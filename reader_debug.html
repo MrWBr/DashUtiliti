@@ -9,83 +9,205 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: monospace;
-            background: #000;
+            background: #0a0a1a;
             color: #0f0;
-            padding: 10px;
-            font-size: 12px;
+            font-size: 11px;
+            min-height: 100vh;
         }
         #reader {
             width: 100%;
-            height: 40vh;
+            height: 35vh;
+            background: #000;
         }
         #reader video {
             width: 100% !important;
         }
-        #output {
-            margin-top: 10px;
+        /* Esconder lixo visual da lib */
+        #reader__dashboard_section_swaplink,
+        #reader__dashboard_section_fileselection,
+        #reader__header_message,
+        #reader img { display: none !important; }
+
+        .section {
+            padding: 8px;
+            border-bottom: 1px solid #333;
+        }
+        .section h3 {
+            color: #4fc3f7;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        #raw-output {
             background: #111;
-            padding: 10px;
             border: 1px solid #333;
             border-radius: 4px;
+            padding: 8px;
             white-space: pre-wrap;
             word-break: break-all;
-            max-height: 50vh;
+            max-height: 30vh;
             overflow-y: auto;
+            font-size: 11px;
+            user-select: all;
         }
-        h3 { color: #4fc3f7; margin: 10px 0 5px; }
+        #char-analysis {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 8px;
+            max-height: 20vh;
+            overflow-y: auto;
+            font-size: 10px;
+            color: #ccc;
+        }
+        .btn-copy {
+            background: #4fc3f7;
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px 0;
+            width: 100%;
+        }
+        .btn-copy:active { background: #81d4fa; }
+        .status {
+            text-align: center;
+            padding: 6px;
+            background: #1a1a2e;
+            color: #888;
+            font-size: 11px;
+        }
+        .found { background: #1b5e20; color: #a5d6a7; }
     </style>
 </head>
 <body>
     <div id="reader"></div>
-    <h3>CONTEÚDO RAW DO QR:</h3>
-    <div id="output">Aguardando leitura...</div>
-    <h3>ANÁLISE:</h3>
-    <div id="analysis"></div>
+    <div class="status" id="status">Aguardando QR Code...</div>
+    
+    <div class="section">
+        <h3>📋 CONTEÚDO DO QR (toque para selecionar):</h3>
+        <div id="raw-output">Aponte para o QR Code...</div>
+        <button class="btn-copy" onclick="copiar()">📋 COPIAR CONTEÚDO</button>
+    </div>
+    
+    <div class="section">
+        <h3>🔍 ANÁLISE:</h3>
+        <div id="char-analysis">-</div>
+    </div>
 
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
-        var output = document.getElementById('output');
-        var analysis = document.getElementById('analysis');
+        var rawOutput = document.getElementById('raw-output');
+        var charAnalysis = document.getElementById('char-analysis');
+        var statusEl = document.getElementById('status');
+        var ultimoConteudo = '';
 
+        function copiar() {
+            if (!ultimoConteudo) return;
+            
+            // Método 1: clipboard API
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(ultimoConteudo).then(function() {
+                    alert('Copiado! Cole no chat.');
+                }).catch(function() {
+                    metodoFallback();
+                });
+            } else {
+                metodoFallback();
+            }
+        }
+
+        function metodoFallback() {
+            // Método 2: textarea temporário
+            var ta = document.createElement('textarea');
+            ta.value = ultimoConteudo;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            ta.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            alert('Copiado! Cole no chat.');
+        }
+
+        function analisar(texto) {
+            var info = '';
+            info += 'TAMANHO: ' + texto.length + ' bytes\n';
+            info += 'TEM QUEBRA DE LINHA: ' + (texto.indexOf('\n') >= 0 ? 'SIM' : 'NAO') + '\n';
+            info += 'TEM \\r: ' + (texto.indexOf('\r') >= 0 ? 'SIM' : 'NAO') + '\n';
+            info += 'PRIMEIRO CHAR: code=' + texto.charCodeAt(0) + ' ("' + texto[0] + '")\n';
+            info += 'ULTIMO CHAR: code=' + texto.charCodeAt(texto.length-1) + '\n';
+            info += 'COMECA COM {: ' + (texto.trim()[0] === '{' ? 'SIM' : 'NAO') + '\n';
+            info += 'COMECA COM [: ' + (texto.trim()[0] === '[' ? 'SIM' : 'NAO') + '\n\n';
+            
+            // Tentar JSON
+            info += '--- JSON.parse() ---\n';
+            try {
+                var parsed = JSON.parse(texto);
+                info += 'RESULTADO: SUCESSO!\n';
+                info += 'TIPO: ' + typeof parsed + '\n';
+                if (typeof parsed === 'object' && parsed !== null) {
+                    info += 'KEYS: ' + Object.keys(parsed).join(', ') + '\n';
+                    if (parsed.d) {
+                        info += 'TEM "d": SIM (length=' + parsed.d.length + ')\n';
+                    }
+                }
+            } catch(e) {
+                info += 'RESULTADO: FALHOU\n';
+                info += 'ERRO: ' + e.message + '\n';
+            }
+            
+            // Primeiros 30 char codes
+            info += '\n--- CHAR CODES (primeiros 30) ---\n';
+            for (var i = 0; i < Math.min(30, texto.length); i++) {
+                var code = texto.charCodeAt(i);
+                var ch = texto[i];
+                if (code === 10) ch = '\\n';
+                else if (code === 13) ch = '\\r';
+                else if (code === 9) ch = '\\t';
+                info += code + '(' + ch + ') ';
+                if ((i + 1) % 10 === 0) info += '\n';
+            }
+            
+            return info;
+        }
+
+        // Iniciar scanner
         var scanner = new Html5Qrcode("reader");
         scanner.start(
             { facingMode: "environment" },
-            { fps: 5, qrbox: { width: 250, height: 250 } },
+            {
+                fps: 5,
+                qrbox: function(w, h) {
+                    var size = Math.floor(Math.min(w, h) * 0.8);
+                    return { width: size, height: size };
+                },
+                formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+            },
             function(decodedText) {
-                // Mostrar conteúdo RAW
-                output.textContent = decodedText;
-
-                // Análise
-                var info = '';
-                info += 'Tamanho: ' + decodedText.length + ' bytes\n';
-                info += 'Primeiro char code: ' + decodedText.charCodeAt(0) + '\n';
-                info += 'Último char code: ' + decodedText.charCodeAt(decodedText.length - 1) + '\n';
-                info += '\n--- Tentando JSON.parse() ---\n';
+                // Evitar repetição
+                if (decodedText === ultimoConteudo) return;
+                ultimoConteudo = decodedText;
                 
-                try {
-                    var parsed = JSON.parse(decodedText);
-                    info += '✅ JSON VÁLIDO!\n';
-                    info += 'Tipo: ' + typeof parsed + '\n';
-                    info += 'Keys: ' + Object.keys(parsed).join(', ') + '\n';
-                    if (parsed.d) {
-                        info += 'parsed.d é array: ' + Array.isArray(parsed.d) + '\n';
-                        info += 'parsed.d.length: ' + parsed.d.length + '\n';
-                        info += 'Primeiro item: ' + JSON.stringify(parsed.d[0]) + '\n';
-                    }
-                } catch(e) {
-                    info += '❌ ERRO: ' + e.message + '\n';
-                    info += '\n--- Primeiros 100 chars ---\n';
-                    info += decodedText.substring(0, 100) + '\n';
-                    info += '\n--- Char codes (primeiros 20) ---\n';
-                    for (var i = 0; i < Math.min(20, decodedText.length); i++) {
-                        info += '[' + i + ']=' + decodedText.charCodeAt(i) + '("' + decodedText[i] + '") ';
-                    }
-                }
-
-                analysis.textContent = info;
+                // Mostrar conteúdo raw
+                rawOutput.textContent = decodedText;
+                
+                // Análise
+                charAnalysis.textContent = analisar(decodedText);
+                
+                // Status
+                statusEl.textContent = '✅ QR LIDO! ' + decodedText.length + ' bytes';
+                statusEl.className = 'status found';
             },
             function() {}
-        );
+        ).then(function() {
+            statusEl.textContent = '📷 Câmera ativa - aponte para o QR';
+        }).catch(function(err) {
+            statusEl.textContent = '❌ Erro: ' + err;
+        });
     </script>
 </body>
 </html>
