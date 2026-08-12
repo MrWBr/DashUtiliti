@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Utilidades Dashboard online</title>
+    <title>Utilidades - Dashboard</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -64,7 +64,7 @@
         /* Cards de valores */
         .cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
             gap: 10px;
             margin-bottom: 20px;
         }
@@ -86,11 +86,13 @@
             color: #fff;
         }
         .card .unit {
-            font-size: 0.7em;
+            font-size: 0.75em;
             color: #666;
+            margin-left: 4px;
         }
         .card.alarm { border-left-color: #ef5350; }
         .card.alarm .value { color: #ef5350; }
+        .card.alarm .label { color: #ef5350; }
         .card.warning { border-left-color: #ffa726; }
         .card.warning .value { color: #ffa726; }
 
@@ -141,7 +143,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>🏭 Industrial Bridge</h1>
+        <h1>🏭 Utilidades - Mondelēz</h1>
         <span class="connection" id="conn-status">● Conectado</span>
         <button onclick="logout()">Sair</button>
     </div>
@@ -182,27 +184,27 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     
-    <!-- Chart.js para gráficos leves -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <script>
         // ⚠️ SUBSTITUA com suas credenciais do Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",
-            authDomain: "dshutili.firebaseapp.com",
+        var firebaseConfig = {
+           apiKey: "AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",
+         authDomain: "dshutili.firebaseapp.com",
             databaseURL: "https://dshutili-default-rtdb.firebaseio.com",
-            projectId: "dshutili",
-          storageBucket: "dshutili.firebasestorage.app",
-            messagingSenderId: "1065134772507",
-            appId: "1:1065134772507:web:aed91d6d1953f69cb403be",
-            measurementId: "G-B3NS6YKTLV"
+             projectId: "dshutili",
+        storageBucket: "dshutili.firebasestorage.app",
+        messagingSenderId: "1065134772507",
+        appId: "1:1065134772507:web:aed91d6d1953f69cb403be",
+         measurementId: "G-B3NS6YKTLV"
         };
 
         firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        var db = firebase.database();
 
         // Verificar autenticação
-        firebase.auth().onAuthStateChanged(user => {
+        firebase.auth().onAuthStateChanged(function(user) {
             if (!user) {
                 window.location.href = 'index.html';
             } else {
@@ -210,24 +212,38 @@
             }
         });
 
-        // ============ CONFIGURAÇÃO DAS VARIÁVEIS ============
-        // Defina aqui os limites de alarme/warning para cada variável
-        const varConfig = {
-            // Exemplo - ajuste conforme suas variáveis reais:
-            // "temp_caldeira": { unit: "°C", min: 0, max: 200, warning: 160, alarm: 180 },
-            // "pressao_vapor": { unit: "bar", min: 0, max: 15, warning: 10, alarm: 12 },
-            // "vazao_agua": { unit: "m³/h", min: 0, max: 50, warning: 40, alarm: 45 },
+        // ============ NOMES AMIGÁVEIS DAS TAGS ============
+        var nomesTags = {
+            "TO8001_4": "Torres Resfriamento",
+            "TO8006": "Retorno Torres",
+            "CH8007": "Chiller 8007",
+            "CH8008": "Chiller 8008",
+            "CH8011_14": "Chillers 8011/14",
+            "CV8004": "Condensador Retorno",
+            "AR_DM": "Ar Comp Dry Mix",
+            "AR_BOGE": "Ar Comp Boge",
+            "AR_CHOCO": "Ar Comp Chocolate",
+            "VAC_DM": "Vácuo Dry Mix",
+            "AGUA_6C": "Água Gelada 6°C",
+            "PRES_BG": "Pressão B&G",
+            "PRES_CHOCO": "Pressão Vapor Choco",
+            "NIV_CD8006": "Nível TQ CD8006/7",
+            "NIV_CD8006_7": "Nível TQ CD8006/7",
+            "AR_CHOCO_Q": "Ar Choco Qualidade",
+            "AR_CHOCO_QUAL": "Ar Choco Qualidade",
+            "AR_BG_Q": "Ar B&G Qualidade",
+            "AR_BG_QUAL": "Ar B&G Qualidade"
         };
 
-        // Histórico local para gráficos de tendência
-        const trendData = {};
-        const MAX_TREND_POINTS = 200;  // ~16 min com leitura a cada 5s
-        let charts = {};
+        // Histórico para gráficos de tendência
+        var trendData = {};
+        var MAX_TREND_POINTS = 200;
+        var charts = {};
 
         function initDashboard() {
             // Escutar dados em tempo real
-            db.ref('current').on('value', snapshot => {
-                const data = snapshot.val();
+            db.ref('current').on('value', function(snapshot) {
+                var data = snapshot.val();
                 if (!data) return;
                 
                 updateCards(data);
@@ -239,104 +255,156 @@
             });
 
             // Detectar desconexão
-            db.ref('.info/connected').on('value', snap => {
+            db.ref('.info/connected').on('value', function(snap) {
                 updateConnectionStatus(snap.val());
             });
 
-            // Carregar histórico inicial
-            db.ref('history').limitToLast(50).once('value', snapshot => {
-                snapshot.forEach(child => {
-                    const data = child.val();
-                    addToLog(data);
+            // Carregar histórico inicial para log
+            db.ref('history').limitToLast(50).once('value', function(snapshot) {
+                snapshot.forEach(function(child) {
+                    addToLog(child.val());
                 });
             });
 
             // Escutar novas entradas no log
-            db.ref('history').limitToLast(1).on('child_added', snapshot => {
+            db.ref('history').limitToLast(1).on('child_added', function(snapshot) {
                 addToLog(snapshot.val());
             });
         }
 
-        function updateCards(data) {
-            const container = document.getElementById('cards-container');
-            container.innerHTML = '';
+        // ============ EXTRAIR VARIÁVEIS DO DADO (qualquer formato) ============
+        function extrairVariaveis(data) {
+            var vars = [];
 
-            Object.keys(data).forEach(key => {
-                if (key.startsWith('_')) return;
+            // Formato 1: tem array "d" com [{id, v, u, a}, ...]
+            if (data.d && Array.isArray(data.d)) {
+                for (var i = 0; i < data.d.length; i++) {
+                    var item = data.d[i];
+                    vars.push({
+                        id: item.id || ('var_' + i),
+                        valor: item.v,
+                        unidade: item.u || '',
+                        alerta: item.a || 0
+                    });
+                }
+                return vars;
+            }
 
-                const value = data[key];
-                const config = varConfig[key] || {};
-                let cardClass = 'card';
+            // Formato 2: chaves diretas com {v, u, a}
+            var keys = Object.keys(data);
+            for (var k = 0; k < keys.length; k++) {
+                var key = keys[k];
+                if (key.startsWith('_') || key === 'd') continue;
                 
-                if (config.alarm && value >= config.alarm) cardClass += ' alarm';
-                else if (config.warning && value >= config.warning) cardClass += ' warning';
+                var val = data[key];
+                
+                if (val !== null && typeof val === 'object' && 'v' in val) {
+                    vars.push({
+                        id: key,
+                        valor: val.v,
+                        unidade: val.u || '',
+                        alerta: val.a || 0
+                    });
+                } else if (typeof val === 'number') {
+                    vars.push({
+                        id: key,
+                        valor: val,
+                        unidade: '',
+                        alerta: 0
+                    });
+                }
+            }
 
-                const card = document.createElement('div');
-                card.className = cardClass;
-                card.innerHTML = `
-                    <div class="label">${formatLabel(key)}</div>
-                    <div class="value">${typeof value === 'number' ? value.toFixed(1) : value}</div>
-                    <div class="unit">${config.unit || ''}</div>
-                `;
-                container.appendChild(card);
-            });
+            return vars;
         }
 
-        function updateTrends(data) {
-            const now = Date.now();
-            
-            Object.keys(data).forEach(key => {
-                if (key.startsWith('_')) return;
-                if (typeof data[key] !== 'number') return;
+        // ============ ATUALIZAR CARDS ============
+        function updateCards(data) {
+            var container = document.getElementById('cards-container');
+            container.innerHTML = '';
 
-                if (!trendData[key]) trendData[key] = [];
-                trendData[key].push({ time: now, value: data[key] });
+            var vars = extrairVariaveis(data);
+
+            for (var i = 0; i < vars.length; i++) {
+                var v = vars[i];
+                var cardClass = 'card';
+                if (v.alerta === 1) cardClass += ' alarm';
+
+                var nome = nomesTags[v.id] || v.id.replace(/_/g, ' ');
+                var valorStr = (typeof v.valor === 'number') ? v.valor.toFixed(1) : v.valor;
+
+                var card = document.createElement('div');
+                card.className = cardClass;
+                card.innerHTML = 
+                    '<div class="label">' + nome + '</div>' +
+                    '<div class="value">' + valorStr + '<span class="unit">' + v.unidade + '</span></div>';
+                container.appendChild(card);
+            }
+        }
+
+        // ============ ATUALIZAR TENDÊNCIAS ============
+        function updateTrends(data) {
+            var now = Date.now();
+            var vars = extrairVariaveis(data);
+
+            for (var i = 0; i < vars.length; i++) {
+                var v = vars[i];
+                if (typeof v.valor !== 'number') continue;
+
+                if (!trendData[v.id]) trendData[v.id] = [];
+                trendData[v.id].push({ time: now, value: v.valor });
                 
-                if (trendData[key].length > MAX_TREND_POINTS) {
-                    trendData[key].shift();
+                if (trendData[v.id].length > MAX_TREND_POINTS) {
+                    trendData[v.id].shift();
                 }
-            });
+            }
 
             renderCharts();
         }
 
         function renderCharts() {
-            const container = document.getElementById('charts-container');
+            var container = document.getElementById('charts-container');
+            var keys = Object.keys(trendData);
             
-            Object.keys(trendData).forEach(key => {
-                let chartDiv = document.getElementById('chart-' + key);
+            for (var k = 0; k < keys.length; k++) {
+                var key = keys[k];
+                var chartDivId = 'chart-' + key.replace(/[^a-zA-Z0-9]/g, '_');
+                var canvasId = 'canvas-' + key.replace(/[^a-zA-Z0-9]/g, '_');
+                var chartDiv = document.getElementById(chartDivId);
                 
                 if (!chartDiv) {
                     chartDiv = document.createElement('div');
                     chartDiv.className = 'chart-container';
-                    chartDiv.id = 'chart-' + key;
-                    chartDiv.innerHTML = `
-                        <h3>${formatLabel(key)} ${varConfig[key]?.unit ? '(' + varConfig[key].unit + ')' : ''}</h3>
-                        <canvas id="canvas-${key}" class="chart-canvas"></canvas>
-                    `;
+                    chartDiv.id = chartDivId;
+                    var nome = nomesTags[key] || key.replace(/_/g, ' ');
+                    chartDiv.innerHTML = 
+                        '<h3>' + nome + '</h3>' +
+                        '<canvas id="' + canvasId + '" class="chart-canvas"></canvas>';
                     container.appendChild(chartDiv);
                 }
 
-                const canvas = document.getElementById('canvas-' + key);
-                const ctx = canvas.getContext('2d');
-                const points = trendData[key];
+                var canvas = document.getElementById(canvasId);
+                if (!canvas) continue;
+                
+                var ctxChart = canvas.getContext('2d');
+                var points = trendData[key];
 
                 if (charts[key]) {
-                    charts[key].data.labels = points.map(p => 
-                        new Date(p.time).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', second:'2-digit'})
-                    );
-                    charts[key].data.datasets[0].data = points.map(p => p.value);
+                    charts[key].data.labels = points.map(function(p) {
+                        return new Date(p.time).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+                    });
+                    charts[key].data.datasets[0].data = points.map(function(p) { return p.value; });
                     charts[key].update('none');
                 } else {
-                    charts[key] = new Chart(ctx, {
+                    charts[key] = new Chart(ctxChart, {
                         type: 'line',
                         data: {
-                            labels: points.map(p => 
-                                new Date(p.time).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', second:'2-digit'})
-                            ),
+                            labels: points.map(function(p) {
+                                return new Date(p.time).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+                            }),
                             datasets: [{
-                                label: formatLabel(key),
-                                data: points.map(p => p.value),
+                                label: nomesTags[key] || key,
+                                data: points.map(function(p) { return p.value; }),
                                 borderColor: '#4fc3f7',
                                 backgroundColor: 'rgba(79, 195, 247, 0.1)',
                                 borderWidth: 1.5,
@@ -365,20 +433,31 @@
                         }
                     });
                 }
-            });
+            }
         }
 
+        // ============ LOG ============
         function addToLog(data) {
             if (!data) return;
-            const tbody = document.getElementById('log-body');
-            const row = document.createElement('tr');
-            const varCount = Object.keys(data).filter(k => !k.startsWith('_')).length;
+            var tbody = document.getElementById('log-body');
+            var row = document.createElement('tr');
+            var varCount = data._varCount || '?';
+            var hasAlerts = false;
             
-            row.innerHTML = `
-                <td>${data._readAt || '-'}</td>
-                <td>${varCount} vars</td>
-                <td style="color: #a5d6a7;">✓ OK</td>
-            `;
+            if (data.d && Array.isArray(data.d)) {
+                for (var i = 0; i < data.d.length; i++) {
+                    if (data.d[i].a === 1) { hasAlerts = true; break; }
+                }
+            }
+            
+            var statusHtml = hasAlerts 
+                ? '<span style="color: #ef5350;">⚠ ALERTA</span>'
+                : '<span style="color: #a5d6a7;">✓ OK</span>';
+            
+            row.innerHTML = 
+                '<td>' + (data._readAt || '-') + '</td>' +
+                '<td>' + varCount + ' vars</td>' +
+                '<td>' + statusHtml + '</td>';
             tbody.insertBefore(row, tbody.firstChild);
             
             while (tbody.children.length > 100) {
@@ -386,8 +465,9 @@
             }
         }
 
+        // ============ STATUS CONEXÃO ============
         function updateConnectionStatus(connected) {
-            const el = document.getElementById('conn-status');
+            var el = document.getElementById('conn-status');
             if (connected) {
                 el.textContent = '● Conectado';
                 el.className = 'connection';
@@ -397,25 +477,28 @@
             }
         }
 
-        function formatLabel(key) {
-            return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        }
-
+        // ============ TABS ============
         function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+            var tabs = document.querySelectorAll('.tab-content');
+            for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+            var btns = document.querySelectorAll('.tabs button');
+            for (var j = 0; j < btns.length; j++) btns[j].classList.remove('active');
+            
             document.getElementById('tab-' + tabName).classList.add('active');
             event.target.classList.add('active');
             
             if (tabName === 'trends') {
-                setTimeout(() => {
-                    Object.values(charts).forEach(c => c.resize());
+                setTimeout(function() {
+                    var chartKeys = Object.keys(charts);
+                    for (var c = 0; c < chartKeys.length; c++) {
+                        charts[chartKeys[c]].resize();
+                    }
                 }, 100);
             }
         }
 
         function logout() {
-            firebase.auth().signOut().then(() => {
+            firebase.auth().signOut().then(function() {
                 window.location.href = 'index.html';
             });
         }
