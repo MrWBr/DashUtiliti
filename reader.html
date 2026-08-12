@@ -11,19 +11,36 @@
             font-family: sans-serif;
             background: #000;
             color: #fff;
-            overflow: hidden;
-            height: 100vh;
+            overflow-x: hidden;
+            min-height: 100vh;
         }
-        #video {
+        #reader {
             width: 100%;
-            height: 60vh;
-            object-fit: cover;
-            display: block;
-            background: #222;
+            min-height: 55vh;
         }
-        canvas { display: none; }
+        #reader video {
+            width: 100% !important;
+            border: none !important;
+        }
+        #reader__scan_region {
+            min-height: 50vh;
+        }
+        /* Esconder elementos desnecessários da lib */
+        #reader__dashboard_section_swaplink,
+        #reader__dashboard_section_fileselection,
+        #reader__header_message,
+        #reader img {
+            display: none !important;
+        }
+        #reader__dashboard_section_csr select {
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 4px;
+            border-radius: 4px;
+        }
         .status-bar {
-            padding: 8px;
+            padding: 10px;
             background: #111;
             text-align: center;
         }
@@ -55,21 +72,16 @@
             padding: 5px 10px;
             border-radius: 4px;
             font-size: 0.7em;
-            z-index: 10;
+            z-index: 100;
         }
         .debug {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
             background: rgba(0,0,0,0.92);
             color: #0f0;
             font-family: monospace;
             font-size: 0.65em;
             padding: 6px;
-            max-height: 20vh;
+            max-height: 18vh;
             overflow-y: auto;
-            z-index: 20;
         }
         .pulse { animation: pulse 1s ease-in-out; }
         @keyframes pulse {
@@ -82,8 +94,7 @@
 <body>
     <button class="btn-logout" onclick="logout()">Sair</button>
     
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="canvas"></canvas>
+    <div id="reader"></div>
     
     <div class="status-bar" id="status-bar">
         <div class="status" id="status">Iniciando câmera...</div>
@@ -99,16 +110,12 @@
             <div>Variáveis</div>
         </div>
         <div>
-            <div class="value" id="scan-count">0</div>
-            <div>Scans</div>
-        </div>
-        <div>
             <div class="value" id="uptime">00:00</div>
             <div>Uptime</div>
         </div>
     </div>
     
-    <!-- Debug console - REMOVA depois que funcionar -->
+    <!-- Debug - REMOVA depois que funcionar -->
     <div class="debug" id="debug"></div>
 
     <!-- Firebase -->
@@ -116,8 +123,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     
-    <!-- jsQR - decodificador puro -->
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <!-- html5-qrcode (ZXing-based, robusto como pyzbar) -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
     <script>
         // ⚠️ SUBSTITUA com suas credenciais do Firebase
@@ -140,8 +147,8 @@
             var time = new Date().toLocaleTimeString('pt-BR');
             debugEl.innerHTML = '[' + time + '] ' + msg + '<br>' + debugEl.innerHTML;
             var lines = debugEl.innerHTML.split('<br>');
-            if (lines.length > 15) {
-                debugEl.innerHTML = lines.slice(0, 15).join('<br>');
+            if (lines.length > 12) {
+                debugEl.innerHTML = lines.slice(0, 12).join('<br>');
             }
         }
 
@@ -151,28 +158,23 @@
                 window.location.href = 'index.html';
             } else {
                 log('✅ Logado: ' + user.email);
-                initCamera();
+                initReader();
             }
         });
 
         var readCount = 0;
-        var scanCount = 0;
         var startTime = Date.now();
         var lastData = null;
-        var video = document.getElementById('video');
-        var canvas = document.getElementById('canvas');
-        var ctx = canvas.getContext('2d', { willReadFrequently: true });
-        var scanning = false;
+        var scanner = null;
 
         // ============================================================
-        // PARSER - MESMA LÓGICA DO SEU PYTHON
-        // Aceita JSON {"d":[...]} OU texto formatado "NOME: valor unidade"
+        // PARSER - Aceita JSON e texto formatado
         // ============================================================
         function parsearDadosQR(dadosRaw) {
             // Tentar JSON primeiro
             try {
                 var dados = JSON.parse(dadosRaw);
-                log('📋 Formato: JSON');
+                log('📋 JSON válido!');
                 
                 // Formato {"d": [{id, v, u, a}, ...]}
                 if (dados.d && Array.isArray(dados.d)) {
@@ -181,11 +183,11 @@
                 // Formato objeto simples {"tag": valor, ...}
                 return { tipo: 'json_simples', dados: dados };
             } catch (e) {
-                // Não é JSON, parsear como texto
+                // Não é JSON
             }
 
-            // Parsear texto (mesmo formato do seu VBS)
-            log('📋 Formato: TEXTO');
+            // Parsear texto formatado
+            log('📋 Parseando como texto...');
             var linhas = dadosRaw.split('\n');
             var tags = [];
 
@@ -193,19 +195,16 @@
                 var linha = linhas[i].trim();
                 if (!linha || linha.indexOf('===') >= 0) continue;
                 
-                // Tentar extrair "NOME: valor unidade" ou "NOME:valor unidade"
                 var idxDoisPontos = linha.indexOf(':');
                 if (idxDoisPontos < 0) continue;
 
                 var nome = linha.substring(0, idxDoisPontos).trim();
                 var resto = linha.substring(idxDoisPontos + 1).trim();
 
-                // Pode ter múltiplos valores na mesma linha separados por |
                 var partes = resto.split('|');
                 
                 for (var p = 0; p < partes.length; p++) {
                     var parte = partes[p].trim();
-                    // Extrair nome:valor se tiver sub-parte com ":"
                     var subIdx = parte.indexOf(':');
                     var subNome = nome;
                     var subValor = parte;
@@ -215,7 +214,6 @@
                         subValor = parte.substring(subIdx + 1).trim();
                     }
 
-                    // Extrair número do valor
                     var tokens = subValor.split(/\s+/);
                     if (tokens.length > 0) {
                         var numStr = tokens[0].replace(',', '.');
@@ -232,8 +230,7 @@
         }
 
         // ============================================================
-        // NORMALIZAR DADOS PARA FIREBASE
-        // Converte qualquer formato para estrutura uniforme
+        // NORMALIZAR PARA FIREBASE
         // ============================================================
         function normalizarParaFirebase(resultado) {
             var dadosFirebase = {
@@ -243,12 +240,9 @@
             };
 
             if (resultado.tipo === 'json' && resultado.dados.d) {
-                // Formato {"d": [{id, v, u, a}, ...]}
                 var items = resultado.dados.d;
                 dadosFirebase._varCount = items.length;
                 dadosFirebase.d = items;
-                
-                // Também salvar como chave:valor para fácil acesso no dashboard
                 for (var i = 0; i < items.length; i++) {
                     var item = items[i];
                     dadosFirebase[item.id] = {
@@ -258,18 +252,18 @@
                     };
                 }
             } else if (resultado.tipo === 'json_simples') {
-                // Formato {"tag": valor, ...}
                 var keys = Object.keys(resultado.dados);
                 dadosFirebase._varCount = keys.length;
                 for (var k = 0; k < keys.length; k++) {
-                    dadosFirebase[keys[k]] = resultado.dados[keys[k]];
+                    var key = keys[k];
+                    if (!key.startsWith('_')) {
+                        dadosFirebase[key] = resultado.dados[key];
+                    }
                 }
             } else if (resultado.tipo === 'texto') {
-                // Formato parseado do texto
                 var tags = resultado.dados;
                 dadosFirebase._varCount = tags.length;
                 dadosFirebase.d = tags;
-                
                 for (var j = 0; j < tags.length; j++) {
                     dadosFirebase[tags[j].id] = {
                         v: tags[j].v,
@@ -282,148 +276,69 @@
         }
 
         // ============================================================
-        // CÂMERA
+        // INICIAR LEITOR (html5-qrcode com ZXing)
         // ============================================================
-        function initCamera() {
-            log('📷 Solicitando câmera...');
+        function initReader() {
+            log('📷 Iniciando html5-qrcode...');
             document.getElementById('status').textContent = '📷 Iniciando câmera...';
-            
-            var constraints = {
-                video: {
-                    facingMode: { ideal: 'environment' },
-                    width: { ideal: 640 },
-                    height: { ideal: 480 }
+
+            scanner = new Html5Qrcode("reader");
+
+            var config = {
+                fps: 5,
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    var minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                    var qrboxSize = Math.floor(minEdge * 0.8);
+                    return { width: qrboxSize, height: qrboxSize };
                 },
-                audio: false
+                aspectRatio: 1.0,
+                formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
             };
 
-            navigator.mediaDevices.getUserMedia(constraints)
-                .then(function(stream) {
-                    var track = stream.getVideoTracks()[0];
-                    var settings = track.getSettings();
-                    log('✅ Câmera: ' + (settings.width || '?') + 'x' + (settings.height || '?'));
-                    
-                    video.srcObject = stream;
-                    video.onloadedmetadata = function() {
-                        log('📹 Video: ' + video.videoWidth + 'x' + video.videoHeight);
-                        video.play().then(function() {
-                            log('▶️ Play OK! Iniciando scan...');
-                            document.getElementById('status').textContent = '✅ Câmera ativa';
-                            scanning = true;
-                            setTimeout(scanLoop, 500);
-                        }).catch(function(e) {
-                            log('❌ Play erro: ' + e.message);
-                        });
-                    };
-                })
-                .catch(function(err) {
-                    log('❌ Câmera erro: ' + err.name);
-                    // Fallback sem facingMode específico
-                    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-                        .then(function(stream) {
-                            log('✅ Fallback câmera OK');
-                            video.srcObject = stream;
-                            video.onloadedmetadata = function() {
-                                video.play().then(function() {
-                                    scanning = true;
-                                    setTimeout(scanLoop, 500);
-                                });
-                            };
-                        })
-                        .catch(function(e) {
-                            log('❌ Sem câmera: ' + e.message);
-                            document.getElementById('status').textContent = '❌ Sem acesso à câmera';
-                        });
-                });
+            scanner.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).then(function() {
+                log('✅ Câmera ativa! Escaneando...');
+                document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
+            }).catch(function(err) {
+                log('❌ Erro câmera: ' + err);
+                document.getElementById('status').textContent = '❌ Erro: ' + err;
+            });
         }
 
         // ============================================================
-        // LOOP DE SCAN - Similar ao capturar_qr() do Python
+        // CALLBACK - QR DETECTADO
         // ============================================================
-        function scanLoop() {
-            if (!scanning) return;
+        function onScanSuccess(decodedText, decodedResult) {
+            log('🎯 QR! (' + decodedText.length + ' bytes)');
             
-            try {
-                if (video.readyState < video.HAVE_CURRENT_DATA) {
-                    setTimeout(scanLoop, 500);
-                    return;
-                }
-
-                var w = video.videoWidth;
-                var h = video.videoHeight;
-                
-                if (w === 0 || h === 0) {
-                    setTimeout(scanLoop, 500);
-                    return;
-                }
-
-                canvas.width = w;
-                canvas.height = h;
-                ctx.drawImage(video, 0, 0, w, h);
-                
-                var imageData = ctx.getImageData(0, 0, w, h);
-                scanCount++;
-                document.getElementById('scan-count').textContent = scanCount;
-                
-                // Decodificar QR com jsQR
-                var code = jsQR(imageData.data, w, h, {
-                    inversionAttempts: "dontInvert"
-                });
-                
-                if (code && code.data) {
-                    log('🎯 QR DETECTADO! (' + code.data.length + ' bytes)');
-                    processQR(code.data);
-                }
-                
-                // Log periódico
-                if (scanCount % 20 === 0) {
-                    log('🔍 Scan #' + scanCount + ' | ' + w + 'x' + h + ' | Sem QR');
-                }
-                
-            } catch (e) {
-                log('❌ Scan erro: ' + e.message);
-            }
-            
-            // Próximo scan em 400ms (~2.5 FPS)
-            setTimeout(scanLoop, 400);
-        }
-
-        // ============================================================
-        // PROCESSAR QR - Usa o parser igual ao Python
-        // ============================================================
-        function processQR(decodedText) {
-            // Parsear dados (aceita JSON ou texto)
+            // Parsear
             var resultado = parsearDadosQR(decodedText);
             
             if (!resultado || (resultado.tipo === 'texto' && resultado.dados.length === 0)) {
-                log('⚠️ QR sem dados úteis: ' + decodedText.substring(0, 40));
+                log('⚠️ Sem dados úteis');
                 return;
             }
 
-            // Normalizar para Firebase
+            // Normalizar
             var dadosFirebase = normalizarParaFirebase(resultado);
             
             // Evitar duplicatas
-            var dataStr = JSON.stringify(dadosFirebase.d || dadosFirebase);
-            if (dataStr === lastData) {
-                log('⏭️ Dados iguais, ignorando');
-                return;
+            var checkStr = JSON.stringify(dadosFirebase.d || '');
+            if (checkStr === lastData) {
+                return; // Silencioso - não logar duplicatas para não poluir
             }
-            lastData = dataStr;
+            lastData = checkStr;
 
             // Enviar para Firebase
             db.ref('current').set(dadosFirebase)
-                .then(function() { log('☁️ Firebase OK!'); })
+                .then(function() { log('☁️ Firebase OK'); })
                 .catch(function(e) { log('❌ Firebase: ' + e.message); });
             
             db.ref('history').push().set(dadosFirebase);
-
-            // Limpar histórico antigo
-            db.ref('history').limitToFirst(1).once('value', function(snap) {
-                if (snap.numChildren() > 500) {
-                    snap.forEach(function(child) { child.ref.remove(); });
-                }
-            });
 
             // Atualizar UI
             readCount++;
@@ -431,14 +346,18 @@
             document.getElementById('read-count').textContent = readCount;
             document.getElementById('vars-count').textContent = varCount;
             document.getElementById('last-read').textContent = 'Última: ' + dadosFirebase._readAt;
-            document.getElementById('status').textContent = '✅ Leitura #' + readCount + ' | ' + varCount + ' vars';
+            document.getElementById('status').textContent = '✅ #' + readCount + ' | ' + varCount + ' vars | ' + resultado.tipo;
             document.getElementById('status-bar').classList.add('pulse');
             setTimeout(function() { 
                 document.getElementById('status-bar').classList.remove('pulse');
                 document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
-            }, 1500);
+            }, 2000);
 
-            log('✅ LEITURA #' + readCount + ' | Tipo: ' + resultado.tipo + ' | ' + varCount + ' vars');
+            log('✅ LEITURA #' + readCount + ' | ' + resultado.tipo + ' | ' + varCount + ' vars');
+        }
+
+        function onScanFailure(error) {
+            // Silencioso - não fazer nada quando não encontra QR
         }
 
         // Uptime
@@ -459,13 +378,21 @@
         }
 
         function logout() {
-            scanning = false;
-            if (video.srcObject) {
-                video.srcObject.getTracks().forEach(function(t) { t.stop(); });
+            if (scanner) {
+                scanner.stop().then(function() {
+                    firebase.auth().signOut().then(function() {
+                        window.location.href = 'index.html';
+                    });
+                }).catch(function() {
+                    firebase.auth().signOut().then(function() {
+                        window.location.href = 'index.html';
+                    });
+                });
+            } else {
+                firebase.auth().signOut().then(function() {
+                    window.location.href = 'index.html';
+                });
             }
-            firebase.auth().signOut().then(function() {
-                window.location.href = 'index.html';
-            });
         }
     </script>
 </body>
