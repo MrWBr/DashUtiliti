@@ -1,0 +1,131 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Industrial Bridge - Login</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #fff;
+        }
+        .login-box {
+            background: #16213e;
+            padding: 40px 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 360px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        }
+        .login-box h1 {
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 1.4em;
+            color: #4fc3f7;
+        }
+        .login-box p {
+            text-align: center;
+            margin-bottom: 24px;
+            font-size: 0.85em;
+            color: #aaa;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 16px;
+            border: 1px solid #333;
+            border-radius: 6px;
+            background: #0f3460;
+            color: #fff;
+            font-size: 1em;
+        }
+        input::placeholder { color: #666; }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #4fc3f7;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover { background: #81d4fa; }
+        .error { color: #ef5350; font-size: 0.85em; text-align: center; margin-top: 10px; display: none; }
+        .links { text-align: center; margin-top: 20px; }
+        .links a {
+            color: #4fc3f7;
+            text-decoration: none;
+            margin: 0 10px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h1>🏭 Industrial Bridge</h1>
+        <p>Monitoramento via QR Code</p>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Senha">
+        <button onclick="login()">Entrar</button>
+        <p class="error" id="error-msg"></p>
+        <div class="links">
+            <a href="reader.html">📷 Leitor</a>
+            <a href="dashboard.html">📊 Dashboard</a>
+        </div>
+    </div>
+
+    <!-- Firebase SDK (compat para funcionar no J1 Mini) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script>
+        // ⚠️ SUBSTITUA com suas credenciais do Firebase
+       const firebaseConfig = {
+        apiKey: "AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",
+        authDomain: "dshutili.firebaseapp.com",
+        databaseURL: "https://dshutili-default-rtdb.firebaseio.com",
+        projectId: "dshutili",
+        storageBucket: "dshutili.firebasestorage.app",
+        messagingSenderId: "1065134772507",
+        appId: "1:1065134772507:web:aed91d6d1953f69cb403be",
+        measurementId: "G-B3NS6YKTLV"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+
+        function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('error-msg');
+            
+            firebase.auth().signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    // Redireciona baseado no dispositivo
+                    const isMobile = /Android|iPhone/i.test(navigator.userAgent);
+                    window.location.href = isMobile ? 'reader.html' : 'dashboard.html';
+                })
+                .catch(err => {
+                    errorMsg.style.display = 'block';
+                    errorMsg.textContent = 'Email ou senha incorretos';
+                });
+        }
+
+        // Se já logado, redireciona
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                const isMobile = /Android|iPhone/i.test(navigator.userAgent);
+                window.location.href = isMobile ? 'reader.html' : 'dashboard.html';
+            }
+        });
+    </script>
+</body>
+</html>
+

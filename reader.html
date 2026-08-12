@@ -1,0 +1,229 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QR Reader</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            height: 100vh;
+        }
+        #reader-container {
+            width: 100%;
+            height: 70vh;
+            position: relative;
+        }
+        #reader-container video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+        }
+        .status-bar {
+            padding: 10px;
+            background: #111;
+            text-align: center;
+        }
+        .status-bar .status {
+            font-size: 0.9em;
+            color: #4fc3f7;
+        }
+        .status-bar .last-read {
+            font-size: 0.75em;
+            color: #888;
+            margin-top: 4px;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            background: #1a1a2e;
+            font-size: 0.8em;
+        }
+        .stats div { text-align: center; }
+        .stats .value { font-size: 1.2em; font-weight: bold; color: #4fc3f7; }
+        .btn-logout {
+            position: fixed;
+            top: 5px;
+            right: 5px;
+            background: #333;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.7em;
+        }
+        .pulse { animation: pulse 1s ease-in-out; }
+        @keyframes pulse {
+            0% { background: #111; }
+            50% { background: #1b5e20; }
+            100% { background: #111; }
+        }
+    </style>
+</head>
+<body>
+    <button class="btn-logout" onclick="logout()">Sair</button>
+    <div id="reader-container"></div>
+    <div class="status-bar" id="status-bar">
+        <div class="status" id="status">Iniciando câmera...</div>
+        <div class="last-read" id="last-read">Aguardando leitura...</div>
+    </div>
+    <div class="stats">
+        <div>
+            <div class="value" id="read-count">0</div>
+            <div>Leituras</div>
+        </div>
+        <div>
+            <div class="value" id="vars-count">0</div>
+            <div>Variáveis</div>
+        </div>
+        <div>
+            <div class="value" id="uptime">00:00</div>
+            <div>Uptime</div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <!-- QR Code Reader - biblioteca leve -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <script>
+        // ⚠️ SUBSTITUA com suas credenciais do Firebase
+        const firebaseConfig = {
+         apiKey: "AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",
+         authDomain: "dshutili.firebaseapp.com",
+            databaseURL: "https://dshutili-default-rtdb.firebaseio.com",
+             projectId: "dshutili",
+        storageBucket: "dshutili.firebasestorage.app",
+        messagingSenderId: "1065134772507",
+        appId: "1:1065134772507:web:aed91d6d1953f69cb403be",
+         measurementId: "G-B3NS6YKTLV"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Verificar autenticação
+        firebase.auth().onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = 'index.html';
+            } else {
+                initReader();
+            }
+        });
+
+        let readCount = 0;
+        let startTime = Date.now();
+        let lastData = null;
+        let scanner = null;
+
+        function initReader() {
+            document.getElementById('status').textContent = '📷 Iniciando câmera...';
+            
+            scanner = new Html5Qrcode("reader-container");
+            
+            const config = {
+                fps: 2,  // Baixo FPS para economizar bateria/CPU no J1 Mini
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+
+            // Usar câmera traseira
+            scanner.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).then(() => {
+                document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
+            }).catch(err => {
+                document.getElementById('status').textContent = '❌ Erro na câmera: ' + err;
+            });
+        }
+
+        function onScanSuccess(decodedText) {
+            try {
+                const data = JSON.parse(decodedText);
+                
+                // Evitar enviar dados duplicados
+                const dataStr = JSON.stringify(data);
+                if (dataStr === lastData) return;
+                lastData = dataStr;
+
+                // Adicionar timestamp
+                data._timestamp = Date.now();
+                data._readAt = new Date().toLocaleString('pt-BR');
+
+                // Enviar para Firebase
+                // Dados atuais (sobrescreve)
+                db.ref('current').set(data);
+                
+                // Histórico (append - mantém últimas 500 leituras)
+                const histRef = db.ref('history').push();
+                histRef.set(data);
+                
+                // Limpar histórico antigo (manter últimas 500)
+                db.ref('history').limitToFirst(1).once('value', snap => {
+                    const count = snap.numChildren();
+                    if (count > 500) {
+                        snap.forEach(child => { child.ref.remove(); });
+                    }
+                });
+
+                // Atualizar UI
+                readCount++;
+                document.getElementById('read-count').textContent = readCount;
+                document.getElementById('vars-count').textContent = Object.keys(data).length - 2;
+                document.getElementById('last-read').textContent = 'Última: ' + data._readAt;
+                document.getElementById('status-bar').classList.add('pulse');
+                setTimeout(() => document.getElementById('status-bar').classList.remove('pulse'), 1000);
+
+            } catch (e) {
+                document.getElementById('status').textContent = '⚠️ QR inválido';
+            }
+        }
+
+        function onScanFailure(error) {
+            // Silencioso - não fazer nada quando não encontra QR
+        }
+
+        // Atualizar uptime
+        setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const min = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const sec = (elapsed % 60).toString().padStart(2, '0');
+            document.getElementById('uptime').textContent = 
+                elapsed >= 3600 
+                    ? Math.floor(elapsed/3600) + ':' + min + ':' + sec
+                    : min + ':' + sec;
+        }, 1000);
+
+        // Manter tela ligada (Wake Lock API)
+        async function keepAwake() {
+            try {
+                if ('wakeLock' in navigator) {
+                    await navigator.wakeLock.request('screen');
+                }
+            } catch (e) { /* fallback: configurar tela para nunca desligar */ }
+        }
+        keepAwake();
+
+        function logout() {
+            if (scanner) scanner.stop();
+            firebase.auth().signOut().then(() => {
+                window.location.href = 'index.html';
+            });
+        }
+    </script>
+</body>
+</html>
+
