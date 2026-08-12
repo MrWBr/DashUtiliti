@@ -3,128 +3,376 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Industrial Bridge - Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Utilidades - Mondelēz</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #1a1a2e;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0e1a;
+            color: #fff;
             min-height: 100vh;
-            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .login-box {
-            background: #16213e;
-            padding: 40px 30px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 360px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        .container {
+            width: 100%;
+            max-width: 380px;
+            padding: 20px;
         }
-        .login-box h1 {
+
+        /* SPLASH */
+        .splash {
             text-align: center;
-            margin-bottom: 8px;
-            font-size: 1.4em;
+        }
+        .splash .logo {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+        .splash h1 {
+            font-size: 1.3em;
             color: #4fc3f7;
+            margin-bottom: 5px;
         }
-        .login-box p {
-            text-align: center;
-            margin-bottom: 24px;
-            font-size: 0.85em;
-            color: #aaa;
+        .splash .subtitle {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 30px;
         }
-        input {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 16px;
-            border: 1px solid #333;
-            border-radius: 6px;
-            background: #0f3460;
+        .mode-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .mode-btn {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            background: #141929;
+            border: 1px solid #2a2f45;
+            border-radius: 12px;
+            padding: 18px 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        .mode-btn:hover { background: #1a2035; border-color: #4fc3f7; }
+        .mode-btn:active { transform: scale(0.98); }
+        .mode-btn .icon {
+            font-size: 2em;
+            flex-shrink: 0;
+        }
+        .mode-btn .text h3 {
+            font-size: 1em;
             color: #fff;
-            font-size: 1em;
+            margin-bottom: 3px;
         }
-        input::placeholder { color: #666; }
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #4fc3f7;
-            color: #1a1a2e;
+        .mode-btn .text p {
+            font-size: 0.75em;
+            color: #888;
+        }
+
+        /* LOGIN */
+        .login {
+            display: none;
+            text-align: center;
+        }
+        .login .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: none;
             border: none;
-            border-radius: 6px;
-            font-size: 1em;
-            font-weight: bold;
+            color: #4fc3f7;
+            font-size: 0.9em;
             cursor: pointer;
         }
-        button:hover { background: #81d4fa; }
-        .error { color: #ef5350; font-size: 0.85em; text-align: center; margin-top: 10px; display: none; }
-        .links { text-align: center; margin-top: 20px; }
-        .links a {
+        .login .mode-badge {
+            display: inline-block;
+            font-size: 0.7em;
+            padding: 4px 10px;
+            border-radius: 10px;
+            background: #1a2035;
             color: #4fc3f7;
-            text-decoration: none;
-            margin: 0 10px;
-            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+        .login h2 {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+        .login .info {
+            font-size: 0.75em;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 12px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px 14px;
+            background: #141929;
+            border: 1px solid #2a2f45;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 0.95em;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .input-group input:focus { border-color: #4fc3f7; }
+        .input-group input::placeholder { color: #555; }
+        .btn-login {
+            width: 100%;
+            padding: 13px;
+            background: #4fc3f7;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 5px;
+            transition: background 0.2s;
+        }
+        .btn-login:hover { background: #81d4fa; }
+        .btn-login:active { transform: scale(0.98); }
+        .btn-login:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .error {
+            color: #ef5350;
+            font-size: 0.8em;
+            margin-top: 10px;
+            display: none;
+        }
+        .loading {
+            display: none;
+            color: #4fc3f7;
+            font-size: 0.85em;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="login-box">
-        <h1>Utilidades - Dashboard</h1>
-        <p>Monitoramento via QR Code</p>
-        <input type="email" id="email" placeholder="Email">
-        <input type="password" id="password" placeholder="Senha">
-        <button onclick="login()">Entrar</button>
-        <p class="error" id="error-msg"></p>
-        <div class="links">
-            <a href="reader.html">📷 Leitor</a>
-            <a href="dashboard.html">📊 Dashboard</a>
+    <div class="container">
+        <!-- TELA 1: SPLASH - ESCOLHER MODO -->
+        <div class="splash" id="splash-screen">
+            <div class="logo">🏭</div>
+            <h1>Utilidades</h1>
+            <div class="subtitle">Mondelēz International - Curitiba</div>
+            
+            <div class="mode-buttons">
+                <div class="mode-btn" onclick="selecionarModo('leitor')">
+                    <div class="icon">📷</div>
+                    <div class="text">
+                        <h3>Leitor QR</h3>
+                        <p>Ler dados da rede industrial via câmera</p>
+                    </div>
+                </div>
+                <div class="mode-btn" onclick="selecionarModo('dashboard')">
+                    <div class="icon">📊</div>
+                    <div class="text">
+                        <h3>Dashboard</h3>
+                        <p>Visualizar dados em tempo real</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TELA 2: LOGIN -->
+        <div class="login" id="login-screen">
+            <button class="back-btn" onclick="voltarSplash()">← Voltar</button>
+            <div class="mode-badge" id="mode-badge">📷 Leitor</div>
+            <h2>Login</h2>
+            <div class="info" id="login-info">Acesso ao sistema de utilidades</div>
+            
+            <form onsubmit="fazerLogin(event)">
+                <div class="input-group">
+                    <input type="email" id="email" placeholder="Email" autocomplete="email" required>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="senha" placeholder="Senha" autocomplete="current-password" required>
+                </div>
+                <button type="submit" class="btn-login" id="btn-login">Entrar</button>
+            </form>
+            <div class="error" id="error-msg"></div>
+            <div class="loading" id="loading">Entrando...</div>
         </div>
     </div>
 
-    <!-- Firebase SDK (compat para funcionar no J1 Mini) -->
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
     <script>
-        // ⚠️ SUBSTITUA com suas credenciais do Firebase
-       const firebaseConfig = {
-        apiKey: "AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",
-        authDomain: "dshutili.firebaseapp.com",
-        databaseURL: "https://dshutili-default-rtdb.firebaseio.com",
-        projectId: "dshutili",
-        storageBucket: "dshutili.firebasestorage.app",
-        messagingSenderId: "1065134772507",
-        appId: "1:1065134772507:web:aed91d6d1953f69cb403be",
-        measurementId: "G-B3NS6YKTLV"
+        var firebaseConfig = {
+            apiKey: "AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",
+            authDomain: "dshutili.firebaseapp.com",
+            databaseURL: "https://dshutili-default-rtdb.firebaseio.com",
+            projectId: "dshutili",
+            storageBucket: "dshutili.firebasestorage.app",
+            messagingSenderId: "1065134772507",
+            appId: "1:1065134772507:web:aed91d6d1953f69cb403be",
+            measurementId: "G-B3NS6YKTLV"
         };
-
         firebase.initializeApp(firebaseConfig);
+        var auth = firebase.auth();
 
-        function login() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const errorMsg = document.getElementById('error-msg');
-            
-            firebase.auth().signInWithEmailAndPassword(email, password)
-                .then(() => {
-                    // Redireciona baseado no dispositivo
-                    const isMobile = /Android|iPhone/i.test(navigator.userAgent);
-                    window.location.href = isMobile ? 'reader.html' : 'dashboard.html';
-                })
-                .catch(err => {
-                    errorMsg.style.display = 'block';
-                    errorMsg.textContent = 'Email ou senha incorretos';
-                });
-        }
+        var modoSelecionado = null;
+        var SESSAO_DASHBOARD_HORAS = 24; // Dashboard expira em 24h
 
-        // Se já logado, redireciona
-        firebase.auth().onAuthStateChanged(user => {
+        // ============================================================
+        // VERIFICAR SE JÁ ESTÁ LOGADO
+        // ============================================================
+        auth.onAuthStateChanged(function(user) {
             if (user) {
-                const isMobile = /Android|iPhone/i.test(navigator.userAgent);
-                window.location.href = isMobile ? 'reader.html' : 'dashboard.html';
+                // Usuário logado — verificar modo salvo
+                var modoSalvo = localStorage.getItem('modo_acesso');
+                
+                if (modoSalvo === 'leitor') {
+                    // Leitor: nunca expira, vai direto
+                    window.location.href = 'reader.html';
+                    return;
+                }
+                
+                if (modoSalvo === 'dashboard') {
+                    // Dashboard: verificar se sessão expirou
+                    var loginTime = parseInt(localStorage.getItem('login_timestamp') || '0');
+                    var agora = Date.now();
+                    var horasPassadas = (agora - loginTime) / (1000 * 60 * 60);
+                    
+                    if (horasPassadas < SESSAO_DASHBOARD_HORAS) {
+                        // Sessão válida, ir direto
+                        window.location.href = 'dashboard.html';
+                        return;
+                    } else {
+                        // Sessão expirada — fazer logout e pedir login novamente
+                        auth.signOut();
+                        localStorage.removeItem('login_timestamp');
+                        localStorage.removeItem('modo_acesso');
+                        mostrarSplash();
+                        return;
+                    }
+                }
+                
+                // Modo não definido — mostrar splash
+                mostrarSplash();
+            } else {
+                // Não logado — mostrar splash
+                mostrarSplash();
             }
         });
+
+        // ============================================================
+        // NAVEGAÇÃO
+        // ============================================================
+        function mostrarSplash() {
+            document.getElementById('splash-screen').style.display = 'block';
+            document.getElementById('login-screen').style.display = 'none';
+        }
+
+        function selecionarModo(modo) {
+            modoSelecionado = modo;
+            
+            // Verificar se já está logado (pode ter sessão ativa)
+            var user = auth.currentUser;
+            if (user && modo === 'leitor') {
+                // Leitor com sessão ativa — ir direto
+                localStorage.setItem('modo_acesso', 'leitor');
+                window.location.href = 'reader.html';
+                return;
+            }
+            if (user && modo === 'dashboard') {
+                // Dashboard com sessão ativa — renovar timestamp e ir
+                localStorage.setItem('modo_acesso', 'dashboard');
+                localStorage.setItem('login_timestamp', Date.now().toString());
+                window.location.href = 'dashboard.html';
+                return;
+            }
+
+            // Mostrar tela de login
+            document.getElementById('splash-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'block';
+            
+            if (modo === 'leitor') {
+                document.getElementById('mode-badge').textContent = '📷 Leitor QR';
+                document.getElementById('login-info').textContent = 'Login permanente neste dispositivo';
+            } else {
+                document.getElementById('mode-badge').textContent = '📊 Dashboard';
+                document.getElementById('login-info').textContent = 'Sessão válida por ' + SESSAO_DASHBOARD_HORAS + ' horas';
+            }
+            
+            document.getElementById('email').focus();
+        }
+
+        function voltarSplash() {
+            document.getElementById('splash-screen').style.display = 'block';
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('error-msg').style.display = 'none';
+        }
+
+        // ============================================================
+        // LOGIN
+        // ============================================================
+        function fazerLogin(e) {
+            e.preventDefault();
+            
+            var email = document.getElementById('email').value.trim();
+            var senha = document.getElementById('senha').value;
+            var btnLogin = document.getElementById('btn-login');
+            var errorMsg = document.getElementById('error-msg');
+            var loading = document.getElementById('loading');
+
+            if (!email || !senha) return;
+
+            btnLogin.disabled = true;
+            errorMsg.style.display = 'none';
+            loading.style.display = 'block';
+
+            // Definir persistência baseada no modo
+            var persistencia;
+            if (modoSelecionado === 'leitor') {
+                // Leitor: persistência LOCAL (nunca expira)
+                persistencia = firebase.auth.Auth.Persistence.LOCAL;
+            } else {
+                // Dashboard: persistência de sessão (mas controlamos via timestamp)
+                persistencia = firebase.auth.Auth.Persistence.LOCAL;
+            }
+
+            auth.setPersistence(persistencia).then(function() {
+                return auth.signInWithEmailAndPassword(email, senha);
+            }).then(function(userCredential) {
+                // Login OK — salvar modo e timestamp
+                localStorage.setItem('modo_acesso', modoSelecionado);
+                localStorage.setItem('login_timestamp', Date.now().toString());
+                
+                // Redirecionar
+                if (modoSelecionado === 'leitor') {
+                    window.location.href = 'reader.html';
+                } else {
+                    window.location.href = 'dashboard.html';
+                }
+            }).catch(function(error) {
+                loading.style.display = 'none';
+                btnLogin.disabled = false;
+                errorMsg.style.display = 'block';
+                
+                switch(error.code) {
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                    case 'auth/invalid-credential':
+                        errorMsg.textContent = 'Email ou senha incorretos';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorMsg.textContent = 'Muitas tentativas. Aguarde.';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMsg.textContent = 'Sem conexão com internet';
+                        break;
+                    default:
+                        errorMsg.textContent = 'Erro: ' + error.message;
+                }
+            });
+        }
     </script>
 </body>
 </html>
