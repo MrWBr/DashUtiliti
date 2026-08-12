@@ -16,17 +16,27 @@
         }
         #reader {
             width: 100%;
-            height: 35vh;
+            height: 70vh;
             background: #000;
         }
         #reader video {
             width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
         }
         /* Esconder lixo visual da lib */
         #reader__dashboard_section_swaplink,
         #reader__dashboard_section_fileselection,
         #reader__header_message,
         #reader img { display: none !important; }
+        /* Aumentar o quadrado de scan */
+        #reader__scan_region {
+            min-height: 65vh !important;
+        }
+        #reader__qr_shaded_region {
+            min-width: 90% !important;
+            min-height: 90% !important;
+        }
 
         .section {
             padding: 8px;
@@ -63,9 +73,9 @@
             background: #4fc3f7;
             color: #000;
             border: none;
-            padding: 8px 16px;
+            padding: 12px 16px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: bold;
             cursor: pointer;
             margin: 5px 0;
@@ -74,10 +84,10 @@
         .btn-copy:active { background: #81d4fa; }
         .status {
             text-align: center;
-            padding: 6px;
+            padding: 8px;
             background: #1a1a2e;
             color: #888;
-            font-size: 11px;
+            font-size: 12px;
         }
         .found { background: #1b5e20; color: #a5d6a7; }
     </style>
@@ -87,7 +97,7 @@
     <div class="status" id="status">Aguardando QR Code...</div>
     
     <div class="section">
-        <h3>📋 CONTEÚDO DO QR (toque para selecionar):</h3>
+        <h3>📋 CONTEÚDO DO QR:</h3>
         <div id="raw-output">Aponte para o QR Code...</div>
         <button class="btn-copy" onclick="copiar()">📋 COPIAR CONTEÚDO</button>
     </div>
@@ -105,9 +115,10 @@
         var ultimoConteudo = '';
 
         function copiar() {
-            if (!ultimoConteudo) return;
-            
-            // Método 1: clipboard API
+            if (!ultimoConteudo) {
+                alert('Nenhum QR lido ainda!');
+                return;
+            }
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(ultimoConteudo).then(function() {
                     alert('Copiado! Cole no chat.');
@@ -120,7 +131,6 @@
         }
 
         function metodoFallback() {
-            // Método 2: textarea temporário
             var ta = document.createElement('textarea');
             ta.value = ultimoConteudo;
             ta.style.position = 'fixed';
@@ -136,69 +146,74 @@
         function analisar(texto) {
             var info = '';
             info += 'TAMANHO: ' + texto.length + ' bytes\n';
-            info += 'TEM QUEBRA DE LINHA: ' + (texto.indexOf('\n') >= 0 ? 'SIM' : 'NAO') + '\n';
+            info += 'TEM QUEBRA \\n: ' + (texto.indexOf('\n') >= 0 ? 'SIM' : 'NAO') + '\n';
             info += 'TEM \\r: ' + (texto.indexOf('\r') >= 0 ? 'SIM' : 'NAO') + '\n';
             info += 'PRIMEIRO CHAR: code=' + texto.charCodeAt(0) + ' ("' + texto[0] + '")\n';
             info += 'ULTIMO CHAR: code=' + texto.charCodeAt(texto.length-1) + '\n';
-            info += 'COMECA COM {: ' + (texto.trim()[0] === '{' ? 'SIM' : 'NAO') + '\n';
-            info += 'COMECA COM [: ' + (texto.trim()[0] === '[' ? 'SIM' : 'NAO') + '\n\n';
+            info += 'COMECA COM {: ' + (texto.trim()[0] === '{' ? 'SIM' : 'NAO') + '\n\n';
             
-            // Tentar JSON
             info += '--- JSON.parse() ---\n';
             try {
                 var parsed = JSON.parse(texto);
-                info += 'RESULTADO: SUCESSO!\n';
+                info += 'RESULTADO: ✅ SUCESSO!\n';
                 info += 'TIPO: ' + typeof parsed + '\n';
                 if (typeof parsed === 'object' && parsed !== null) {
                     info += 'KEYS: ' + Object.keys(parsed).join(', ') + '\n';
                     if (parsed.d) {
                         info += 'TEM "d": SIM (length=' + parsed.d.length + ')\n';
+                        info += 'ITEM[0]: ' + JSON.stringify(parsed.d[0]) + '\n';
                     }
                 }
             } catch(e) {
-                info += 'RESULTADO: FALHOU\n';
+                info += 'RESULTADO: ❌ FALHOU\n';
                 info += 'ERRO: ' + e.message + '\n';
+                
+                // Tentar limpar e parsear de novo
+                var limpo = texto.trim().replace(/^\xEF\xBB\xBF/, '').replace(/[\r\n]/g, '');
+                info += '\n--- TENTANDO LIMPAR ---\n';
+                try {
+                    var parsed2 = JSON.parse(limpo);
+                    info += 'LIMPO: ✅ FUNCIONOU!\n';
+                    info += 'KEYS: ' + Object.keys(parsed2).join(', ') + '\n';
+                } catch(e2) {
+                    info += 'LIMPO: ❌ FALHOU: ' + e2.message + '\n';
+                }
             }
             
-            // Primeiros 30 char codes
-            info += '\n--- CHAR CODES (primeiros 30) ---\n';
+            info += '\n--- PRIMEIROS 50 CHARS ---\n';
+            info += texto.substring(0, 50) + '\n';
+            
+            info += '\n--- CHAR CODES (0-29) ---\n';
             for (var i = 0; i < Math.min(30, texto.length); i++) {
                 var code = texto.charCodeAt(i);
                 var ch = texto[i];
                 if (code === 10) ch = '\\n';
                 else if (code === 13) ch = '\\r';
                 else if (code === 9) ch = '\\t';
+                else if (code === 65279) ch = 'BOM';
                 info += code + '(' + ch + ') ';
-                if ((i + 1) % 10 === 0) info += '\n';
+                if ((i + 1) % 5 === 0) info += '\n';
             }
             
             return info;
         }
 
-        // Iniciar scanner
+        // Iniciar scanner - SEM qrbox para usar a tela toda
         var scanner = new Html5Qrcode("reader");
         scanner.start(
             { facingMode: "environment" },
             {
-                fps: 5,
-                qrbox: function(w, h) {
-                    var size = Math.floor(Math.min(w, h) * 0.8);
-                    return { width: size, height: size };
-                },
+                fps: 10,
+                qrbox: undefined,
                 formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
             },
             function(decodedText) {
-                // Evitar repetição
                 if (decodedText === ultimoConteudo) return;
                 ultimoConteudo = decodedText;
                 
-                // Mostrar conteúdo raw
                 rawOutput.textContent = decodedText;
-                
-                // Análise
                 charAnalysis.textContent = analisar(decodedText);
                 
-                // Status
                 statusEl.textContent = '✅ QR LIDO! ' + decodedText.length + ' bytes';
                 statusEl.className = 'status found';
             },
