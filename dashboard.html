@@ -8,202 +8,183 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #0a0a1a;
-            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0e1a;
+            color: #e0e0e0;
             min-height: 100vh;
         }
+
+        /* HEADER */
         .header {
-            background: #1a1a2e;
-            padding: 12px 20px;
+            background: linear-gradient(135deg, #1a1f3a, #0d1117);
+            padding: 12px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid #2a2f45;
+            position: sticky;
+            top: 0;
+            z-index: 50;
         }
-        .header h1 { font-size: 1.1em; color: #4fc3f7; }
-        .header .connection {
-            font-size: 0.8em;
-            padding: 4px 10px;
-            border-radius: 12px;
+        .header h1 {
+            font-size: 1em;
+            color: #4fc3f7;
+            font-weight: 600;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .connection {
+            font-size: 0.7em;
+            padding: 3px 8px;
+            border-radius: 10px;
             background: #1b5e20;
             color: #a5d6a7;
         }
-        .header .connection.offline { background: #b71c1c; color: #ef9a9a; }
-        .header button {
+        .connection.offline { background: #b71c1c; color: #ef9a9a; }
+        .btn-logout {
             background: #333;
             color: #fff;
             border: none;
-            padding: 6px 12px;
+            padding: 5px 10px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 0.8em;
+            font-size: 0.7em;
         }
-        .tabs {
-            display: flex;
-            background: #16213e;
-            border-bottom: 1px solid #333;
-        }
-        .tabs button {
-            flex: 1;
-            padding: 10px;
-            background: none;
-            border: none;
-            color: #888;
-            cursor: pointer;
-            font-size: 0.9em;
-            border-bottom: 2px solid transparent;
-        }
-        .tabs button.active {
-            color: #4fc3f7;
-            border-bottom-color: #4fc3f7;
-        }
-        .tab-content { display: none; padding: 15px; }
-        .tab-content.active { display: block; }
 
-        /* Cards de valores */
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 10px;
-            margin-bottom: 20px;
+        /* LAST UPDATE */
+        .last-update {
+            text-align: center;
+            font-size: 0.7em;
+            color: #555;
+            padding: 6px;
+            background: #0d1117;
         }
-        .card {
-            background: #16213e;
+
+        /* CARDS CONTAINER */
+        .cards-container {
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        /* CARD ROW */
+        .card-row {
+            display: flex;
+            align-items: center;
+            background: #141929;
             border-radius: 8px;
-            padding: 12px;
+            padding: 10px 12px;
             border-left: 3px solid #4fc3f7;
+            gap: 10px;
+            transition: background 0.2s;
         }
-        .card .label {
+        .card-row:hover { background: #1a2035; }
+        .card-row.alarm {
+            border-left-color: #ef5350;
+            background: #1a1015;
+        }
+        .card-row.alarm:hover { background: #251520; }
+        .card-row.warning {
+            border-left-color: #ffa726;
+        }
+
+        /* Card: Info lado esquerdo */
+        .card-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .card-nome {
             font-size: 0.7em;
             color: #888;
             text-transform: uppercase;
-            margin-bottom: 4px;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .card .value {
-            font-size: 1.4em;
-            font-weight: bold;
+        .card-valor {
+            font-size: 1.3em;
+            font-weight: 700;
             color: #fff;
+            margin-top: 2px;
         }
-        .card .unit {
-            font-size: 0.75em;
+        .card-valor .unidade {
+            font-size: 0.55em;
             color: #666;
-            margin-left: 4px;
+            font-weight: 400;
+            margin-left: 3px;
         }
-        .card.alarm { border-left-color: #ef5350; }
-        .card.alarm .value { color: #ef5350; }
-        .card.alarm .label { color: #ef5350; }
-        .card.warning { border-left-color: #ffa726; }
-        .card.warning .value { color: #ffa726; }
+        .card-row.alarm .card-valor { color: #ef5350; }
+        .card-row.alarm .card-nome { color: #ef9a9a; }
 
-        /* Gráficos */
-        .chart-container {
-            background: #16213e;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
+        /* Card: Sparkline lado direito */
+        .card-spark {
+            width: 100px;
+            height: 35px;
+            flex-shrink: 0;
         }
-        .chart-container h3 {
-            font-size: 0.85em;
-            color: #888;
-            margin-bottom: 10px;
-        }
-        .chart-canvas {
+        .card-spark canvas {
             width: 100%;
-            height: 200px;
+            height: 100%;
         }
 
-        /* Tabela de log */
-        .log-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.8em;
-        }
-        .log-table th {
-            background: #16213e;
-            padding: 8px;
-            text-align: left;
-            color: #4fc3f7;
-            position: sticky;
-            top: 0;
-        }
-        .log-table td {
-            padding: 6px 8px;
-            border-bottom: 1px solid #222;
-        }
-        .log-table tr:hover { background: #1a1a2e; }
-
-        .last-update {
+        /* Tendência seta */
+        .card-trend {
+            font-size: 1em;
+            width: 20px;
             text-align: center;
+            flex-shrink: 0;
+        }
+        .trend-up { color: #ef5350; }
+        .trend-down { color: #4caf50; }
+        .trend-stable { color: #555; }
+
+        /* Seção grupo */
+        .section-title {
             font-size: 0.75em;
-            color: #666;
-            padding: 10px;
+            color: #4fc3f7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 12px 12px 4px;
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>🏭 Utilidades - Mondelēz</h1>
-        <span class="connection" id="conn-status">● Conectado</span>
-        <button onclick="logout()">Sair</button>
+        <div class="header-right">
+            <span class="connection" id="conn-status">● Conectado</span>
+            <button class="btn-logout" onclick="logout()">Sair</button>
+        </div>
     </div>
-
-    <div class="tabs">
-        <button class="active" onclick="showTab('realtime')">⚡ Tempo Real</button>
-        <button onclick="showTab('trends')">📈 Tendências</button>
-        <button onclick="showTab('log')">📋 Log</button>
-    </div>
-
-    <!-- ABA: Tempo Real -->
-    <div class="tab-content active" id="tab-realtime">
-        <div class="cards-grid" id="cards-container"></div>
-        <div class="last-update" id="last-update">Aguardando dados...</div>
-    </div>
-
-    <!-- ABA: Tendências -->
-    <div class="tab-content" id="tab-trends">
-        <div id="charts-container"></div>
-    </div>
-
-    <!-- ABA: Log -->
-    <div class="tab-content" id="tab-log">
-        <table class="log-table">
-            <thead>
-                <tr>
-                    <th>Horário</th>
-                    <th>Variáveis</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="log-body"></tbody>
-        </table>
-    </div>
+    <div class="last-update" id="last-update">Aguardando dados...</div>
+    
+    <div class="cards-container" id="cards-container"></div>
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
     <script>
-        // ⚠️ SUBSTITUA com suas credenciais do Firebase
         var firebaseConfig = {
-           apiKey: "AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",
-         authDomain: "dshutili.firebaseapp.com",
+            apiKey: "AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",
+            authDomain: "dshutili.firebaseapp.com",
             databaseURL: "https://dshutili-default-rtdb.firebaseio.com",
-             projectId: "dshutili",
-        storageBucket: "dshutili.firebasestorage.app",
-        messagingSenderId: "1065134772507",
-        appId: "1:1065134772507:web:aed91d6d1953f69cb403be",
-         measurementId: "G-B3NS6YKTLV"
+            projectId: "dshutili",
+            storageBucket: "dshutili.firebasestorage.app",
+            messagingSenderId: "1065134772507",
+            appId: "1:1065134772507:web:aed91d6d1953f69cb403be",
+            measurementId: "G-B3NS6YKTLV"
         };
-
         firebase.initializeApp(firebaseConfig);
         var db = firebase.database();
 
-        // Verificar autenticação
         firebase.auth().onAuthStateChanged(function(user) {
             if (!user) {
                 window.location.href = 'index.html';
@@ -212,257 +193,259 @@
             }
         });
 
-        // ============ NOMES AMIGÁVEIS DAS TAGS ============
-        var nomesTags = {
-            "TO8001_4": "Torres Resfriamento",
-            "TO8006": "Retorno Torres",
-            "CH8007": "Chiller 8007",
-            "CH8008": "Chiller 8008",
-            "CH8011_14": "Chillers 8011/14",
-            "CV8004": "Condensador Retorno",
-            "AR_DM": "Ar Comp Dry Mix",
-            "AR_BOGE": "Ar Comp Boge",
-            "AR_CHOCO": "Ar Comp Chocolate",
-            "VAC_DM": "Vácuo Dry Mix",
-            "AGUA_6C": "Água Gelada 6°C",
-            "PRES_BG": "Pressão B&G",
-            "PRES_CHOCO": "Pressão Vapor Choco",
-            "NIV_CD8006": "Nível TQ CD8006/7",
-            "NIV_CD8006_7": "Nível TQ CD8006/7",
-            "AR_CHOCO_Q": "Ar Choco Qualidade",
-            "AR_CHOCO_QUAL": "Ar Choco Qualidade",
-            "AR_BG_Q": "Ar B&G Qualidade",
-            "AR_BG_QUAL": "Ar B&G Qualidade"
+        // ============ CONFIGURAÇÃO DAS TAGS ============
+        var tagConfig = {
+            "TO8001_2_3_4": { nome: "Torres Resfriamento", grupo: "temp", limiteAlto: 32, limiteBaixo: null },
+            "TO8006_Retorno": { nome: "Retorno Torres", grupo: "temp", limiteAlto: 35, limiteBaixo: null },
+            "CH8007": { nome: "Chiller 8007", grupo: "temp", limiteAlto: 2, limiteBaixo: -5 },
+            "CH8008": { nome: "Chiller 8008", grupo: "temp", limiteAlto: 2, limiteBaixo: -5 },
+            "CH8011_14": { nome: "Chillers 8011/14", grupo: "temp", limiteAlto: 2, limiteBaixo: -5 },
+            "CV8004_Retorno": { nome: "Condensador Retorno", grupo: "temp", limiteAlto: 43, limiteBaixo: null },
+            "Ar_Comp_DM": { nome: "Ar Comp Dry Mix", grupo: "ar", limiteAlto: null, limiteBaixo: 5.5 },
+            "Ar_Comp_DM_Boge": { nome: "Ar Comp Boge", grupo: "ar", limiteAlto: null, limiteBaixo: 5.5 },
+            "Ar_Comp_Choco": { nome: "Ar Comp Chocolate", grupo: "ar", limiteAlto: null, limiteBaixo: 5.5 },
+            "Vacuo_Dry_Mix": { nome: "Vácuo Dry Mix", grupo: "ar", limiteAlto: null, limiteBaixo: 15 },
+            "Agua_6C": { nome: "Água Gelada 6°C", grupo: "agua", limiteAlto: 8, limiteBaixo: null },
+            "Pressao_Cavalete_BG": { nome: "Pressão Cavalete B&G", grupo: "vapor", limiteAlto: null, limiteBaixo: 10 },
+            "Pressao_Vapor_Choco": { nome: "Pressão Vapor Choco", grupo: "vapor", limiteAlto: null, limiteBaixo: 5 },
+            "Nivel_TQ_CD8006_7": { nome: "Nível TQ CD8006/7", grupo: "agua", limiteAlto: null, limiteBaixo: 40 },
+            "Umidade_Ar_Comp_Chocolate": { nome: "Umidade Ar Choco", grupo: "qualidade", limiteAlto: 15, limiteBaixo: null },
+            "Temperatura_Ar_Comp_Chocolate": { nome: "Temp Ar Choco", grupo: "qualidade", limiteAlto: 50, limiteBaixo: null },
+            "Umidade_Ar_Comp_BG": { nome: "Umidade Ar B&G", grupo: "qualidade", limiteAlto: 15, limiteBaixo: null },
+            "Temperatura_Ar_Comp_BG": { nome: "Temp Ar B&G", grupo: "qualidade", limiteAlto: 50, limiteBaixo: null }
         };
 
-        // Histórico para gráficos de tendência
-        var trendData = {};
-        var MAX_TREND_POINTS = 200;
-        var charts = {};
+        var grupos = {
+            "temp": "🌡️ Temperaturas",
+            "ar": "💨 Ar Comprimido / Vácuo",
+            "agua": "💧 Água",
+            "vapor": "♨️ Vapor / Pressão",
+            "qualidade": "📊 Qualidade do Ar"
+        };
+
+        // Histórico para sparklines (últimos 30 pontos)
+        var historico = {};
+        var MAX_HIST = 30;
 
         function initDashboard() {
-            // Escutar dados em tempo real
             db.ref('current').on('value', function(snapshot) {
                 var data = snapshot.val();
                 if (!data) return;
                 
-                updateCards(data);
-                updateTrends(data);
+                atualizarHistorico(data);
+                renderCards(data);
                 updateConnectionStatus(true);
                 
                 document.getElementById('last-update').textContent = 
-                    'Última atualização: ' + (data._readAt || new Date().toLocaleString('pt-BR'));
+                    '🔄 Última atualização: ' + (data._readAt || new Date().toLocaleString('pt-BR'));
             });
 
-            // Detectar desconexão
             db.ref('.info/connected').on('value', function(snap) {
                 updateConnectionStatus(snap.val());
             });
-
-            // Carregar histórico inicial para log
-            db.ref('history').limitToLast(50).once('value', function(snapshot) {
-                snapshot.forEach(function(child) {
-                    addToLog(child.val());
-                });
-            });
-
-            // Escutar novas entradas no log
-            db.ref('history').limitToLast(1).on('child_added', function(snapshot) {
-                addToLog(snapshot.val());
-            });
         }
 
-        // ============ EXTRAIR VARIÁVEIS DO DADO (qualquer formato) ============
-        function extrairVariaveis(data) {
-            var vars = [];
-
-            // Formato 1: tem array "d" com [{id, v, u, a}, ...]
-            if (data.d && Array.isArray(data.d)) {
-                for (var i = 0; i < data.d.length; i++) {
-                    var item = data.d[i];
-                    vars.push({
-                        id: item.id || ('var_' + i),
-                        valor: item.v,
-                        unidade: item.u || '',
-                        alerta: item.a || 0
-                    });
-                }
-                return vars;
-            }
-
-            // Formato 2: chaves diretas com {v, u, a}
+        // ============ ATUALIZAR HISTÓRICO ============
+        function atualizarHistorico(data) {
             var keys = Object.keys(data);
-            for (var k = 0; k < keys.length; k++) {
-                var key = keys[k];
-                if (key.startsWith('_') || key === 'd') continue;
+            for (var i = 0; i < keys.length; i++) {
+                var key = keys[i];
+                if (key.startsWith('_')) continue;
                 
                 var val = data[key];
+                var valor = null;
                 
-                if (val !== null && typeof val === 'object' && 'v' in val) {
-                    vars.push({
-                        id: key,
-                        valor: val.v,
-                        unidade: val.u || '',
-                        alerta: val.a || 0
-                    });
+                if (val && typeof val === 'object' && 'v' in val) {
+                    valor = val.v;
                 } else if (typeof val === 'number') {
-                    vars.push({
-                        id: key,
-                        valor: val,
-                        unidade: '',
-                        alerta: 0
-                    });
+                    valor = val;
+                }
+                
+                if (valor !== null && typeof valor === 'number') {
+                    if (!historico[key]) historico[key] = [];
+                    historico[key].push(valor);
+                    if (historico[key].length > MAX_HIST) {
+                        historico[key].shift();
+                    }
                 }
             }
-
-            return vars;
         }
 
-        // ============ ATUALIZAR CARDS ============
-        function updateCards(data) {
+        // ============ RENDER CARDS ============
+        function renderCards(data) {
             var container = document.getElementById('cards-container');
             container.innerHTML = '';
 
-            var vars = extrairVariaveis(data);
-
-            for (var i = 0; i < vars.length; i++) {
-                var v = vars[i];
-                var cardClass = 'card';
-                if (v.alerta === 1) cardClass += ' alarm';
-
-                var nome = nomesTags[v.id] || v.id.replace(/_/g, ' ');
-                var valorStr = (typeof v.valor === 'number') ? v.valor.toFixed(1) : v.valor;
-
-                var card = document.createElement('div');
-                card.className = cardClass;
-                card.innerHTML = 
-                    '<div class="label">' + nome + '</div>' +
-                    '<div class="value">' + valorStr + '<span class="unit">' + v.unidade + '</span></div>';
-                container.appendChild(card);
-            }
-        }
-
-        // ============ ATUALIZAR TENDÊNCIAS ============
-        function updateTrends(data) {
-            var now = Date.now();
-            var vars = extrairVariaveis(data);
-
-            for (var i = 0; i < vars.length; i++) {
-                var v = vars[i];
-                if (typeof v.valor !== 'number') continue;
-
-                if (!trendData[v.id]) trendData[v.id] = [];
-                trendData[v.id].push({ time: now, value: v.valor });
+            // Extrair variáveis
+            var vars = [];
+            var keys = Object.keys(data);
+            for (var i = 0; i < keys.length; i++) {
+                var key = keys[i];
+                if (key.startsWith('_')) continue;
                 
-                if (trendData[v.id].length > MAX_TREND_POINTS) {
-                    trendData[v.id].shift();
+                var val = data[key];
+                if (val && typeof val === 'object' && 'v' in val) {
+                    vars.push({ id: key, nome: val.nome || key, v: val.v, u: val.u || '' });
+                } else if (typeof val === 'number') {
+                    vars.push({ id: key, nome: key, v: val, u: '' });
                 }
             }
 
-            renderCharts();
-        }
-
-        function renderCharts() {
-            var container = document.getElementById('charts-container');
-            var keys = Object.keys(trendData);
+            // Agrupar por grupo
+            var gruposOrdem = ['temp', 'ar', 'agua', 'vapor', 'qualidade', 'outro'];
+            var agrupados = {};
             
-            for (var k = 0; k < keys.length; k++) {
-                var key = keys[k];
-                var chartDivId = 'chart-' + key.replace(/[^a-zA-Z0-9]/g, '_');
-                var canvasId = 'canvas-' + key.replace(/[^a-zA-Z0-9]/g, '_');
-                var chartDiv = document.getElementById(chartDivId);
-                
-                if (!chartDiv) {
-                    chartDiv = document.createElement('div');
-                    chartDiv.className = 'chart-container';
-                    chartDiv.id = chartDivId;
-                    var nome = nomesTags[key] || key.replace(/_/g, ' ');
-                    chartDiv.innerHTML = 
-                        '<h3>' + nome + '</h3>' +
-                        '<canvas id="' + canvasId + '" class="chart-canvas"></canvas>';
-                    container.appendChild(chartDiv);
-                }
+            for (var j = 0; j < vars.length; j++) {
+                var v = vars[j];
+                var cfg = tagConfig[v.id];
+                var grupo = cfg ? cfg.grupo : 'outro';
+                if (!agrupados[grupo]) agrupados[grupo] = [];
+                agrupados[grupo].push(v);
+            }
 
-                var canvas = document.getElementById(canvasId);
-                if (!canvas) continue;
-                
-                var ctxChart = canvas.getContext('2d');
-                var points = trendData[key];
+            // Renderizar por grupo
+            for (var g = 0; g < gruposOrdem.length; g++) {
+                var grupoKey = gruposOrdem[g];
+                var items = agrupados[grupoKey];
+                if (!items || items.length === 0) continue;
 
-                if (charts[key]) {
-                    charts[key].data.labels = points.map(function(p) {
-                        return new Date(p.time).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-                    });
-                    charts[key].data.datasets[0].data = points.map(function(p) { return p.value; });
-                    charts[key].update('none');
-                } else {
-                    charts[key] = new Chart(ctxChart, {
-                        type: 'line',
-                        data: {
-                            labels: points.map(function(p) {
-                                return new Date(p.time).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-                            }),
-                            datasets: [{
-                                label: nomesTags[key] || key,
-                                data: points.map(function(p) { return p.value; }),
-                                borderColor: '#4fc3f7',
-                                backgroundColor: 'rgba(79, 195, 247, 0.1)',
-                                borderWidth: 1.5,
-                                pointRadius: 0,
-                                fill: true,
-                                tension: 0.3
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            animation: false,
-                            plugins: { legend: { display: false } },
-                            scales: {
-                                x: {
-                                    display: true,
-                                    ticks: { color: '#666', maxTicksLimit: 6, font: { size: 10 } },
-                                    grid: { color: '#222' }
-                                },
-                                y: {
-                                    display: true,
-                                    ticks: { color: '#666', font: { size: 10 } },
-                                    grid: { color: '#222' }
-                                }
-                            }
-                        }
-                    });
+                // Título do grupo
+                var titulo = document.createElement('div');
+                titulo.className = 'section-title';
+                titulo.textContent = grupos[grupoKey] || '📌 Outros';
+                container.appendChild(titulo);
+
+                // Cards do grupo
+                for (var k = 0; k < items.length; k++) {
+                    var item = items[k];
+                    container.appendChild(criarCardRow(item));
                 }
             }
         }
 
-        // ============ LOG ============
-        function addToLog(data) {
-            if (!data) return;
-            var tbody = document.getElementById('log-body');
-            var row = document.createElement('tr');
-            var varCount = data._varCount || '?';
-            var hasAlerts = false;
-            
-            if (data.d && Array.isArray(data.d)) {
-                for (var i = 0; i < data.d.length; i++) {
-                    if (data.d[i].a === 1) { hasAlerts = true; break; }
-                }
+        // ============ CRIAR CARD ROW ============
+        function criarCardRow(item) {
+            var cfg = tagConfig[item.id] || {};
+            var nome = cfg.nome || item.nome || item.id.replace(/_/g, ' ');
+            var valor = item.v;
+            var unidade = item.u;
+
+            // Verificar alarme
+            var alarme = false;
+            if (cfg.limiteAlto !== null && cfg.limiteAlto !== undefined && valor > cfg.limiteAlto) alarme = true;
+            if (cfg.limiteBaixo !== null && cfg.limiteBaixo !== undefined && valor < cfg.limiteBaixo) alarme = true;
+
+            // Tendência
+            var hist = historico[item.id] || [];
+            var tendencia = '';
+            var tendenciaClass = 'trend-stable';
+            if (hist.length >= 2) {
+                var diff = hist[hist.length - 1] - hist[hist.length - 2];
+                if (diff > 0.2) { tendencia = '▲'; tendenciaClass = 'trend-up'; }
+                else if (diff < -0.2) { tendencia = '▼'; tendenciaClass = 'trend-down'; }
+                else { tendencia = '─'; tendenciaClass = 'trend-stable'; }
             }
-            
-            var statusHtml = hasAlerts 
-                ? '<span style="color: #ef5350;">⚠ ALERTA</span>'
-                : '<span style="color: #a5d6a7;">✓ OK</span>';
-            
-            row.innerHTML = 
-                '<td>' + (data._readAt || '-') + '</td>' +
-                '<td>' + varCount + ' vars</td>' +
-                '<td>' + statusHtml + '</td>';
-            tbody.insertBefore(row, tbody.firstChild);
-            
-            while (tbody.children.length > 100) {
-                tbody.removeChild(tbody.lastChild);
+
+            // Criar elemento
+            var row = document.createElement('div');
+            row.className = 'card-row' + (alarme ? ' alarm' : '');
+
+            // Info
+            var info = document.createElement('div');
+            info.className = 'card-info';
+            info.innerHTML = '<div class="card-nome">' + nome + '</div>' +
+                '<div class="card-valor">' + (typeof valor === 'number' ? valor.toFixed(1) : valor) +
+                '<span class="unidade">' + unidade + '</span></div>';
+
+            // Sparkline canvas
+            var sparkDiv = document.createElement('div');
+            sparkDiv.className = 'card-spark';
+            var canvas = document.createElement('canvas');
+            canvas.width = 100;
+            canvas.height = 35;
+            sparkDiv.appendChild(canvas);
+
+            // Tendência
+            var trendDiv = document.createElement('div');
+            trendDiv.className = 'card-trend ' + tendenciaClass;
+            trendDiv.textContent = tendencia;
+
+            row.appendChild(info);
+            row.appendChild(sparkDiv);
+            row.appendChild(trendDiv);
+
+            // Desenhar sparkline
+            if (hist.length >= 2) {
+                desenharSparkline(canvas, hist, alarme);
             }
+
+            return row;
+        }
+
+        // ============ DESENHAR SPARKLINE ============
+        function desenharSparkline(canvas, valores, alarme) {
+            var ctx = canvas.getContext('2d');
+            var w = canvas.width;
+            var h = canvas.height;
+            var padding = 3;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Fundo
+            ctx.fillStyle = 'rgba(20, 25, 40, 0.5)';
+            ctx.fillRect(0, 0, w, h);
+
+            if (valores.length < 2) return;
+
+            var min = Math.min.apply(null, valores);
+            var max = Math.max.apply(null, valores);
+            var range = max - min || 1;
+
+            // Linha de média
+            var media = valores.reduce(function(a, b) { return a + b; }, 0) / valores.length;
+            var mediaY = h - padding - ((media - min) / range) * (h - padding * 2);
+            ctx.strokeStyle = 'rgba(100, 100, 120, 0.3)';
+            ctx.lineWidth = 0.5;
+            ctx.setLineDash([2, 2]);
+            ctx.beginPath();
+            ctx.moveTo(0, mediaY);
+            ctx.lineTo(w, mediaY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Área preenchida
+            ctx.beginPath();
+            for (var i = 0; i < valores.length; i++) {
+                var x = (i / (valores.length - 1)) * w;
+                var y = h - padding - ((valores[i] - min) / range) * (h - padding * 2);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.lineTo(w, h);
+            ctx.lineTo(0, h);
+            ctx.closePath();
+            ctx.fillStyle = alarme ? 'rgba(239, 83, 80, 0.1)' : 'rgba(79, 195, 247, 0.1)';
+            ctx.fill();
+
+            // Linha principal
+            ctx.beginPath();
+            for (var j = 0; j < valores.length; j++) {
+                var px = (j / (valores.length - 1)) * w;
+                var py = h - padding - ((valores[j] - min) / range) * (h - padding * 2);
+                if (j === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.strokeStyle = alarme ? '#ef5350' : '#4fc3f7';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Ponto atual (último)
+            var lastX = w;
+            var lastY = h - padding - ((valores[valores.length - 1] - min) / range) * (h - padding * 2);
+            ctx.beginPath();
+            ctx.arc(lastX - 2, lastY, 2.5, 0, Math.PI * 2);
+            ctx.fillStyle = alarme ? '#ef5350' : '#4fc3f7';
+            ctx.fill();
         }
 
         // ============ STATUS CONEXÃO ============
@@ -474,26 +457,6 @@
             } else {
                 el.textContent = '● Offline';
                 el.className = 'connection offline';
-            }
-        }
-
-        // ============ TABS ============
-        function showTab(tabName) {
-            var tabs = document.querySelectorAll('.tab-content');
-            for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
-            var btns = document.querySelectorAll('.tabs button');
-            for (var j = 0; j < btns.length; j++) btns[j].classList.remove('active');
-            
-            document.getElementById('tab-' + tabName).classList.add('active');
-            event.target.classList.add('active');
-            
-            if (tabName === 'trends') {
-                setTimeout(function() {
-                    var chartKeys = Object.keys(charts);
-                    for (var c = 0; c < chartKeys.length; c++) {
-                        charts[chartKeys[c]].resize();
-                    }
-                }, 100);
             }
         }
 
