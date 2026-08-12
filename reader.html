@@ -374,6 +374,13 @@
                 });
             }
         }
+        function logout() {
+    localStorage.removeItem('modo_acesso');
+    localStorage.removeItem('login_timestamp');
+    firebase.auth().signOut().then(function() {
+        window.location.href = 'index.html';
+    });
+}
     </script>
 </body>
 </html>
