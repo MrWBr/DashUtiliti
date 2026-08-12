@@ -116,7 +116,6 @@
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
     <script>
-        // ⚠️ SUBSTITUA com suas credenciais do Firebase
         var firebaseConfig = {
             apiKey: "AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",
             authDomain: "dshutili.firebaseapp.com",
@@ -159,10 +158,6 @@
         // ============================================================
         // PARSER PARA FORMATO DO FACTORYTALK
         // Formato: "NOME: valor unidade\n" (uma variável por linha)
-        // Exemplos:
-        //   TO8001/2/3/4: 24.70 C
-        //   Ar Comp DM: 5.82 bar
-        //   Pressao Cavalete B&G: 13.47 kg/cm2
         // ============================================================
         function parsearTextoFactoryTalk(texto) {
             var linhas = texto.split('\n');
@@ -172,8 +167,6 @@
                 var linha = linhas[i].trim();
                 if (!linha) continue;
 
-                // Encontrar o ÚLTIMO ":" na linha (pois nomes podem ter ":" também? não, mas por segurança)
-                // Na verdade, o formato é "NOME: valor unidade" — o ":" separa nome do valor
                 var idxDoisPontos = linha.lastIndexOf(':');
                 if (idxDoisPontos < 0) continue;
 
@@ -182,18 +175,12 @@
 
                 if (!nome || !resto) continue;
 
-                // Separar valor numérico da unidade
-                // "24.70 C" → valor=24.70, unidade="C"
-                // "-1.20 C" → valor=-1.20, unidade="C"
-                // "13.47 kg/cm2" → valor=13.47, unidade="kg/cm2"
-                // "71.5 %" → valor=71.5, unidade="%"
                 var match = resto.match(/^(-?\d+\.?\d*)\s*(.*)/);
                 
                 if (match) {
                     var valor = parseFloat(match[1]);
                     var unidade = match[2] || '';
                     
-                    // Gerar ID limpo a partir do nome
                     var id = nome
                         .replace(/[\/\s]+/g, '_')
                         .replace(/[^a-zA-Z0-9_]/g, '')
@@ -212,7 +199,7 @@
         }
 
         // ============================================================
-        // PROCESSAR QR - Tenta JSON, senão parseia texto FactoryTalk
+        // PROCESSAR QR
         // ============================================================
         function processQR(decodedText) {
             var tags = [];
@@ -225,7 +212,6 @@
                 if (dados.d && Array.isArray(dados.d)) {
                     tags = dados.d;
                 } else {
-                    // JSON simples {"tag": valor}
                     var keys = Object.keys(dados);
                     for (var k = 0; k < keys.length; k++) {
                         var key = keys[k];
@@ -257,7 +243,6 @@
                 _varCount: tags.length
             };
 
-            // Adicionar cada tag como chave
             for (var i = 0; i < tags.length; i++) {
                 var tag = tags[i];
                 dadosFirebase[tag.id] = {
@@ -267,7 +252,7 @@
                 };
             }
 
-            // Evitar duplicatas (comparar só valores, não timestamp)
+            // Evitar duplicatas
             var checkStr = '';
             for (var j = 0; j < tags.length; j++) {
                 checkStr += tags[j].id + ':' + tags[j].v + ';';
@@ -312,7 +297,7 @@
         }
 
         // ============================================================
-        // INICIAR LEITOR
+        // INICIAR LEITOR - COM QRBOX GRANDE (90% da tela)
         // ============================================================
         function initReader() {
             log('📷 Iniciando câmera...');
@@ -320,23 +305,48 @@
 
             scanner = new Html5Qrcode("reader");
 
+            var config = {
+                fps: 10,
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    // 90% da área visível — grande mas definido
+                    var w = Math.floor(viewfinderWidth * 0.9);
+                    var h = Math.floor(viewfinderHeight * 0.9);
+                    return { width: w, height: h };
+                },
+                formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true
+                }
+            };
+
             scanner.start(
                 { facingMode: "environment" },
-                {
-                    fps: 5,
-                    qrbox: undefined,
-                    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
-                },
+                config,
                 function(decodedText) {
                     processQR(decodedText);
                 },
                 function() {}
             ).then(function() {
-                log('✅ Câmera ativa!');
+                log('✅ Câmera ativa! FPS=10, qrbox=90%');
                 document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
             }).catch(function(err) {
-                log('❌ Câmera: ' + err);
-                document.getElementById('status').textContent = '❌ Erro: ' + err;
+                log('❌ Câmera erro: ' + err);
+                // Tentar sem qrbox como fallback
+                log('🔄 Tentando fallback sem qrbox...');
+                scanner.start(
+                    { facingMode: "environment" },
+                    { fps: 10, formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE] },
+                    function(decodedText) {
+                        processQR(decodedText);
+                    },
+                    function() {}
+                ).then(function() {
+                    log('✅ Fallback OK!');
+                    document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
+                }).catch(function(err2) {
+                    log('❌ Fallback falhou: ' + err2);
+                    document.getElementById('status').textContent = '❌ Erro câmera';
+                });
             });
         }
 
@@ -358,6 +368,8 @@
         }
 
         function logout() {
+            localStorage.removeItem('modo_acesso');
+            localStorage.removeItem('login_timestamp');
             if (scanner) {
                 scanner.stop().then(function() {
                     firebase.auth().signOut().then(function() {
@@ -374,13 +386,6 @@
                 });
             }
         }
-        function logout() {
-    localStorage.removeItem('modo_acesso');
-    localStorage.removeItem('login_timestamp');
-    firebase.auth().signOut().then(function() {
-        window.location.href = 'index.html';
-    });
-}
     </script>
 </body>
 </html>
