@@ -1,0 +1,92 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QR Debug</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: monospace;
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            font-size: 12px;
+        }
+        #reader {
+            width: 100%;
+            height: 40vh;
+        }
+        #reader video {
+            width: 100% !important;
+        }
+        #output {
+            margin-top: 10px;
+            background: #111;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        h3 { color: #4fc3f7; margin: 10px 0 5px; }
+    </style>
+</head>
+<body>
+    <div id="reader"></div>
+    <h3>CONTEÚDO RAW DO QR:</h3>
+    <div id="output">Aguardando leitura...</div>
+    <h3>ANÁLISE:</h3>
+    <div id="analysis"></div>
+
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script>
+        var output = document.getElementById('output');
+        var analysis = document.getElementById('analysis');
+
+        var scanner = new Html5Qrcode("reader");
+        scanner.start(
+            { facingMode: "environment" },
+            { fps: 5, qrbox: { width: 250, height: 250 } },
+            function(decodedText) {
+                // Mostrar conteúdo RAW
+                output.textContent = decodedText;
+
+                // Análise
+                var info = '';
+                info += 'Tamanho: ' + decodedText.length + ' bytes\n';
+                info += 'Primeiro char code: ' + decodedText.charCodeAt(0) + '\n';
+                info += 'Último char code: ' + decodedText.charCodeAt(decodedText.length - 1) + '\n';
+                info += '\n--- Tentando JSON.parse() ---\n';
+                
+                try {
+                    var parsed = JSON.parse(decodedText);
+                    info += '✅ JSON VÁLIDO!\n';
+                    info += 'Tipo: ' + typeof parsed + '\n';
+                    info += 'Keys: ' + Object.keys(parsed).join(', ') + '\n';
+                    if (parsed.d) {
+                        info += 'parsed.d é array: ' + Array.isArray(parsed.d) + '\n';
+                        info += 'parsed.d.length: ' + parsed.d.length + '\n';
+                        info += 'Primeiro item: ' + JSON.stringify(parsed.d[0]) + '\n';
+                    }
+                } catch(e) {
+                    info += '❌ ERRO: ' + e.message + '\n';
+                    info += '\n--- Primeiros 100 chars ---\n';
+                    info += decodedText.substring(0, 100) + '\n';
+                    info += '\n--- Char codes (primeiros 20) ---\n';
+                    for (var i = 0; i < Math.min(20, decodedText.length); i++) {
+                        info += '[' + i + ']=' + decodedText.charCodeAt(i) + '("' + decodedText[i] + '") ';
+                    }
+                }
+
+                analysis.textContent = info;
+            },
+            function() {}
+        );
+    </script>
+</body>
+</html>
+
