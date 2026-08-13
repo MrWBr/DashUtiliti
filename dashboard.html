@@ -54,6 +54,44 @@
             font-size: 0.7em;
         }
 
+        /* LEITOR STATUS BAR */
+        .leitor-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 14px;
+            background: #0d1117;
+            border-bottom: 1px solid #1a1f3a;
+            font-size: 0.7em;
+        }
+        .leitor-status .leitor-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .leitor-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+            animation: blink 2s infinite;
+        }
+        .leitor-dot.offline {
+            background: #ef5350;
+            animation: none;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .leitor-status .leitor-stats {
+            display: flex;
+            gap: 12px;
+            color: #666;
+        }
+        .leitor-stats span { color: #888; }
+        .leitor-stats .val { color: #4fc3f7; font-weight: 600; }
+
         /* LAST UPDATE */
         .last-update {
             text-align: center;
@@ -162,6 +200,19 @@
             <button class="btn-logout" onclick="logout()">Sair</button>
         </div>
     </div>
+
+    <!-- STATUS DO LEITOR -->
+    <div class="leitor-status" id="leitor-bar">
+        <div class="leitor-info">
+            <div class="leitor-dot" id="leitor-dot"></div>
+            <span id="leitor-label">Leitor: verificando...</span>
+        </div>
+        <div class="leitor-stats">
+            <span>📖 <span class="val" id="leitor-leituras">0</span></span>
+            <span>⏱️ <span class="val" id="leitor-uptime">00:00</span></span>
+        </div>
+    </div>
+
     <div class="last-update" id="last-update">Aguardando dados...</div>
     
     <div class="cards-container" id="cards-container"></div>
@@ -228,6 +279,7 @@
         var MAX_HIST = 30;
 
         function initDashboard() {
+            // Escutar dados atuais
             db.ref('current').on('value', function(snapshot) {
                 var data = snapshot.val();
                 if (!data) return;
@@ -240,9 +292,63 @@
                     '🔄 Última atualização: ' + (data._readAt || new Date().toLocaleString('pt-BR'));
             });
 
+            // Escutar status do leitor
+            db.ref('leitor_status').on('value', function(snapshot) {
+                var data = snapshot.val();
+                atualizarStatusLeitor(data);
+            });
+
+            // Status de conexão
             db.ref('.info/connected').on('value', function(snap) {
                 updateConnectionStatus(snap.val());
             });
+        }
+
+        // ============ STATUS DO LEITOR ============
+        function atualizarStatusLeitor(data) {
+            var dot = document.getElementById('leitor-dot');
+            var label = document.getElementById('leitor-label');
+            var leituras = document.getElementById('leitor-leituras');
+            var uptimeEl = document.getElementById('leitor-uptime');
+
+            if (!data) {
+                dot.className = 'leitor-dot offline';
+                label.textContent = 'Leitor: nenhum conectado';
+                leituras.textContent = '0';
+                uptimeEl.textContent = '00:00';
+                return;
+            }
+
+            var agora = Date.now();
+            var ultimoHeartbeat = data.lastHeartbeat || 0;
+            var diffSegundos = (agora - ultimoHeartbeat) / 1000;
+
+            if (data.ativo && diffSegundos < 30) {
+                // Online
+                dot.className = 'leitor-dot';
+                label.textContent = 'Leitor: online';
+                leituras.textContent = data.leituras || '0';
+
+                // Formatar uptime
+                var up = data.uptime || 0;
+                var h = Math.floor(up / 3600);
+                var m = Math.floor((up % 3600) / 60).toString();
+                var s = (up % 60).toString();
+                if (m.length < 2) m = '0' + m;
+                if (s.length < 2) s = '0' + s;
+                uptimeEl.textContent = h > 0 ? h + ':' + m + ':' + s : m + ':' + s;
+            } else {
+                // Offline
+                dot.className = 'leitor-dot offline';
+                if (data.desconectadoEm) {
+                    var desc = new Date(data.desconectadoEm).toLocaleTimeString('pt-BR');
+                    label.textContent = 'Leitor: offline desde ' + desc;
+                } else {
+                    label.textContent = 'Leitor: offline (heartbeat expirado)';
+                }
+                leituras.textContent = data.leituras || '0';
+                uptimeEl.textContent = '--:--';
+            }
         }
 
         // ============ ATUALIZAR HISTÓRICO ============
@@ -391,7 +497,6 @@
 
             ctx.clearRect(0, 0, w, h);
 
-            // Fundo
             ctx.fillStyle = 'rgba(20, 25, 40, 0.5)';
             ctx.fillRect(0, 0, w, h);
 
@@ -461,6 +566,8 @@
         }
 
         function logout() {
+            localStorage.removeItem('modo_acesso');
+            localStorage.removeItem('login_timestamp');
             firebase.auth().signOut().then(function() {
                 window.location.href = 'index.html';
             });
