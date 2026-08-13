@@ -78,15 +78,50 @@
             50% { background: #1b5e20; }
             100% { background: #111; }
         }
+
+        /* BLOQUEIO - outro leitor já conectado */
+        .blocked-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            padding: 30px;
+        }
+        .blocked-overlay.show { display: flex; }
+        .blocked-overlay .icon { font-size: 3em; margin-bottom: 15px; }
+        .blocked-overlay h2 { color: #ef5350; margin-bottom: 10px; }
+        .blocked-overlay p { color: #888; font-size: 0.9em; margin-bottom: 20px; }
+        .blocked-overlay button {
+            background: #ef5350;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <button class="btn-logout" onclick="logout()">Sair</button>
     
+    <!-- Overlay de bloqueio -->
+    <div class="blocked-overlay" id="blocked-overlay">
+        <div class="icon">🚫</div>
+        <h2>Leitor já conectado</h2>
+        <p>Outro dispositivo está ativo como leitor.<br>Apenas um leitor pode operar por vez.</p>
+        <button onclick="forcarConexao()">Forçar conexão aqui</button>
+    </div>
+    
     <div id="reader"></div>
     
     <div class="status-bar" id="status-bar">
-        <div class="status" id="status">Iniciando câmera...</div>
+        <div class="status" id="status">Iniciando...</div>
         <div class="last-read" id="last-read">Aguardando leitura...</div>
     </div>
     <div class="stats">
@@ -99,12 +134,15 @@
             <div>Variáveis</div>
         </div>
         <div>
+            <div class="value" id="battery-level">--</div>
+            <div>Bateria</div>
+        </div>
+        <div>
             <div class="value" id="uptime">00:00</div>
             <div>Uptime</div>
         </div>
     </div>
     
-    <!-- Debug - REMOVA depois que funcionar -->
     <div class="debug" id="debug"></div>
 
     <!-- Firebase -->
@@ -129,8 +167,17 @@
         firebase.initializeApp(firebaseConfig);
         var db = firebase.database();
 
-        // ===== DEBUG =====
+        // ===== VARIÁVEIS GLOBAIS =====
         var debugEl = document.getElementById('debug');
+        var readCount = 0;
+        var startTime = Date.now();
+        var lastData = null;
+        var scanner = null;
+        var leitorID = 'leitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        var heartbeatInterval = null;
+        var batteryLevel = null;
+        var batteryCharging = false;
+
         function log(msg) {
             var time = new Date().toLocaleTimeString('pt-BR');
             debugEl.innerHTML = '[' + time + '] ' + msg + '<br>' + debugEl.innerHTML;
@@ -140,24 +187,192 @@
             }
         }
 
-        // Verificar autenticação
+        // ============================================================
+        // AUTENTICAÇÃO
+        // ============================================================
         firebase.auth().onAuthStateChanged(function(user) {
             if (!user) {
                 window.location.href = 'index.html';
             } else {
                 log('✅ Logado: ' + user.email);
-                initReader();
+                initBattery();
+                verificarLeitorUnico();
             }
         });
 
-        var readCount = 0;
-        var startTime = Date.now();
-        var lastData = null;
-        var scanner = null;
+        // ============================================================
+        // BATERIA
+        // ============================================================
+        function initBattery() {
+            if ('getBattery' in navigator) {
+                navigator.getBattery().then(function(battery) {
+                    batteryLevel = Math.round(battery.level * 100);
+                    batteryCharging = battery.charging;
+                    atualizarBateriaUI();
+
+                    battery.addEventListener('levelchange', function() {
+                        batteryLevel = Math.round(battery.level * 100);
+                        atualizarBateriaUI();
+                    });
+                    battery.addEventListener('chargingchange', function() {
+                        batteryCharging = battery.charging;
+                        atualizarBateriaUI();
+                    });
+                }).catch(function() {
+                    log('⚠️ Battery API indisponível');
+                });
+            } else {
+                log('⚠️ Battery API não suportada');
+            }
+        }
+
+        function atualizarBateriaUI() {
+            var el = document.getElementById('battery-level');
+            var icon = batteryCharging ? '⚡' : '🔋';
+            el.textContent = batteryLevel !== null ? icon + batteryLevel + '%' : '--';
+        }
 
         // ============================================================
-        // PARSER PARA FORMATO DO FACTORYTALK
-        // Formato: "NOME: valor unidade\n" (uma variável por linha)
+        // LEITOR ÚNICO - Apenas um leitor pode operar
+        // ============================================================
+        function verificarLeitorUnico() {
+            var leitorRef = db.ref('leitor_status');
+            
+            leitorRef.once('value').then(function(snapshot) {
+                var data = snapshot.val();
+                
+                if (data && data.ativo) {
+                    // Verificar se o leitor anterior ainda está vivo (heartbeat < 30s)
+                    var agora = Date.now();
+                    var ultimoHeartbeat = data.lastHeartbeat || 0;
+                    var diffSegundos = (agora - ultimoHeartbeat) / 1000;
+                    
+                    if (diffSegundos < 30 && data.leitorID !== leitorID) {
+                        // Outro leitor está ativo e vivo
+                        log('🚫 Outro leitor ativo (heartbeat ' + Math.round(diffSegundos) + 's atrás)');
+                        document.getElementById('blocked-overlay').classList.add('show');
+                        return;
+                    }
+                }
+                
+                // Nenhum leitor ativo ou heartbeat expirado — registrar este
+                registrarLeitor();
+            });
+        }
+
+        function registrarLeitor() {
+            log('📡 Registrando como leitor ativo...');
+            
+            var leitorData = {
+                ativo: true,
+                leitorID: leitorID,
+                conectadoEm: Date.now(),
+                conectadoEmStr: new Date().toLocaleString('pt-BR'),
+                lastHeartbeat: Date.now(),
+                bateria: batteryLevel,
+                carregando: batteryCharging,
+                userAgent: navigator.userAgent.substring(0, 80)
+            };
+
+            db.ref('leitor_status').set(leitorData).then(function() {
+                log('✅ Registrado como leitor único');
+                iniciarHeartbeat();
+                initReader();
+                initWakeLock();
+            }).catch(function(e) {
+                log('❌ Erro registro: ' + e.message);
+            });
+
+            // Quando desconectar (fechar aba/perder internet), limpar status
+            db.ref('leitor_status/ativo').onDisconnect().set(false);
+            db.ref('leitor_status/desconectadoEm').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
+        }
+
+        function forcarConexao() {
+            document.getElementById('blocked-overlay').classList.remove('show');
+            registrarLeitor();
+        }
+
+        // ============================================================
+        // HEARTBEAT - Envia status a cada 10 segundos
+        // ============================================================
+        function iniciarHeartbeat() {
+            // Enviar imediatamente
+            enviarHeartbeat();
+            
+            // Repetir a cada 10 segundos
+            heartbeatInterval = setInterval(enviarHeartbeat, 10000);
+        }
+
+        function enviarHeartbeat() {
+            var updates = {
+                'leitor_status/lastHeartbeat': Date.now(),
+                'leitor_status/bateria': batteryLevel,
+                'leitor_status/carregando': batteryCharging,
+                'leitor_status/leituras': readCount,
+                'leitor_status/uptime': Math.floor((Date.now() - startTime) / 1000)
+            };
+
+            db.ref().update(updates).catch(function(e) {
+                log('⚠️ Heartbeat falhou: ' + e.message);
+            });
+        }
+
+        // ============================================================
+        // WAKE LOCK + TELA ESCURA (economia de bateria)
+        // ============================================================
+        function initWakeLock() {
+            if ('wakeLock' in navigator) {
+                navigator.wakeLock.request('screen').then(function(lock) {
+                    log('🔒 Wake Lock ativo (tela não apaga)');
+                    
+                    // Re-adquirir se perder (ex: troca de aba)
+                    document.addEventListener('visibilitychange', function() {
+                        if (document.visibilityState === 'visible') {
+                            navigator.wakeLock.request('screen').catch(function(){});
+                        }
+                    });
+                }).catch(function(e) {
+                    log('⚠️ Wake Lock falhou: ' + e.message);
+                });
+            } else {
+                log('⚠️ Wake Lock não suportado');
+                // Fallback: video invisível para manter tela acesa
+                keepScreenOn();
+            }
+        }
+
+        // Fallback para manter tela acesa em dispositivos sem Wake Lock
+        function keepScreenOn() {
+            var video = document.createElement('video');
+            video.setAttribute('playsinline', '');
+            video.setAttribute('muted', '');
+            video.setAttribute('loop', '');
+            video.style.position = 'fixed';
+            video.style.top = '-1px';
+            video.style.left = '-1px';
+            video.style.width = '1px';
+            video.style.height = '1px';
+            video.style.opacity = '0.01';
+            // Tiny transparent video (1x1 pixel, 1 frame)
+            video.src = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAA' +
+                'ABtZGF0AAACrgYF//+q3EXpvebZSLeWLNgg2SPu73gyNjQgLSBjb3JlIDE0OCByMjY0MyA1YzY1NzA0IC0gSC4yNj' +
+                'QvTVBFRy00IEFWQyBjb2RlYyAtIENvcHlsZWZ0IDIwMDMtMjAxNSAtIGh0dHA6Ly93d3cudmlkZW9sYW4ub3JnL3' +
+                'gyNjQuaHRtbCAtIG9wdGlvbnM6IGNhYmFjPTEgcmVmPTMgZGVibG9jaz0xOjA6MCBhbmFseXNlPTB4MzoweDExMy' +
+                'BtZT1oZXggc3VibWU9NyBwc3k9MSBwc3lfcmQ9MS4wMDowLjAwIG1peGVkX3JlZj0xIG1lX3JhbmdlPTE2IGNocm' +
+                '9tYV9tZT0xIHRyZWxsaXM9MSA4eDhkY3Q9MSBjcW09MCBkZWFkem9uZT0yMSwxMSBmYXN0X3Bza2lwPTEgY2hyb2' +
+                '1hX3FwX29mZnNldD0tMiB0aHJlYWRzPTEgbG9va2FoZWFkX3RocmVhZHM9MSBzbGljZWRfdGhyZWFkcz0wIG5yPT' +
+                'AgZGVjaW1hdGU9MSBpbnRlcmxhY2VkPTAgYmx1cmF5X2NvbXBhdD0wIGNvbnN0cmFpbmVkX2ludHJhPTAgYmZyYW' +
+                '1lcz0wIHdlaWdodHA9MCBrZXlpbnQ9MjUwIGtleWludF9taW49MjUgc2NlbmVjdXQ9NDAgaW50cmFfcmVmcmVzaD0w' +
+                'IHJjX2xvb2thaGVhZD00MCByYz1jcmYgbWJ0cmVlPTEgY3JmPTIzLjAgcWNvbXA9MC42MCBxcG1pbj0wIHFwbWF4' +
+                'PTY5IHFwc3RlcD00IGlwX3JhdGlvPTEuNDAgYXE9MToxLjAwAIAAAABhYW1lIAAAADhBTVIAAAAAAAAAAAAAAAAAAA' +
+                'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY';
+            document.body.appendChild(video);
+            video.play().catch(function(){});
+        }
+
+        // ============================================================
+        // PARSER FACTORYTALK
         // ============================================================
         function parsearTextoFactoryTalk(texto) {
             var linhas = texto.split('\n');
@@ -186,12 +401,7 @@
                         .replace(/[^a-zA-Z0-9_]/g, '')
                         .substring(0, 30);
 
-                    tags.push({
-                        id: id,
-                        nome: nome,
-                        v: valor,
-                        u: unidade
-                    });
+                    tags.push({ id: id, nome: nome, v: valor, u: unidade });
                 }
             }
 
@@ -204,11 +414,9 @@
         function processQR(decodedText) {
             var tags = [];
 
-            // Tentar JSON primeiro
             try {
                 var dados = JSON.parse(decodedText);
                 log('📋 JSON válido');
-                
                 if (dados.d && Array.isArray(dados.d)) {
                     tags = dados.d;
                 } else {
@@ -224,19 +432,17 @@
                     }
                 }
             } catch(e) {
-                // Não é JSON — parsear como texto FactoryTalk
-                log('📋 Texto FactoryTalk (' + decodedText.length + 'b)');
+                log('📋 Texto (' + decodedText.length + 'b)');
                 tags = parsearTextoFactoryTalk(decodedText);
             }
 
             if (tags.length === 0) {
-                log('⚠️ Nenhuma variável extraída!');
+                log('⚠️ Nenhuma variável!');
                 return;
             }
 
-            log('📊 ' + tags.length + ' variáveis parseadas');
+            log('📊 ' + tags.length + ' vars');
 
-            // Montar objeto para Firebase
             var dadosFirebase = {
                 _timestamp: Date.now(),
                 _readAt: new Date().toLocaleString('pt-BR'),
@@ -245,11 +451,7 @@
 
             for (var i = 0; i < tags.length; i++) {
                 var tag = tags[i];
-                dadosFirebase[tag.id] = {
-                    nome: tag.nome,
-                    v: tag.v,
-                    u: tag.u
-                };
+                dadosFirebase[tag.id] = { nome: tag.nome, v: tag.v, u: tag.u };
             }
 
             // Evitar duplicatas
@@ -258,30 +460,22 @@
                 checkStr += tags[j].id + ':' + tags[j].v + ';';
             }
             if (checkStr === lastData) {
-                log('⏭️ Dados iguais');
+                log('⏭️ Iguais');
                 return;
             }
             lastData = checkStr;
 
             // Enviar para Firebase
-            log('☁️ Enviando ao Firebase...');
+            log('☁️ Enviando...');
             db.ref('current').set(dadosFirebase)
-                .then(function() {
-                    log('✅ Firebase current OK!');
-                })
-                .catch(function(e) {
-                    log('❌ Firebase ERRO: ' + e.message);
-                });
+                .then(function() { log('✅ current OK'); })
+                .catch(function(e) { log('❌ ' + e.message); });
             
             db.ref('history').push().set(dadosFirebase)
-                .then(function() {
-                    log('✅ Firebase history OK!');
-                })
-                .catch(function(e) {
-                    log('❌ History ERRO: ' + e.message);
-                });
+                .then(function() { log('✅ history OK'); })
+                .catch(function(e) { log('❌ ' + e.message); });
 
-            // Atualizar UI
+            // UI
             readCount++;
             document.getElementById('read-count').textContent = readCount;
             document.getElementById('vars-count').textContent = tags.length;
@@ -290,25 +484,22 @@
             document.getElementById('status-bar').classList.add('pulse');
             setTimeout(function() { 
                 document.getElementById('status-bar').classList.remove('pulse');
-                document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
+                document.getElementById('status').textContent = '✅ Lendo...';
             }, 2000);
-
-            log('✅ LEITURA #' + readCount + ' OK!');
         }
 
         // ============================================================
-        // INICIAR LEITOR - COM QRBOX GRANDE (90% da tela)
+        // INICIAR LEITOR
         // ============================================================
         function initReader() {
             log('📷 Iniciando câmera...');
-            document.getElementById('status').textContent = '📷 Iniciando câmera...';
+            document.getElementById('status').textContent = '📷 Iniciando...';
 
             scanner = new Html5Qrcode("reader");
 
             var config = {
                 fps: 10,
                 qrbox: function(viewfinderWidth, viewfinderHeight) {
-                    // 90% da área visível — grande mas definido
                     var w = Math.floor(viewfinderWidth * 0.9);
                     var h = Math.floor(viewfinderHeight * 0.9);
                     return { width: w, height: h };
@@ -322,29 +513,23 @@
             scanner.start(
                 { facingMode: "environment" },
                 config,
-                function(decodedText) {
-                    processQR(decodedText);
-                },
+                function(decodedText) { processQR(decodedText); },
                 function() {}
             ).then(function() {
-                log('✅ Câmera ativa! FPS=10, qrbox=90%');
-                document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
+                log('✅ Câmera ativa!');
+                document.getElementById('status').textContent = '✅ Lendo...';
             }).catch(function(err) {
-                log('❌ Câmera erro: ' + err);
-                // Tentar sem qrbox como fallback
-                log('🔄 Tentando fallback sem qrbox...');
+                log('🔄 Fallback...');
                 scanner.start(
                     { facingMode: "environment" },
                     { fps: 10, formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE] },
-                    function(decodedText) {
-                        processQR(decodedText);
-                    },
+                    function(decodedText) { processQR(decodedText); },
                     function() {}
                 ).then(function() {
                     log('✅ Fallback OK!');
-                    document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
+                    document.getElementById('status').textContent = '✅ Lendo...';
                 }).catch(function(err2) {
-                    log('❌ Fallback falhou: ' + err2);
+                    log('❌ ' + err2);
                     document.getElementById('status').textContent = '❌ Erro câmera';
                 });
             });
@@ -362,14 +547,19 @@
                 hrs > 0 ? hrs + ':' + min + ':' + sec : min + ':' + sec;
         }, 1000);
 
-        // Wake Lock
-        if ('wakeLock' in navigator) {
-            navigator.wakeLock.request('screen').catch(function(){});
-        }
-
+        // LOGOUT
         function logout() {
+            // Limpar status do leitor
+            db.ref('leitor_status').update({
+                ativo: false,
+                desconectadoEm: Date.now()
+            });
+            
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            
             localStorage.removeItem('modo_acesso');
             localStorage.removeItem('login_timestamp');
+            
             if (scanner) {
                 scanner.stop().then(function() {
                     firebase.auth().signOut().then(function() {
