@@ -36,14 +36,6 @@
             align-items: center;
             gap: 10px;
         }
-        .connection {
-            font-size: 0.7em;
-            padding: 3px 8px;
-            border-radius: 10px;
-            background: #1b5e20;
-            color: #a5d6a7;
-        }
-        .connection.offline { background: #b71c1c; color: #ef9a9a; }
         .btn-logout {
             background: #333;
             color: #fff;
@@ -53,6 +45,83 @@
             cursor: pointer;
             font-size: 0.7em;
         }
+
+        /* LEITOR STATUS BAR */
+        .leitor-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+            background: #0d1117;
+            border-bottom: 1px solid #1a2035;
+            font-size: 0.75em;
+        }
+        .leitor-status .left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .leitor-status .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+            animation: blink 2s infinite;
+        }
+        .leitor-status .dot.offline {
+            background: #ef5350;
+            animation: none;
+        }
+        .leitor-status .dot.warning {
+            background: #ffa726;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .leitor-status .info {
+            color: #888;
+        }
+        .leitor-status .info strong {
+            color: #e0e0e0;
+        }
+        .leitor-status .right {
+            display: flex;
+            gap: 12px;
+            color: #888;
+        }
+        .leitor-status .right span {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .battery-bar {
+            display: inline-block;
+            width: 20px;
+            height: 9px;
+            border: 1px solid #666;
+            border-radius: 2px;
+            position: relative;
+            vertical-align: middle;
+        }
+        .battery-bar::after {
+            content: '';
+            position: absolute;
+            right: -3px;
+            top: 2px;
+            width: 2px;
+            height: 5px;
+            background: #666;
+            border-radius: 0 1px 1px 0;
+        }
+        .battery-bar .fill {
+            height: 100%;
+            border-radius: 1px;
+            background: #4caf50;
+        }
+        .battery-bar .fill.low { background: #ef5350; }
+        .battery-bar .fill.mid { background: #ffa726; }
 
         /* LAST UPDATE */
         .last-update {
@@ -88,11 +157,7 @@
             background: #1a1015;
         }
         .card-row.alarm:hover { background: #251520; }
-        .card-row.warning {
-            border-left-color: #ffa726;
-        }
 
-        /* Card: Info lado esquerdo */
         .card-info {
             flex: 1;
             min-width: 0;
@@ -121,9 +186,8 @@
         .card-row.alarm .card-valor { color: #ef5350; }
         .card-row.alarm .card-nome { color: #ef9a9a; }
 
-        /* Card: Sparkline lado direito */
         .card-spark {
-            width: 160px;
+            width: 100px;
             height: 35px;
             flex-shrink: 0;
         }
@@ -132,7 +196,6 @@
             height: 100%;
         }
 
-        /* Tendência seta */
         .card-trend {
             font-size: 1em;
             width: 20px;
@@ -143,7 +206,6 @@
         .trend-down { color: #4caf50; }
         .trend-stable { color: #555; }
 
-        /* Seção grupo */
         .section-title {
             font-size: 0.75em;
             color: #4fc3f7;
@@ -152,19 +214,47 @@
             padding: 12px 12px 4px;
             font-weight: 600;
         }
+
+        /* Sem dados */
+        .no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: #555;
+        }
+        .no-data .icon { font-size: 3em; margin-bottom: 10px; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Utilidades</h1>
+        <h1>🏭 Utilidades</h1>
         <div class="header-right">
-            <span class="connection" id="conn-status">● Conectado</span>
             <button class="btn-logout" onclick="logout()">Sair</button>
         </div>
     </div>
+
+    <!-- STATUS DO LEITOR -->
+    <div class="leitor-status" id="leitor-bar">
+        <div class="left">
+            <div class="dot" id="leitor-dot"></div>
+            <div class="info" id="leitor-info">Leitor: <strong>Verificando...</strong></div>
+        </div>
+        <div class="right">
+            <span id="leitor-battery">
+                <div class="battery-bar"><div class="fill" id="battery-fill" style="width:0%"></div></div>
+                <span id="battery-text">--%</span>
+            </span>
+            <span id="leitor-leituras">📖 --</span>
+        </div>
+    </div>
+
     <div class="last-update" id="last-update">Aguardando dados...</div>
     
-    <div class="cards-container" id="cards-container"></div>
+    <div class="cards-container" id="cards-container">
+        <div class="no-data">
+            <div class="icon">📡</div>
+            <p>Aguardando dados do leitor...</p>
+        </div>
+    </div>
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -193,20 +283,20 @@
             }
         });
 
-        // ============ CONFIGURAÇÃO DAS TAGS ============
+        // ============ CONFIG TAGS ============
         var tagConfig = {
-            "TO8001_2_3_4": { nome: "Torres C.A.G", grupo: "temp", limiteAlto: 32, limiteBaixo: null },
+            "TO8001_2_3_4": { nome: "Torres C.A.G.", grupo: "temp", limiteAlto: 32, limiteBaixo: null },
             "TO8006_Retorno": { nome: "Torre Wafer", grupo: "temp", limiteAlto: 35, limiteBaixo: null },
             "CH8007": { nome: "Chiller 8007", grupo: "temp", limiteAlto: 2, limiteBaixo: -5 },
             "CH8008": { nome: "Chiller 8008", grupo: "temp", limiteAlto: 2, limiteBaixo: -5 },
             "CH8011_14": { nome: "Chillers 8011/14", grupo: "temp", limiteAlto: 2, limiteBaixo: -5 },
-            "CV8004_Retorno": { nome: "Sala de gordura", grupo: "temp", limiteAlto: 48, limiteBaixo: null },
+            "CV8004_Retorno": { nome: "Sala de Gorduras", grupo: "temp", limiteAlto: 50, limiteBaixo: null },
             "Ar_Comp_DM": { nome: "Ar Comp Dry Mix", grupo: "ar", limiteAlto: null, limiteBaixo: 5.5 },
-            "Ar_Comp_DM_Boge": { nome: "Ar Comp Boge", grupo: "ar", limiteAlto: null, limiteBaixo: 5.0 },
+            "Ar_Comp_DM_Boge": { nome: "Ar Comp Boge", grupo: "ar", limiteAlto: null, limiteBaixo: 5.5 },
             "Ar_Comp_Choco": { nome: "Ar Comp Chocolate", grupo: "ar", limiteAlto: null, limiteBaixo: 5.5 },
             "Vacuo_Dry_Mix": { nome: "Vácuo Dry Mix", grupo: "ar", limiteAlto: null, limiteBaixo: 15 },
             "Agua_6C": { nome: "Água Gelada 6°C", grupo: "agua", limiteAlto: 8, limiteBaixo: null },
-            "Pressao_Cavalete_BG": { nome: "Pressão Cavalete B&G", grupo: "vapor", limiteAlto: null, limiteBaixo: 10 },
+            "Pressao_Cavalete_BG": { nome: "Pressão B&G", grupo: "vapor", limiteAlto: null, limiteBaixo: 10 },
             "Pressao_Vapor_Choco": { nome: "Pressão Vapor Choco", grupo: "vapor", limiteAlto: null, limiteBaixo: 5 },
             "Nivel_TQ_CD8006_7": { nome: "Nível TQ CD8006/7", grupo: "vapor", limiteAlto: null, limiteBaixo: 40 },
             "Umidade_Ar_Comp_Chocolate": { nome: "Umidade Ar Choco", grupo: "qualidade", limiteAlto: 15, limiteBaixo: null },
@@ -223,29 +313,95 @@
             "qualidade": "📊 Qualidade do Ar"
         };
 
-        // Histórico para sparklines (últimos 30 pontos)
         var historico = {};
         var MAX_HIST = 30;
 
         function initDashboard() {
+            // Escutar dados em tempo real
             db.ref('current').on('value', function(snapshot) {
                 var data = snapshot.val();
                 if (!data) return;
                 
                 atualizarHistorico(data);
                 renderCards(data);
-                updateConnectionStatus(true);
                 
                 document.getElementById('last-update').textContent = 
-                    '🔄 Última atualização: ' + (data._readAt || new Date().toLocaleString('pt-BR'));
+                    '🔄 ' + (data._readAt || new Date().toLocaleString('pt-BR'));
             });
 
+            // Escutar status do leitor
+            db.ref('leitor_status').on('value', function(snapshot) {
+                var status = snapshot.val();
+                atualizarStatusLeitor(status);
+            });
+
+            // Status conexão Firebase
             db.ref('.info/connected').on('value', function(snap) {
-                updateConnectionStatus(snap.val());
+                // Pode usar para indicar se o dashboard está online
             });
         }
 
-        // ============ ATUALIZAR HISTÓRICO ============
+        // ============ STATUS DO LEITOR ============
+        function atualizarStatusLeitor(status) {
+            var dot = document.getElementById('leitor-dot');
+            var info = document.getElementById('leitor-info');
+            var batteryFill = document.getElementById('battery-fill');
+            var batteryText = document.getElementById('battery-text');
+            var leituras = document.getElementById('leitor-leituras');
+
+            if (!status) {
+                dot.className = 'dot offline';
+                info.innerHTML = 'Leitor: <strong>Nunca conectado</strong>';
+                return;
+            }
+
+            var agora = Date.now();
+            var lastHB = status.lastHeartbeat || 0;
+            var diffSeg = Math.floor((agora - lastHB) / 1000);
+
+            // Status baseado no heartbeat
+            if (status.ativo && diffSeg < 30) {
+                // Online
+                dot.className = 'dot';
+                info.innerHTML = 'Leitor: <strong style="color:#4caf50">Online</strong> <span style="color:#555">(' + diffSeg + 's atrás)</span>';
+            } else if (status.ativo && diffSeg < 60) {
+                // Warning - heartbeat atrasado
+                dot.className = 'dot warning';
+                info.innerHTML = 'Leitor: <strong style="color:#ffa726">Instável</strong> <span style="color:#555">(' + diffSeg + 's)</span>';
+            } else {
+                // Offline
+                dot.className = 'dot offline';
+                var desconStr = '';
+                if (status.desconectadoEm) {
+                    desconStr = ' — ' + new Date(status.desconectadoEm).toLocaleString('pt-BR');
+                }
+                info.innerHTML = 'Leitor: <strong style="color:#ef5350">Offline</strong> <span style="color:#555">' + desconStr + '</span>';
+            }
+
+            // Bateria
+            var bat = status.bateria;
+            if (bat !== null && bat !== undefined) {
+                batteryFill.style.width = bat + '%';
+                batteryFill.className = 'fill' + (bat < 20 ? ' low' : bat < 50 ? ' mid' : '');
+                batteryText.textContent = (status.carregando ? '⚡' : '') + bat + '%';
+            } else {
+                batteryText.textContent = '--';
+            }
+
+            // Leituras
+            if (status.leituras !== undefined) {
+                leituras.textContent = '📖 ' + status.leituras;
+            }
+        }
+
+        // Atualizar status do leitor a cada 5 segundos (para atualizar o "Xs atrás")
+        setInterval(function() {
+            db.ref('leitor_status').once('value').then(function(snap) {
+                atualizarStatusLeitor(snap.val());
+            });
+        }, 5000);
+
+        // ============ HISTÓRICO ============
         function atualizarHistorico(data) {
             var keys = Object.keys(data);
             for (var i = 0; i < keys.length; i++) {
@@ -264,9 +420,7 @@
                 if (valor !== null && typeof valor === 'number') {
                     if (!historico[key]) historico[key] = [];
                     historico[key].push(valor);
-                    if (historico[key].length > MAX_HIST) {
-                        historico[key].shift();
-                    }
+                    if (historico[key].length > MAX_HIST) historico[key].shift();
                 }
             }
         }
@@ -276,7 +430,6 @@
             var container = document.getElementById('cards-container');
             container.innerHTML = '';
 
-            // Extrair variáveis
             var vars = [];
             var keys = Object.keys(data);
             for (var i = 0; i < keys.length; i++) {
@@ -291,7 +444,12 @@
                 }
             }
 
-            // Agrupar por grupo
+            if (vars.length === 0) {
+                container.innerHTML = '<div class="no-data"><div class="icon">📡</div><p>Aguardando dados...</p></div>';
+                return;
+            }
+
+            // Agrupar
             var gruposOrdem = ['temp', 'ar', 'agua', 'vapor', 'qualidade', 'outro'];
             var agrupados = {};
             
@@ -303,39 +461,33 @@
                 agrupados[grupo].push(v);
             }
 
-            // Renderizar por grupo
             for (var g = 0; g < gruposOrdem.length; g++) {
                 var grupoKey = gruposOrdem[g];
                 var items = agrupados[grupoKey];
                 if (!items || items.length === 0) continue;
 
-                // Título do grupo
                 var titulo = document.createElement('div');
                 titulo.className = 'section-title';
                 titulo.textContent = grupos[grupoKey] || '📌 Outros';
                 container.appendChild(titulo);
 
-                // Cards do grupo
                 for (var k = 0; k < items.length; k++) {
-                    var item = items[k];
-                    container.appendChild(criarCardRow(item));
+                    container.appendChild(criarCardRow(items[k]));
                 }
             }
         }
 
-        // ============ CRIAR CARD ROW ============
+        // ============ CRIAR CARD ============
         function criarCardRow(item) {
             var cfg = tagConfig[item.id] || {};
             var nome = cfg.nome || item.nome || item.id.replace(/_/g, ' ');
             var valor = item.v;
             var unidade = item.u;
 
-            // Verificar alarme
             var alarme = false;
-            if (cfg.limiteAlto !== null && cfg.limiteAlto !== undefined && valor > cfg.limiteAlto) alarme = true;
-            if (cfg.limiteBaixo !== null && cfg.limiteBaixo !== undefined && valor < cfg.limiteBaixo) alarme = true;
+            if (cfg.limiteAlto != null && valor > cfg.limiteAlto) alarme = true;
+            if (cfg.limiteBaixo != null && valor < cfg.limiteBaixo) alarme = true;
 
-            // Tendência
             var hist = historico[item.id] || [];
             var tendencia = '';
             var tendenciaClass = 'trend-stable';
@@ -346,26 +498,22 @@
                 else { tendencia = '─'; tendenciaClass = 'trend-stable'; }
             }
 
-            // Criar elemento
             var row = document.createElement('div');
             row.className = 'card-row' + (alarme ? ' alarm' : '');
 
-            // Info
             var info = document.createElement('div');
             info.className = 'card-info';
             info.innerHTML = '<div class="card-nome">' + nome + '</div>' +
                 '<div class="card-valor">' + (typeof valor === 'number' ? valor.toFixed(1) : valor) +
                 '<span class="unidade">' + unidade + '</span></div>';
 
-            // Sparkline canvas
             var sparkDiv = document.createElement('div');
             sparkDiv.className = 'card-spark';
             var canvas = document.createElement('canvas');
-            canvas.width = 160;
+            canvas.width = 100;
             canvas.height = 35;
             sparkDiv.appendChild(canvas);
 
-            // Tendência
             var trendDiv = document.createElement('div');
             trendDiv.className = 'card-trend ' + tendenciaClass;
             trendDiv.textContent = tendencia;
@@ -374,7 +522,6 @@
             row.appendChild(sparkDiv);
             row.appendChild(trendDiv);
 
-            // Desenhar sparkline
             if (hist.length >= 2) {
                 desenharSparkline(canvas, hist, alarme);
             }
@@ -382,7 +529,7 @@
             return row;
         }
 
-        // ============ DESENHAR SPARKLINE ============
+        // ============ SPARKLINE ============
         function desenharSparkline(canvas, valores, alarme) {
             var ctx = canvas.getContext('2d');
             var w = canvas.width;
@@ -390,8 +537,6 @@
             var padding = 3;
 
             ctx.clearRect(0, 0, w, h);
-
-            // Fundo
             ctx.fillStyle = 'rgba(20, 25, 40, 0.5)';
             ctx.fillRect(0, 0, w, h);
 
@@ -401,7 +546,7 @@
             var max = Math.max.apply(null, valores);
             var range = max - min || 1;
 
-            // Linha de média
+            // Média
             var media = valores.reduce(function(a, b) { return a + b; }, 0) / valores.length;
             var mediaY = h - padding - ((media - min) / range) * (h - padding * 2);
             ctx.strokeStyle = 'rgba(100, 100, 120, 0.3)';
@@ -413,7 +558,7 @@
             ctx.stroke();
             ctx.setLineDash([]);
 
-            // Área preenchida
+            // Área
             ctx.beginPath();
             for (var i = 0; i < valores.length; i++) {
                 var x = (i / (valores.length - 1)) * w;
@@ -427,7 +572,7 @@
             ctx.fillStyle = alarme ? 'rgba(239, 83, 80, 0.1)' : 'rgba(79, 195, 247, 0.1)';
             ctx.fill();
 
-            // Linha principal
+            // Linha
             ctx.beginPath();
             for (var j = 0; j < valores.length; j++) {
                 var px = (j / (valores.length - 1)) * w;
@@ -439,7 +584,7 @@
             ctx.lineWidth = 1.5;
             ctx.stroke();
 
-            // Ponto atual (último)
+            // Ponto atual
             var lastX = w;
             var lastY = h - padding - ((valores[valores.length - 1] - min) / range) * (h - padding * 2);
             ctx.beginPath();
@@ -448,30 +593,13 @@
             ctx.fill();
         }
 
-        // ============ STATUS CONEXÃO ============
-        function updateConnectionStatus(connected) {
-            var el = document.getElementById('conn-status');
-            if (connected) {
-                el.textContent = '● Conectado';
-                el.className = 'connection';
-            } else {
-                el.textContent = '● Offline';
-                el.className = 'connection offline';
-            }
-        }
-
         function logout() {
+            localStorage.removeItem('modo_acesso');
+            localStorage.removeItem('login_timestamp');
             firebase.auth().signOut().then(function() {
                 window.location.href = 'index.html';
             });
         }
-        function logout() {
-    localStorage.removeItem('modo_acesso');
-    localStorage.removeItem('login_timestamp');
-    firebase.auth().signOut().then(function() {
-        window.location.href = 'index.html';
-    });
-}
     </script>
 </body>
 </html>
