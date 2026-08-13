@@ -134,10 +134,6 @@
             <div>Variáveis</div>
         </div>
         <div>
-            <div class="value" id="battery-level">N/A</div>
-            <div>Bateria</div>
-        </div>
-        <div>
             <div class="value" id="uptime">00:00</div>
             <div>Uptime</div>
         </div>
@@ -175,8 +171,6 @@
         var scanner = null;
         var leitorID = 'leitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
         var heartbeatInterval = null;
-        var batteryLevel = null;
-        var batteryCharging = false;
 
         function log(msg) {
             var time = new Date().toLocaleTimeString('pt-BR');
@@ -195,50 +189,9 @@
                 window.location.href = 'index.html';
             } else {
                 log('✅ Logado: ' + user.email);
-                iniciarTudo();
+                verificarLeitorUnico();
             }
         });
-
-        function iniciarTudo() {
-            initBattery();
-            verificarLeitorUnico();
-        }
-
-        // ============================================================
-        // BATERIA (funciona no Android Chrome, não no iOS Safari)
-        // ============================================================
-        function initBattery() {
-            if ('getBattery' in navigator) {
-                navigator.getBattery().then(function(battery) {
-                    batteryLevel = Math.round(battery.level * 100);
-                    batteryCharging = battery.charging;
-                    atualizarBateriaUI();
-
-                    battery.addEventListener('levelchange', function() {
-                        batteryLevel = Math.round(battery.level * 100);
-                        atualizarBateriaUI();
-                    });
-                    battery.addEventListener('chargingchange', function() {
-                        batteryCharging = battery.charging;
-                        atualizarBateriaUI();
-                    });
-                    log('🔋 Battery API OK: ' + batteryLevel + '%');
-                }).catch(function() {
-                    log('ℹ️ Bateria: não disponível (iOS)');
-                });
-            } else {
-                // iOS Safari não suporta — tudo bem, segue sem
-                log('ℹ️ Bateria: não suportada neste dispositivo');
-            }
-        }
-
-        function atualizarBateriaUI() {
-            var el = document.getElementById('battery-level');
-            if (batteryLevel !== null) {
-                var icon = batteryCharging ? '⚡' : '🔋';
-                el.textContent = icon + batteryLevel + '%';
-            }
-        }
 
         // ============================================================
         // LEITOR ÚNICO
@@ -255,17 +208,17 @@
                     var diffSegundos = (agora - ultimoHeartbeat) / 1000;
                     
                     if (diffSegundos < 30 && data.leitorID !== leitorID) {
+                        // Outro leitor ativo e vivo
                         log('🚫 Outro leitor ativo (' + Math.round(diffSegundos) + 's atrás)');
                         document.getElementById('blocked-overlay').classList.add('show');
                         return;
                     }
                 }
                 
-                // OK — registrar este leitor
+                // Nenhum leitor ativo ou heartbeat expirado
                 registrarLeitor();
             }).catch(function(e) {
-                // Se falhar a verificação, inicia mesmo assim
-                log('⚠️ Verificação falhou: ' + e.message + ' — iniciando mesmo assim');
+                log('⚠️ Verificação falhou — iniciando mesmo assim');
                 registrarLeitor();
             });
         }
@@ -279,26 +232,24 @@
                 conectadoEm: Date.now(),
                 conectadoEmStr: new Date().toLocaleString('pt-BR'),
                 lastHeartbeat: Date.now(),
-                bateria: batteryLevel,
-                carregando: batteryCharging,
-                userAgent: navigator.userAgent.substring(0, 80)
+                leituras: 0,
+                uptime: 0
             };
 
             db.ref('leitor_status').set(leitorData).then(function() {
                 log('✅ Leitor registrado');
-                iniciarHeartbeat();
-                initReader();
-                initWakeLock();
             }).catch(function(e) {
-                // Se falhar o registro, inicia a câmera mesmo assim
-                log('⚠️ Registro falhou: ' + e.message + ' — abrindo câmera');
-                initReader();
-                initWakeLock();
+                log('⚠️ Registro falhou: ' + e.message);
             });
 
             // Quando desconectar, marcar como inativo
             db.ref('leitor_status/ativo').onDisconnect().set(false);
             db.ref('leitor_status/desconectadoEm').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
+
+            // Sempre iniciar câmera e heartbeat (independente do registro)
+            iniciarHeartbeat();
+            initReader();
+            initWakeLock();
         }
 
         function forcarConexao() {
@@ -315,17 +266,11 @@
         }
 
         function enviarHeartbeat() {
-            var updates = {
-                'leitor_status/lastHeartbeat': Date.now(),
-                'leitor_status/bateria': batteryLevel,
-                'leitor_status/carregando': batteryCharging,
-                'leitor_status/leituras': readCount,
-                'leitor_status/uptime': Math.floor((Date.now() - startTime) / 1000)
-            };
-
-            db.ref().update(updates).catch(function() {
-                // Silencioso — não poluir debug
-            });
+            db.ref('leitor_status').update({
+                lastHeartbeat: Date.now(),
+                leituras: readCount,
+                uptime: Math.floor((Date.now() - startTime) / 1000)
+            }).catch(function() {});
         }
 
         // ============================================================
@@ -334,8 +279,7 @@
         function initWakeLock() {
             if ('wakeLock' in navigator) {
                 navigator.wakeLock.request('screen').then(function() {
-                    log('🔒 Tela não apaga (Wake Lock)');
-                    
+                    log('🔒 Tela não apaga');
                     document.addEventListener('visibilitychange', function() {
                         if (document.visibilityState === 'visible') {
                             navigator.wakeLock.request('screen').catch(function(){});
@@ -344,13 +288,11 @@
                 }).catch(function() {
                     log('ℹ️ Wake Lock indisponível');
                 });
-            } else {
-                log('ℹ️ Wake Lock não suportado — use "Guided Access" no iOS');
             }
         }
 
         // ============================================================
-        // PARSER FACTORYTALK
+        // PARSER FACTORYTALK (texto puro)
         // ============================================================
         function parsearTextoFactoryTalk(texto) {
             var linhas = texto.split('\n');
@@ -392,6 +334,7 @@
         function processQR(decodedText) {
             var tags = [];
 
+            // Tentar JSON primeiro
             try {
                 var dados = JSON.parse(decodedText);
                 log('📋 JSON válido');
@@ -410,6 +353,7 @@
                     }
                 }
             } catch(e) {
+                // Texto FactoryTalk
                 log('📋 Texto (' + decodedText.length + 'b)');
                 tags = parsearTextoFactoryTalk(decodedText);
             }
@@ -421,6 +365,7 @@
 
             log('📊 ' + tags.length + ' vars');
 
+            // Montar dados para Firebase
             var dadosFirebase = {
                 _timestamp: Date.now(),
                 _readAt: new Date().toLocaleString('pt-BR'),
@@ -432,13 +377,13 @@
                 dadosFirebase[tag.id] = { nome: tag.nome, v: tag.v, u: tag.u };
             }
 
-            // Evitar duplicatas
+            // Evitar duplicatas (mesmo conteúdo)
             var checkStr = '';
             for (var j = 0; j < tags.length; j++) {
                 checkStr += tags[j].id + ':' + tags[j].v + ';';
             }
             if (checkStr === lastData) {
-                log('⏭️ Iguais');
+                log('⏭️ Dados iguais');
                 return;
             }
             lastData = checkStr;
@@ -453,7 +398,7 @@
                 .then(function() { log('✅ history OK'); })
                 .catch(function(e) { log('❌ history: ' + e.message); });
 
-            // UI
+            // Atualizar UI
             readCount++;
             document.getElementById('read-count').textContent = readCount;
             document.getElementById('vars-count').textContent = tags.length;
@@ -467,7 +412,7 @@
         }
 
         // ============================================================
-        // INICIAR LEITOR
+        // INICIAR LEITOR — Config simples que funciona no iPhone 11
         // ============================================================
         function initReader() {
             log('📷 Abrindo câmera...');
@@ -475,51 +420,23 @@
 
             scanner = new Html5Qrcode("reader");
 
-            var config = {
-                fps: 10,
-                qrbox: function(viewfinderWidth, viewfinderHeight) {
-                    var w = Math.floor(viewfinderWidth * 0.85);
-                    var h = Math.floor(viewfinderHeight * 0.85);
-                    return { width: w, height: h };
-                },
-                formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-                experimentalFeatures: {
-                    useBarCodeDetectorIfSupported: true
-                }
-            };
-
+            // Config SIMPLES — testada e funcionando no iPhone 11
             scanner.start(
                 { facingMode: "environment" },
-                config,
+                {
+                    fps: 5,
+                    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+                },
                 function(decodedText) { processQR(decodedText); },
                 function() {}
             ).then(function() {
                 log('✅ Câmera OK! Lendo...');
                 document.getElementById('status').textContent = '✅ Lendo...';
             }).catch(function(err) {
-                log('⚠️ Câmera erro: ' + err + ' — tentando fallback...');
-                // Fallback: config mais simples
-                scanner.start(
-                    { facingMode: "environment" },
-                    {
-                        fps: 5,
-                        qrbox: 250,
-                        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
-                    },
-                    function(decodedText) { processQR(decodedText); },
-                    function() {}
-                ).then(function() {
-                    log('✅ Fallback OK!');
-                    document.getElementById('status').textContent = '✅ Lendo...';
-                }).catch(function(err2) {
-                    log('❌ Câmera falhou: ' + err2);
-                    document.getElementById('status').textContent = '❌ Erro câmera - recarregue';
-                    // Último recurso: recarregar após 3s
-                    setTimeout(function() {
-                        log('🔄 Recarregando página...');
-                        location.reload();
-                    }, 3000);
-                });
+                log('❌ Câmera: ' + err);
+                document.getElementById('status').textContent = '❌ Erro câmera - recarregando...';
+                // Auto-reload em 3s
+                setTimeout(function() { location.reload(); }, 3000);
             });
         }
 
@@ -540,7 +457,7 @@
             db.ref('leitor_status').update({
                 ativo: false,
                 desconectadoEm: Date.now()
-            });
+            }).catch(function(){});
             
             if (heartbeatInterval) clearInterval(heartbeatInterval);
             localStorage.removeItem('modo_acesso');
