@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -77,10 +78,44 @@
             50% { background: #1b5e20; }
             100% { background: #111; }
         }
+        /* BLOQUEIO */
+        .blocked-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            padding: 30px;
+        }
+        .blocked-overlay.show { display: flex; }
+        .blocked-overlay .icon { font-size: 3em; margin-bottom: 15px; }
+        .blocked-overlay h2 { color: #ef5350; margin-bottom: 10px; }
+        .blocked-overlay p { color: #888; font-size: 0.9em; margin-bottom: 20px; }
+        .blocked-overlay button {
+            background: #ef5350;
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <button class="btn-logout" onclick="logout()">Sair</button>
+
+    <!-- Overlay de bloqueio -->
+    <div class="blocked-overlay" id="blocked-overlay">
+        <div class="icon">🚫</div>
+        <h2>Leitor já conectado</h2>
+        <p>Outro dispositivo está ativo como leitor.<br>Apenas um leitor pode operar por vez.</p>
+        <button onclick="forcarConexao()">Forçar conexão aqui</button>
+    </div>
     
     <div id="reader"></div>
     
@@ -103,7 +138,6 @@
         </div>
     </div>
     
-    <!-- Debug - REMOVA depois que funcionar -->
     <div class="debug" id="debug"></div>
 
     <!-- Firebase -->
@@ -128,8 +162,16 @@
         firebase.initializeApp(firebaseConfig);
         var db = firebase.database();
 
-        // ===== DEBUG =====
+        // ===== VARIÁVEIS GLOBAIS =====
         var debugEl = document.getElementById('debug');
+        var readCount = 0;
+        var startTime = Date.now();
+        var lastData = null;
+        var lastDataTime = 0;
+        var scanner = null;
+        var leitorID = 'leitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        var heartbeatInterval = null;
+
         function log(msg) {
             var time = new Date().toLocaleTimeString('pt-BR');
             debugEl.innerHTML = '[' + time + '] ' + msg + '<br>' + debugEl.innerHTML;
@@ -139,24 +181,93 @@
             }
         }
 
-        // Verificar autenticação
+        // ============================================================
+        // AUTENTICAÇÃO
+        // ============================================================
         firebase.auth().onAuthStateChanged(function(user) {
             if (!user) {
                 window.location.href = 'index.html';
             } else {
                 log('✅ Logado: ' + user.email);
-                initReader();
+                verificarLeitorUnico();
             }
         });
 
-        var readCount = 0;
-        var startTime = Date.now();
-        var lastData = null;
-        var scanner = null;
+        // ============================================================
+        // LEITOR ÚNICO
+        // ============================================================
+        function verificarLeitorUnico() {
+            db.ref('leitor_status').once('value').then(function(snapshot) {
+                var data = snapshot.val();
+                
+                if (data && data.ativo) {
+                    var agora = Date.now();
+                    var ultimoHeartbeat = data.lastHeartbeat || 0;
+                    var diffSegundos = (agora - ultimoHeartbeat) / 1000;
+                    
+                    // Outro leitor ativo E heartbeat recente (< 30s)
+                    if (diffSegundos < 30 && data.leitorID !== leitorID) {
+                        log('🚫 Outro leitor ativo (' + Math.round(diffSegundos) + 's)');
+                        document.getElementById('blocked-overlay').classList.add('show');
+                        return;
+                    }
+                }
+                
+                // OK — registrar e iniciar
+                registrarLeitor();
+            }).catch(function(e) {
+                log('⚠️ Verificação falhou — iniciando');
+                registrarLeitor();
+            });
+        }
+
+        function registrarLeitor() {
+            db.ref('leitor_status').set({
+                ativo: true,
+                leitorID: leitorID,
+                conectadoEm: Date.now(),
+                conectadoEmStr: new Date().toLocaleString('pt-BR'),
+                lastHeartbeat: Date.now(),
+                leituras: 0,
+                uptime: 0
+            }).then(function() {
+                log('✅ Leitor registrado');
+            }).catch(function(e) {
+                log('⚠️ Registro: ' + e.message);
+            });
+
+            // Marcar inativo ao desconectar
+            db.ref('leitor_status/ativo').onDisconnect().set(false);
+            db.ref('leitor_status/desconectadoEm').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
+
+            // Iniciar câmera e heartbeat (independente do registro)
+            iniciarHeartbeat();
+            initReader();
+        }
+
+        function forcarConexao() {
+            document.getElementById('blocked-overlay').classList.remove('show');
+            registrarLeitor();
+        }
+
+        // ============================================================
+        // HEARTBEAT — a cada 10 segundos
+        // ============================================================
+        function iniciarHeartbeat() {
+            enviarHeartbeat();
+            heartbeatInterval = setInterval(enviarHeartbeat, 10000);
+        }
+
+        function enviarHeartbeat() {
+            db.ref('leitor_status').update({
+                lastHeartbeat: Date.now(),
+                leituras: readCount,
+                uptime: Math.floor((Date.now() - startTime) / 1000)
+            }).catch(function(){});
+        }
 
         // ============================================================
         // PARSER PARA FORMATO DO FACTORYTALK
-        // Formato: "NOME: valor unidade\n" (uma variável por linha)
         // ============================================================
         function parsearTextoFactoryTalk(texto) {
             var linhas = texto.split('\n');
@@ -223,7 +334,7 @@
                     }
                 }
             } catch(e) {
-                // Não é JSON — parsear como texto FactoryTalk
+                // Texto FactoryTalk
                 log('📋 Texto FactoryTalk (' + decodedText.length + 'b)');
                 tags = parsearTextoFactoryTalk(decodedText);
             }
@@ -251,16 +362,17 @@
                 };
             }
 
-            // Evitar duplicatas
+            // Evitar duplicatas — mas aceita se passaram mais de 10 segundos
             var checkStr = '';
             for (var j = 0; j < tags.length; j++) {
                 checkStr += tags[j].id + ':' + tags[j].v + ';';
             }
-            if (checkStr === lastData) {
-                log('⏭️ Dados iguais');
-                return;
+            var agora = Date.now();
+            if (checkStr === lastData && (agora - lastDataTime) < 10000) {
+                return; // Duplicata recente — ignora
             }
             lastData = checkStr;
+            lastDataTime = agora;
 
             // Enviar para Firebase
             log('☁️ Enviando ao Firebase...');
@@ -296,7 +408,7 @@
         }
 
         // ============================================================
-        // INICIAR LEITOR - COM QRBOX GRANDE (90% da tela)
+        // INICIAR LEITOR — INTOCADO (versão que funciona)
         // ============================================================
         function initReader() {
             log('📷 Iniciando câmera...');
@@ -307,7 +419,6 @@
             var config = {
                 fps: 10,
                 qrbox: function(viewfinderWidth, viewfinderHeight) {
-                    // 90% da área visível — grande mas definido
                     var w = Math.floor(viewfinderWidth * 0.9);
                     var h = Math.floor(viewfinderHeight * 0.9);
                     return { width: w, height: h };
@@ -330,7 +441,6 @@
                 document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
             }).catch(function(err) {
                 log('❌ Câmera erro: ' + err);
-                // Tentar sem qrbox como fallback
                 log('🔄 Tentando fallback sem qrbox...');
                 scanner.start(
                     { facingMode: "environment" },
@@ -349,6 +459,21 @@
             });
         }
 
+        // ============================================================
+        // WAKE LOCK (manter tela acesa)
+        // ============================================================
+        if ('wakeLock' in navigator) {
+            navigator.wakeLock.request('screen').then(function() {
+                log('🔒 Tela não apaga');
+            }).catch(function(){});
+            
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible') {
+                    navigator.wakeLock.request('screen').catch(function(){});
+                }
+            });
+        }
+
         // Uptime
         setInterval(function() {
             var elapsed = Math.floor((Date.now() - startTime) / 1000);
@@ -361,14 +486,18 @@
                 hrs > 0 ? hrs + ':' + min + ':' + sec : min + ':' + sec;
         }, 1000);
 
-        // Wake Lock
-        if ('wakeLock' in navigator) {
-            navigator.wakeLock.request('screen').catch(function(){});
-        }
-
+        // LOGOUT
         function logout() {
+            // Marcar leitor como inativo
+            db.ref('leitor_status').update({
+                ativo: false,
+                desconectadoEm: Date.now()
+            }).catch(function(){});
+
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
             localStorage.removeItem('modo_acesso');
             localStorage.removeItem('login_timestamp');
+            
             if (scanner) {
                 scanner.stop().then(function() {
                     firebase.auth().signOut().then(function() {
@@ -388,3 +517,4 @@
     </script>
 </body>
 </html>
+
