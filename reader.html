@@ -78,47 +78,15 @@
             50% { background: #1b5e20; }
             100% { background: #111; }
         }
-        .blocked-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.95);
-            z-index: 999;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            text-align: center;
-            padding: 30px;
-        }
-        .blocked-overlay.show { display: flex; }
-        .blocked-overlay .icon { font-size: 3em; margin-bottom: 15px; }
-        .blocked-overlay h2 { color: #ef5350; margin-bottom: 10px; }
-        .blocked-overlay p { color: #888; font-size: 0.9em; margin-bottom: 20px; }
-        .blocked-overlay button {
-            background: #ef5350;
-            color: #fff;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 1em;
-            cursor: pointer;
-        }
     </style>
 </head>
 <body>
     <button class="btn-logout" onclick="logout()">Sair</button>
     
-    <div class="blocked-overlay" id="blocked-overlay">
-        <div class="icon">🚫</div>
-        <h2>Leitor já conectado</h2>
-        <p>Outro dispositivo está ativo como leitor.<br>Apenas um leitor pode operar por vez.</p>
-        <button onclick="forcarConexao()">Forçar conexão aqui</button>
-    </div>
-    
     <div id="reader"></div>
     
     <div class="status-bar" id="status-bar">
-        <div class="status" id="status">Iniciando...</div>
+        <div class="status" id="status">Iniciando câmera...</div>
         <div class="last-read" id="last-read">Aguardando leitura...</div>
     </div>
     <div class="stats">
@@ -136,102 +104,60 @@
         </div>
     </div>
     
+    <!-- Debug - REMOVA depois que funcionar -->
     <div class="debug" id="debug"></div>
 
-    <!-- html5-qrcode PRIMEIRO -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-
-    <!-- Firebase DEPOIS -->
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    
+    <!-- html5-qrcode -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
     <script>
-        // ===== VARIÁVEIS GLOBAIS =====
-        var debugEl = document.getElementById('debug');
-        var readCount = 0;
-        var startTime = Date.now();
-        var lastData = null;
-        var scanner = null;
-        var db = null;
-        var firebaseReady = false;
-        var leitorID = 'leitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-        var heartbeatInterval = null;
-        var filaDados = []; // Fila para dados lidos antes do Firebase estar pronto
+        var firebaseConfig = {
+            apiKey: "AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",
+            authDomain: "dshutili.firebaseapp.com",
+            databaseURL: "https://dshutili-default-rtdb.firebaseio.com",
+            projectId: "dshutili",
+            storageBucket: "dshutili.firebasestorage.app",
+            messagingSenderId: "1065134772507",
+            appId: "1:1065134772507:web:aed91d6d1953f69cb403be",
+            measurementId: "G-B3NS6YKTLV"
+        };
+        firebase.initializeApp(firebaseConfig);
+        var db = firebase.database();
 
+        // ===== DEBUG =====
+        var debugEl = document.getElementById('debug');
         function log(msg) {
             var time = new Date().toLocaleTimeString('pt-BR');
             debugEl.innerHTML = '[' + time + '] ' + msg + '<br>' + debugEl.innerHTML;
             var lines = debugEl.innerHTML.split('<br>');
-            if (lines.length > 15) {
-                debugEl.innerHTML = lines.slice(0, 15).join('<br>');
+            if (lines.length > 12) {
+                debugEl.innerHTML = lines.slice(0, 12).join('<br>');
             }
         }
 
-        // ============================================================
-        // 1. INICIAR CÂMERA IMEDIATAMENTE (como o teste mínimo)
-        // ============================================================
-        log('📷 Abrindo câmera...');
-
-        scanner = new Html5Qrcode("reader");
-
-        scanner.start(
-            { facingMode: "environment" },
-            { fps: 5 },
-            function(decodedText) { processQR(decodedText); },
-            function() {}
-        ).then(function() {
-            log('✅ Câmera OK!');
-            document.getElementById('status').textContent = '✅ Lendo...';
-        }).catch(function(err) {
-            log('❌ Câmera: ' + err);
-            document.getElementById('status').textContent = '❌ Erro câmera';
-            setTimeout(function() { location.reload(); }, 3000);
+        // Verificar autenticação
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (!user) {
+                window.location.href = 'index.html';
+            } else {
+                log('✅ Logado: ' + user.email);
+                initReader();
+            }
         });
 
-        // ============================================================
-        // 2. INICIAR FIREBASE (em paralelo, não bloqueia câmera)
-        // ============================================================
-        try {
-            var firebaseConfig = {
-                apiKey: "AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",
-                authDomain: "dshutili.firebaseapp.com",
-                databaseURL: "https://dshutili-default-rtdb.firebaseio.com",
-                projectId: "dshutili",
-                storageBucket: "dshutili.firebasestorage.app",
-                messagingSenderId: "1065134772507",
-                appId: "1:1065134772507:web:aed91d6d1953f69cb403be",
-                measurementId: "G-B3NS6YKTLV"
-            };
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-
-            firebase.auth().onAuthStateChanged(function(user) {
-                if (!user) {
-                    log('⚠️ Não logado — redirecionando...');
-                    window.location.href = 'index.html';
-                } else {
-                    log('✅ Firebase OK: ' + user.email);
-                    firebaseReady = true;
-                    verificarLeitorUnico();
-                    iniciarHeartbeat();
-                    
-                    // Enviar dados que ficaram na fila
-                    if (filaDados.length > 0) {
-                        log('📤 Enviando ' + filaDados.length + ' leituras da fila...');
-                        for (var i = 0; i < filaDados.length; i++) {
-                            enviarFirebase(filaDados[i]);
-                        }
-                        filaDados = [];
-                    }
-                }
-            });
-        } catch(e) {
-            log('⚠️ Firebase init erro: ' + e.message);
-        }
+        var readCount = 0;
+        var startTime = Date.now();
+        var lastData = null;
+        var scanner = null;
 
         // ============================================================
-        // PARSER FACTORYTALK
+        // PARSER PARA FORMATO DO FACTORYTALK
+        // Formato: "NOME: valor unidade\n" (uma variável por linha)
         // ============================================================
         function parsearTextoFactoryTalk(texto) {
             var linhas = texto.split('\n');
@@ -260,7 +186,12 @@
                         .replace(/[^a-zA-Z0-9_]/g, '')
                         .substring(0, 30);
 
-                    tags.push({ id: id, nome: nome, v: valor, u: unidade });
+                    tags.push({
+                        id: id,
+                        nome: nome,
+                        v: valor,
+                        u: unidade
+                    });
                 }
             }
 
@@ -273,9 +204,11 @@
         function processQR(decodedText) {
             var tags = [];
 
+            // Tentar JSON primeiro
             try {
                 var dados = JSON.parse(decodedText);
-                log('📋 JSON');
+                log('📋 JSON válido');
+                
                 if (dados.d && Array.isArray(dados.d)) {
                     tags = dados.d;
                 } else {
@@ -291,18 +224,19 @@
                     }
                 }
             } catch(e) {
-                log('📋 Texto (' + decodedText.length + 'b)');
+                // Não é JSON — parsear como texto FactoryTalk
+                log('📋 Texto FactoryTalk (' + decodedText.length + 'b)');
                 tags = parsearTextoFactoryTalk(decodedText);
             }
 
             if (tags.length === 0) {
-                log('⚠️ 0 vars!');
+                log('⚠️ Nenhuma variável extraída!');
                 return;
             }
 
-            log('📊 ' + tags.length + ' vars detectadas');
+            log('📊 ' + tags.length + ' variáveis parseadas');
 
-            // Montar dados
+            // Montar objeto para Firebase
             var dadosFirebase = {
                 _timestamp: Date.now(),
                 _readAt: new Date().toLocaleString('pt-BR'),
@@ -311,7 +245,11 @@
 
             for (var i = 0; i < tags.length; i++) {
                 var tag = tags[i];
-                dadosFirebase[tag.id] = { nome: tag.nome, v: tag.v, u: tag.u };
+                dadosFirebase[tag.id] = {
+                    nome: tag.nome,
+                    v: tag.v,
+                    u: tag.u
+                };
             }
 
             // Evitar duplicatas
@@ -320,10 +258,28 @@
                 checkStr += tags[j].id + ':' + tags[j].v + ';';
             }
             if (checkStr === lastData) {
-                log('⏭️ Iguais');
+                log('⏭️ Dados iguais');
                 return;
             }
             lastData = checkStr;
+
+            // Enviar para Firebase
+            log('☁️ Enviando ao Firebase...');
+            db.ref('current').set(dadosFirebase)
+                .then(function() {
+                    log('✅ Firebase current OK!');
+                })
+                .catch(function(e) {
+                    log('❌ Firebase ERRO: ' + e.message);
+                });
+            
+            db.ref('history').push().set(dadosFirebase)
+                .then(function() {
+                    log('✅ Firebase history OK!');
+                })
+                .catch(function(e) {
+                    log('❌ History ERRO: ' + e.message);
+                });
 
             // Atualizar UI
             readCount++;
@@ -334,120 +290,63 @@
             document.getElementById('status-bar').classList.add('pulse');
             setTimeout(function() { 
                 document.getElementById('status-bar').classList.remove('pulse');
-                document.getElementById('status').textContent = '✅ Lendo...';
+                document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
             }, 2000);
 
-            // Enviar ou enfileirar
-            if (firebaseReady) {
-                enviarFirebase(dadosFirebase);
-            } else {
-                log('📥 Firebase não pronto — enfileirando...');
-                filaDados.push(dadosFirebase);
-            }
+            log('✅ LEITURA #' + readCount + ' OK!');
         }
 
         // ============================================================
-        // ENVIAR PARA FIREBASE
+        // INICIAR LEITOR - COM QRBOX GRANDE (90% da tela)
         // ============================================================
-        function enviarFirebase(dados) {
-            log('☁️ Enviando...');
-            
-            db.ref('current').set(dados)
-                .then(function() { log('✅ current OK'); })
-                .catch(function(e) { log('❌ current: ' + e.message); });
-            
-            db.ref('history').push().set(dados)
-                .then(function() { log('✅ history OK'); })
-                .catch(function(e) { log('❌ history: ' + e.message); });
-        }
+        function initReader() {
+            log('📷 Iniciando câmera...');
+            document.getElementById('status').textContent = '📷 Iniciando câmera...';
 
-        // ============================================================
-        // LEITOR ÚNICO
-        // ============================================================
-        function verificarLeitorUnico() {
-            db.ref('leitor_status').once('value').then(function(snapshot) {
-                var data = snapshot.val();
-                
-                if (data && data.ativo) {
-                    var agora = Date.now();
-                    var ultimoHeartbeat = data.lastHeartbeat || 0;
-                    var diffSegundos = (agora - ultimoHeartbeat) / 1000;
-                    
-                    if (diffSegundos < 30 && data.leitorID !== leitorID) {
-                        log('🚫 Outro leitor ativo');
-                        document.getElementById('blocked-overlay').classList.add('show');
-                        // Parar scanner
-                        if (scanner) scanner.stop().catch(function(){});
-                        return;
-                    }
+            scanner = new Html5Qrcode("reader");
+
+            var config = {
+                fps: 10,
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    // 90% da área visível — grande mas definido
+                    var w = Math.floor(viewfinderWidth * 0.9);
+                    var h = Math.floor(viewfinderHeight * 0.9);
+                    return { width: w, height: h };
+                },
+                formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true
                 }
-                
-                registrarLeitor();
-            }).catch(function() {
-                registrarLeitor();
-            });
-        }
+            };
 
-        function registrarLeitor() {
-            db.ref('leitor_status').set({
-                ativo: true,
-                leitorID: leitorID,
-                conectadoEm: Date.now(),
-                conectadoEmStr: new Date().toLocaleString('pt-BR'),
-                lastHeartbeat: Date.now(),
-                leituras: 0,
-                uptime: 0
-            }).then(function() {
-                log('✅ Leitor registrado');
-            }).catch(function(e) {
-                log('⚠️ Registro: ' + e.message);
-            });
-
-            db.ref('leitor_status/ativo').onDisconnect().set(false);
-            db.ref('leitor_status/desconectadoEm').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
-        }
-
-        function forcarConexao() {
-            document.getElementById('blocked-overlay').classList.remove('show');
-            registrarLeitor();
-            // Reiniciar câmera
             scanner.start(
                 { facingMode: "environment" },
-                { fps: 5 },
-                function(decodedText) { processQR(decodedText); },
+                config,
+                function(decodedText) {
+                    processQR(decodedText);
+                },
                 function() {}
-            ).catch(function(){});
-        }
-
-        // ============================================================
-        // HEARTBEAT
-        // ============================================================
-        function iniciarHeartbeat() {
-            enviarHeartbeat();
-            heartbeatInterval = setInterval(enviarHeartbeat, 10000);
-        }
-
-        function enviarHeartbeat() {
-            if (!db) return;
-            db.ref('leitor_status').update({
-                lastHeartbeat: Date.now(),
-                leituras: readCount,
-                uptime: Math.floor((Date.now() - startTime) / 1000)
-            }).catch(function(){});
-        }
-
-        // ============================================================
-        // WAKE LOCK
-        // ============================================================
-        if ('wakeLock' in navigator) {
-            navigator.wakeLock.request('screen').then(function() {
-                log('🔒 Tela não apaga');
-            }).catch(function(){});
-            
-            document.addEventListener('visibilitychange', function() {
-                if (document.visibilityState === 'visible') {
-                    navigator.wakeLock.request('screen').catch(function(){});
-                }
+            ).then(function() {
+                log('✅ Câmera ativa! FPS=10, qrbox=90%');
+                document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
+            }).catch(function(err) {
+                log('❌ Câmera erro: ' + err);
+                // Tentar sem qrbox como fallback
+                log('🔄 Tentando fallback sem qrbox...');
+                scanner.start(
+                    { facingMode: "environment" },
+                    { fps: 10, formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE] },
+                    function(decodedText) {
+                        processQR(decodedText);
+                    },
+                    function() {}
+                ).then(function() {
+                    log('✅ Fallback OK!');
+                    document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
+                }).catch(function(err2) {
+                    log('❌ Fallback falhou: ' + err2);
+                    document.getElementById('status').textContent = '❌ Erro câmera';
+                });
             });
         }
 
@@ -463,19 +362,14 @@
                 hrs > 0 ? hrs + ':' + min + ':' + sec : min + ':' + sec;
         }, 1000);
 
-        // LOGOUT
+        // Wake Lock
+        if ('wakeLock' in navigator) {
+            navigator.wakeLock.request('screen').catch(function(){});
+        }
+
         function logout() {
-            if (db) {
-                db.ref('leitor_status').update({
-                    ativo: false,
-                    desconectadoEm: Date.now()
-                }).catch(function(){});
-            }
-            
-            if (heartbeatInterval) clearInterval(heartbeatInterval);
             localStorage.removeItem('modo_acesso');
             localStorage.removeItem('login_timestamp');
-            
             if (scanner) {
                 scanner.stop().then(function() {
                     firebase.auth().signOut().then(function() {
