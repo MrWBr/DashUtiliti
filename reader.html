@@ -433,9 +433,9 @@
             var config = {
                 fps: 3,
                 qrbox: function(viewfinderWidth, viewfinderHeight) {
-                    // 70% da tela — menor = mais rápido pra processar
-                    var w = Math.floor(viewfinderWidth * 0.7);
-                    var h = Math.floor(viewfinderHeight * 0.7);
+                    // 95% da tela
+                    var w = Math.floor(viewfinderWidth * 0.95);
+                    var h = Math.floor(viewfinderHeight * 0.95);
                     return { width: w, height: h };
                 },
                 formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
