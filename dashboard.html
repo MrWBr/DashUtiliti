@@ -132,8 +132,9 @@
 
         /* Card: Info lado esquerdo */
         .card-info {
-            flex: 1;
-            min-width: 0;
+            flex-shrink: 0;
+            width: 110px;
+            min-width: 90px;
         }
         .card-nome {
             font-size: 0.7em;
@@ -159,15 +160,16 @@
         .card-row.alarm .card-valor { color: #ef5350; }
         .card-row.alarm .card-nome { color: #ef9a9a; }
 
-        /* Card: Sparkline lado direito */
+        /* Card: Sparkline — ADAPTÁVEL */
         .card-spark {
-            width: 100px;
-            height: 35px;
-            flex-shrink: 0;
+            flex: 1;
+            min-width: 60px;
+            height: 40px;
         }
         .card-spark canvas {
             width: 100%;
             height: 100%;
+            display: block;
         }
 
         /* Tendência seta */
@@ -324,12 +326,10 @@
             var diffSegundos = (agora - ultimoHeartbeat) / 1000;
 
             if (data.ativo && diffSegundos < 30) {
-                // Online
                 dot.className = 'leitor-dot';
                 label.textContent = 'Leitor: online';
                 leituras.textContent = data.leituras || '0';
 
-                // Formatar uptime
                 var up = data.uptime || 0;
                 var h = Math.floor(up / 3600);
                 var m = Math.floor((up % 3600) / 60).toString();
@@ -338,13 +338,12 @@
                 if (s.length < 2) s = '0' + s;
                 uptimeEl.textContent = h > 0 ? h + ':' + m + ':' + s : m + ':' + s;
             } else {
-                // Offline
                 dot.className = 'leitor-dot offline';
                 if (data.desconectadoEm) {
                     var desc = new Date(data.desconectadoEm).toLocaleTimeString('pt-BR');
                     label.textContent = 'Leitor: offline desde ' + desc;
                 } else {
-                    label.textContent = 'Leitor: offline (heartbeat expirado)';
+                    label.textContent = 'Leitor: offline';
                 }
                 leituras.textContent = data.leituras || '0';
                 uptimeEl.textContent = '--:--';
@@ -382,7 +381,6 @@
             var container = document.getElementById('cards-container');
             container.innerHTML = '';
 
-            // Extrair variáveis
             var vars = [];
             var keys = Object.keys(data);
             for (var i = 0; i < keys.length; i++) {
@@ -397,7 +395,6 @@
                 }
             }
 
-            // Agrupar por grupo
             var gruposOrdem = ['temp', 'ar', 'agua', 'vapor', 'qualidade', 'outro'];
             var agrupados = {};
             
@@ -409,25 +406,49 @@
                 agrupados[grupo].push(v);
             }
 
-            // Renderizar por grupo
             for (var g = 0; g < gruposOrdem.length; g++) {
                 var grupoKey = gruposOrdem[g];
                 var items = agrupados[grupoKey];
                 if (!items || items.length === 0) continue;
 
-                // Título do grupo
                 var titulo = document.createElement('div');
                 titulo.className = 'section-title';
                 titulo.textContent = grupos[grupoKey] || '📌 Outros';
                 container.appendChild(titulo);
 
-                // Cards do grupo
                 for (var k = 0; k < items.length; k++) {
                     var item = items[k];
                     container.appendChild(criarCardRow(item));
                 }
             }
+
+            // Desenhar sparklines após render (para pegar tamanho real)
+            setTimeout(redesenharSparklines, 50);
         }
+
+        // ============ REDESENHAR SPARKLINES (com tamanho real) ============
+        function redesenharSparklines() {
+            var canvases = document.querySelectorAll('.card-spark canvas');
+            for (var i = 0; i < canvases.length; i++) {
+                var canvas = canvases[i];
+                var tagId = canvas.getAttribute('data-tag');
+                var alarme = canvas.getAttribute('data-alarm') === 'true';
+                var hist = historico[tagId] || [];
+                
+                if (hist.length >= 2) {
+                    // Ajustar resolução do canvas ao tamanho real do container
+                    var rect = canvas.parentElement.getBoundingClientRect();
+                    canvas.width = Math.floor(rect.width * 2); // 2x para retina
+                    canvas.height = Math.floor(rect.height * 2);
+                    desenharSparkline(canvas, hist, alarme);
+                }
+            }
+        }
+
+        // Redesenhar ao redimensionar a tela
+        window.addEventListener('resize', function() {
+            setTimeout(redesenharSparklines, 100);
+        });
 
         // ============ CRIAR CARD ROW ============
         function criarCardRow(item) {
@@ -436,7 +457,6 @@
             var valor = item.v;
             var unidade = item.u;
 
-            // Verificar alarme
             var alarme = false;
             if (cfg.limiteAlto !== null && cfg.limiteAlto !== undefined && valor > cfg.limiteAlto) alarme = true;
             if (cfg.limiteBaixo !== null && cfg.limiteBaixo !== undefined && valor < cfg.limiteBaixo) alarme = true;
@@ -452,7 +472,6 @@
                 else { tendencia = '─'; tendenciaClass = 'trend-stable'; }
             }
 
-            // Criar elemento
             var row = document.createElement('div');
             row.className = 'card-row' + (alarme ? ' alarm' : '');
 
@@ -463,12 +482,12 @@
                 '<div class="card-valor">' + (typeof valor === 'number' ? valor.toFixed(1) : valor) +
                 '<span class="unidade">' + unidade + '</span></div>';
 
-            // Sparkline canvas
+            // Sparkline canvas — tamanho definido pelo CSS flex
             var sparkDiv = document.createElement('div');
             sparkDiv.className = 'card-spark';
             var canvas = document.createElement('canvas');
-            canvas.width = 100;
-            canvas.height = 35;
+            canvas.setAttribute('data-tag', item.id);
+            canvas.setAttribute('data-alarm', alarme ? 'true' : 'false');
             sparkDiv.appendChild(canvas);
 
             // Tendência
@@ -480,11 +499,6 @@
             row.appendChild(sparkDiv);
             row.appendChild(trendDiv);
 
-            // Desenhar sparkline
-            if (hist.length >= 2) {
-                desenharSparkline(canvas, hist, alarme);
-            }
-
             return row;
         }
 
@@ -493,10 +507,11 @@
             var ctx = canvas.getContext('2d');
             var w = canvas.width;
             var h = canvas.height;
-            var padding = 3;
+            var padding = 4;
 
             ctx.clearRect(0, 0, w, h);
 
+            // Fundo
             ctx.fillStyle = 'rgba(20, 25, 40, 0.5)';
             ctx.fillRect(0, 0, w, h);
 
@@ -510,8 +525,8 @@
             var media = valores.reduce(function(a, b) { return a + b; }, 0) / valores.length;
             var mediaY = h - padding - ((media - min) / range) * (h - padding * 2);
             ctx.strokeStyle = 'rgba(100, 100, 120, 0.3)';
-            ctx.lineWidth = 0.5;
-            ctx.setLineDash([2, 2]);
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
             ctx.beginPath();
             ctx.moveTo(0, mediaY);
             ctx.lineTo(w, mediaY);
@@ -529,7 +544,7 @@
             ctx.lineTo(w, h);
             ctx.lineTo(0, h);
             ctx.closePath();
-            ctx.fillStyle = alarme ? 'rgba(239, 83, 80, 0.1)' : 'rgba(79, 195, 247, 0.1)';
+            ctx.fillStyle = alarme ? 'rgba(239, 83, 80, 0.15)' : 'rgba(79, 195, 247, 0.15)';
             ctx.fill();
 
             // Linha principal
@@ -541,14 +556,14 @@
                 else ctx.lineTo(px, py);
             }
             ctx.strokeStyle = alarme ? '#ef5350' : '#4fc3f7';
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = 2;
             ctx.stroke();
 
             // Ponto atual (último)
-            var lastX = w;
+            var lastX = w - 3;
             var lastY = h - padding - ((valores[valores.length - 1] - min) / range) * (h - padding * 2);
             ctx.beginPath();
-            ctx.arc(lastX - 2, lastY, 2.5, 0, Math.PI * 2);
+            ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
             ctx.fillStyle = alarme ? '#ef5350' : '#4fc3f7';
             ctx.fill();
         }
