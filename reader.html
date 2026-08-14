@@ -396,7 +396,7 @@
 
             // Enviar para Firebase
             log('☁️ Enviando...');
-            db.ref('current').set(dadosFirebase)
+            db.ref('current').update(dadosFirebase)
                 .then(function() { log('✅ current OK!'); })
                 .catch(function(e) { log('❌ ' + e.message); });
             
