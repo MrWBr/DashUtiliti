@@ -126,9 +126,6 @@
             background: #1a1015;
         }
         .card-row.alarm:hover { background: #251520; }
-        .card-row.warning {
-            border-left-color: #ffa726;
-        }
 
         /* Card: Info lado esquerdo */
         .card-info {
@@ -164,12 +161,29 @@
         .card-spark {
             flex: 1;
             min-width: 60px;
-            height: 40px;
+            height: 50px;
+            position: relative;
         }
         .card-spark canvas {
             width: 100%;
             height: 100%;
             display: block;
+        }
+        /* Min/Max labels no gráfico */
+        .spark-labels {
+            position: absolute;
+            top: 0;
+            right: 2px;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+        .spark-labels span {
+            font-size: 0.5em;
+            color: #555;
+            font-family: monospace;
         }
 
         /* Tendência seta */
@@ -247,25 +261,26 @@
         });
 
         // ============ CONFIGURAÇÃO DAS TAGS ============
+        // escalaMin/escalaMax: define a escala fixa do gráfico (referência visual)
         var tagConfig = {
-            "TO8001_2_3_4": { nome: "Torres C.A.G.", grupo: "temp", limiteAlto: 32, limiteBaixo: null },
-            "TO8006_Retorno": { nome: "Torre Wafer", grupo: "temp", limiteAlto: 35, limiteBaixo: null },
-            "CH8007": { nome: "Chiller 8007", grupo: "temp", limiteAlto: 2, limiteBaixo: -5 },
-            "CH8008": { nome: "Chiller 8008", grupo: "temp", limiteAlto: 2, limiteBaixo: -5 },
-            "CH8011_14": { nome: "Chillers 8011/14", grupo: "temp", limiteAlto: 2, limiteBaixo: -5 },
-            "CV8004_Retorno": { nome: "Sala de gordura", grupo: "temp", limiteAlto: 50, limiteBaixo: null },
-            "Ar_Comp_DM": { nome: "Ar Comp Dry Mix", grupo: "ar", limiteAlto: null, limiteBaixo: 5.5 },
-            "Ar_Comp_DM_Boge": { nome: "Ar Comp Boge", grupo: "ar", limiteAlto: null, limiteBaixo: 5.0 },
-            "Ar_Comp_Choco": { nome: "Ar Comp Chocolate", grupo: "ar", limiteAlto: null, limiteBaixo: 5.5 },
-            "Vacuo_Dry_Mix": { nome: "Vácuo Dry Mix", grupo: "ar", limiteAlto: null, limiteBaixo: 15 },
-            "Agua_6C": { nome: "Água Gelada 6°C", grupo: "agua", limiteAlto: 8, limiteBaixo: null },
-            "Pressao_Cavalete_BG": { nome: "Pressão Cavalete B&G", grupo: "vapor", limiteAlto: null, limiteBaixo: 10 },
-            "Pressao_Vapor_Choco": { nome: "Pressão Vapor Choco", grupo: "vapor", limiteAlto: null, limiteBaixo: 5 },
-            "Nivel_TQ_CD8006_7": { nome: "Nível TQ CD8006/7", grupo: "vapor", limiteAlto: null, limiteBaixo: 40 },
-            "Umidade_Ar_Comp_Chocolate": { nome: "Umidade Ar Choco", grupo: "qualidade", limiteAlto: 25, limiteBaixo: null },
-            "Temperatura_Ar_Comp_Chocolate": { nome: "Temp Ar Choco", grupo: "qualidade", limiteAlto: 50, limiteBaixo: null },
-            "Umidade_Ar_Comp_BG": { nome: "Umidade Ar B&G", grupo: "qualidade", limiteAlto: 25, limiteBaixo: null },
-            "Temperatura_Ar_Comp_BG": { nome: "Temp Ar B&G", grupo: "qualidade", limiteAlto: 50, limiteBaixo: null }
+            "TO8001_2_3_4": { nome: "Torres C.A.G.", grupo: "temp", limiteAlto: 32, limiteBaixo: null, escalaMin: 20, escalaMax: 35 },
+            "TO8006_Retorno": { nome: "Torre Wafer", grupo: "temp", limiteAlto: 35, limiteBaixo: null, escalaMin: 25, escalaMax: 40 },
+            "CH8007": { nome: "Chiller 8007", grupo: "temp", limiteAlto: 2, limiteBaixo: -5, escalaMin: -8, escalaMax: 5 },
+            "CH8008": { nome: "Chiller 8008", grupo: "temp", limiteAlto: 2, limiteBaixo: -5, escalaMin: -8, escalaMax: 5 },
+            "CH8011_14": { nome: "Chillers 8011/14", grupo: "temp", limiteAlto: 2, limiteBaixo: -5, escalaMin: -8, escalaMax: 5 },
+            "CV8004_Retorno": { nome: "Sala de gordura", grupo: "temp", limiteAlto: 50, limiteBaixo: null, escalaMin: 35, escalaMax: 55 },
+            "Ar_Comp_DM": { nome: "Ar Comp Dry Mix", grupo: "ar", limiteAlto: null, limiteBaixo: 5.5, escalaMin: 4, escalaMax: 8 },
+            "Ar_Comp_DM_Boge": { nome: "Ar Comp Boge", grupo: "ar", limiteAlto: null, limiteBaixo: 5.0, escalaMin: 4, escalaMax: 8 },
+            "Ar_Comp_Choco": { nome: "Ar Comp Chocolate", grupo: "ar", limiteAlto: null, limiteBaixo: 5.5, escalaMin: 4, escalaMax: 8 },
+            "Vacuo_Dry_Mix": { nome: "Vácuo Dry Mix", grupo: "ar", limiteAlto: null, limiteBaixo: 15, escalaMin: 10, escalaMax: 30 },
+            "Agua_6C": { nome: "Água Gelada 6°C", grupo: "agua", limiteAlto: 8, limiteBaixo: null, escalaMin: 3, escalaMax: 10 },
+            "Pressao_Cavalete_BG": { nome: "Pressão Cavalete B&G", grupo: "vapor", limiteAlto: null, limiteBaixo: 10, escalaMin: 8, escalaMax: 15 },
+            "Pressao_Vapor_Choco": { nome: "Pressão Vapor Choco", grupo: "vapor", limiteAlto: null, limiteBaixo: 5, escalaMin: 3, escalaMax: 10 },
+            "Nivel_TQ_CD8006_7": { nome: "Nível TQ CD8006/7", grupo: "vapor", limiteAlto: null, limiteBaixo: 40, escalaMin: 20, escalaMax: 100 },
+            "Umidade_Ar_Comp_Chocolate": { nome: "Umidade Ar Choco", grupo: "qualidade", limiteAlto: 25, limiteBaixo: null, escalaMin: 0, escalaMax: 35 },
+            "Temperatura_Ar_Comp_Chocolate": { nome: "Temp Ar Choco", grupo: "qualidade", limiteAlto: 50, limiteBaixo: null, escalaMin: 25, escalaMax: 55 },
+            "Umidade_Ar_Comp_BG": { nome: "Umidade Ar B&G", grupo: "qualidade", limiteAlto: 25, limiteBaixo: null, escalaMin: 0, escalaMax: 35 },
+            "Temperatura_Ar_Comp_BG": { nome: "Temp Ar B&G", grupo: "qualidade", limiteAlto: 50, limiteBaixo: null, escalaMin: 25, escalaMax: 55 }
         };
 
         var grupos = {
@@ -281,7 +296,6 @@
         var MAX_HIST = 30;
 
         function initDashboard() {
-            // Escutar dados atuais
             db.ref('current').on('value', function(snapshot) {
                 var data = snapshot.val();
                 if (!data) return;
@@ -294,13 +308,11 @@
                     '🔄 Última atualização: ' + (data._readAt || new Date().toLocaleString('pt-BR'));
             });
 
-            // Escutar status do leitor
             db.ref('leitor_status').on('value', function(snapshot) {
                 var data = snapshot.val();
                 atualizarStatusLeitor(data);
             });
 
-            // Status de conexão
             db.ref('.info/connected').on('value', function(snap) {
                 updateConnectionStatus(snap.val());
             });
@@ -422,11 +434,11 @@
                 }
             }
 
-            // Desenhar sparklines após render (para pegar tamanho real)
+            // Desenhar sparklines após render
             setTimeout(redesenharSparklines, 50);
         }
 
-        // ============ REDESENHAR SPARKLINES (com tamanho real) ============
+        // ============ REDESENHAR SPARKLINES ============
         function redesenharSparklines() {
             var canvases = document.querySelectorAll('.card-spark canvas');
             for (var i = 0; i < canvases.length; i++) {
@@ -434,18 +446,19 @@
                 var tagId = canvas.getAttribute('data-tag');
                 var alarme = canvas.getAttribute('data-alarm') === 'true';
                 var hist = historico[tagId] || [];
+                var cfg = tagConfig[tagId] || {};
+                
+                // Ajustar resolução ao tamanho real
+                var rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = Math.floor(rect.width * 2);
+                canvas.height = Math.floor(rect.height * 2);
                 
                 if (hist.length >= 2) {
-                    // Ajustar resolução do canvas ao tamanho real do container
-                    var rect = canvas.parentElement.getBoundingClientRect();
-                    canvas.width = Math.floor(rect.width * 2); // 2x para retina
-                    canvas.height = Math.floor(rect.height * 2);
-                    desenharSparkline(canvas, hist, alarme);
+                    desenharSparkline(canvas, hist, alarme, cfg);
                 }
             }
         }
 
-        // Redesenhar ao redimensionar a tela
         window.addEventListener('resize', function() {
             setTimeout(redesenharSparklines, 100);
         });
@@ -482,13 +495,21 @@
                 '<div class="card-valor">' + (typeof valor === 'number' ? valor.toFixed(1) : valor) +
                 '<span class="unidade">' + unidade + '</span></div>';
 
-            // Sparkline canvas — tamanho definido pelo CSS flex
+            // Sparkline
             var sparkDiv = document.createElement('div');
             sparkDiv.className = 'card-spark';
             var canvas = document.createElement('canvas');
             canvas.setAttribute('data-tag', item.id);
             canvas.setAttribute('data-alarm', alarme ? 'true' : 'false');
             sparkDiv.appendChild(canvas);
+
+            // Labels min/max na escala
+            var labels = document.createElement('div');
+            labels.className = 'spark-labels';
+            var escMax = cfg.escalaMax !== undefined ? cfg.escalaMax : '';
+            var escMin = cfg.escalaMin !== undefined ? cfg.escalaMin : '';
+            labels.innerHTML = '<span>' + escMax + '</span><span>' + escMin + '</span>';
+            sparkDiv.appendChild(labels);
 
             // Tendência
             var trendDiv = document.createElement('div');
@@ -502,12 +523,12 @@
             return row;
         }
 
-        // ============ DESENHAR SPARKLINE ============
-        function desenharSparkline(canvas, valores, alarme) {
+        // ============ DESENHAR SPARKLINE (com escala fixa + limites) ============
+        function desenharSparkline(canvas, valores, alarme, cfg) {
             var ctx = canvas.getContext('2d');
             var w = canvas.width;
             var h = canvas.height;
-            var padding = 4;
+            var padding = 6;
 
             ctx.clearRect(0, 0, w, h);
 
@@ -517,41 +538,72 @@
 
             if (valores.length < 2) return;
 
-            var min = Math.min.apply(null, valores);
-            var max = Math.max.apply(null, valores);
+            // ESCALA FIXA: usa escalaMin/escalaMax do config (não auto-escala)
+            var min, max;
+            if (cfg.escalaMin !== undefined && cfg.escalaMax !== undefined) {
+                min = cfg.escalaMin;
+                max = cfg.escalaMax;
+            } else {
+                // Fallback: auto-escala com margem
+                min = Math.min.apply(null, valores);
+                max = Math.max.apply(null, valores);
+                var margem = (max - min) * 0.2 || 1;
+                min -= margem;
+                max += margem;
+            }
             var range = max - min || 1;
 
-            // Linha de média
-            var media = valores.reduce(function(a, b) { return a + b; }, 0) / valores.length;
-            var mediaY = h - padding - ((media - min) / range) * (h - padding * 2);
-            ctx.strokeStyle = 'rgba(100, 100, 120, 0.3)';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([3, 3]);
-            ctx.beginPath();
-            ctx.moveTo(0, mediaY);
-            ctx.lineTo(w, mediaY);
-            ctx.stroke();
-            ctx.setLineDash([]);
+            // Função para converter valor em Y
+            function valToY(val) {
+                var clamped = Math.max(min, Math.min(max, val));
+                return h - padding - ((clamped - min) / range) * (h - padding * 2);
+            }
+
+            // Linha de limite ALTO (vermelha tracejada)
+            if (cfg.limiteAlto !== null && cfg.limiteAlto !== undefined) {
+                var yAlto = valToY(cfg.limiteAlto);
+                ctx.strokeStyle = 'rgba(239, 83, 80, 0.4)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(0, yAlto);
+                ctx.lineTo(w, yAlto);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Linha de limite BAIXO (laranja tracejada)
+            if (cfg.limiteBaixo !== null && cfg.limiteBaixo !== undefined) {
+                var yBaixo = valToY(cfg.limiteBaixo);
+                ctx.strokeStyle = 'rgba(255, 167, 38, 0.4)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(0, yBaixo);
+                ctx.lineTo(w, yBaixo);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
 
             // Área preenchida
             ctx.beginPath();
             for (var i = 0; i < valores.length; i++) {
                 var x = (i / (valores.length - 1)) * w;
-                var y = h - padding - ((valores[i] - min) / range) * (h - padding * 2);
+                var y = valToY(valores[i]);
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             }
             ctx.lineTo(w, h);
             ctx.lineTo(0, h);
             ctx.closePath();
-            ctx.fillStyle = alarme ? 'rgba(239, 83, 80, 0.15)' : 'rgba(79, 195, 247, 0.15)';
+            ctx.fillStyle = alarme ? 'rgba(239, 83, 80, 0.12)' : 'rgba(79, 195, 247, 0.12)';
             ctx.fill();
 
             // Linha principal
             ctx.beginPath();
             for (var j = 0; j < valores.length; j++) {
                 var px = (j / (valores.length - 1)) * w;
-                var py = h - padding - ((valores[j] - min) / range) * (h - padding * 2);
+                var py = valToY(valores[j]);
                 if (j === 0) ctx.moveTo(px, py);
                 else ctx.lineTo(px, py);
             }
@@ -560,8 +612,8 @@
             ctx.stroke();
 
             // Ponto atual (último)
-            var lastX = w - 3;
-            var lastY = h - padding - ((valores[valores.length - 1] - min) / range) * (h - padding * 2);
+            var lastX = w - 4;
+            var lastY = valToY(valores[valores.length - 1]);
             ctx.beginPath();
             ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
             ctx.fillStyle = alarme ? '#ef5350' : '#4fc3f7';
