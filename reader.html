@@ -124,11 +124,15 @@
     <div class="stats">
         <div>
             <div class="value" id="read-count">0</div>
-            <div>Leituras</div>
+            <div>Envios</div>
         </div>
         <div>
             <div class="value" id="vars-count">0</div>
             <div>Variáveis</div>
+        </div>
+        <div>
+            <div class="value" id="skip-count">0</div>
+            <div>Ignorados</div>
         </div>
         <div>
             <div class="value" id="uptime">00:00</div>
@@ -163,14 +167,21 @@
         // ===== VARIÁVEIS GLOBAIS =====
         var debugEl = document.getElementById('debug');
         var readCount = 0;
+        var skipCount = 0;
         var startTime = Date.now();
-        var lastData = null;
-        var lastDataTime = 0;
         var scanner = null;
         var leitorID = 'leitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
         var heartbeatInterval = null;
         var lastReadTimestamp = Date.now();
         var restartCount = 0;
+
+        // ===== OTIMIZAÇÃO: enviar só o que mudou =====
+        var ultimosValores = {};         // Último valor enviado de cada tag
+        var bufferMudancas = {};         // Acumula mudanças entre envios
+        var ultimoEnvio = 0;             // Timestamp do último envio
+        var MIN_INTERVALO_ENVIO = 3000;  // Mínimo 3s entre envios
+        var TOLERANCIA = 0.05;           // Ignora variação menor que 0.05 (ruído)
+        var lastHistoryTime = 0;         // Controle do history (a cada 30s)
 
         function log(msg) {
             var time = new Date().toLocaleTimeString('pt-BR');
@@ -199,19 +210,16 @@
         function verificarLeitorUnico() {
             db.ref('leitor_status').once('value').then(function(snapshot) {
                 var data = snapshot.val();
-                
                 if (data && data.ativo) {
                     var agora = Date.now();
                     var ultimoHeartbeat = data.lastHeartbeat || 0;
                     var diffSegundos = (agora - ultimoHeartbeat) / 1000;
-                    
                     if (diffSegundos < 60 && data.leitorID !== leitorID) {
                         log('🚫 Outro leitor ativo (' + Math.round(diffSegundos) + 's)');
                         document.getElementById('blocked-overlay').classList.add('show');
                         return;
                     }
                 }
-                
                 registrarLeitor();
             }).catch(function(e) {
                 log('⚠️ Verificação falhou — iniciando');
@@ -247,7 +255,7 @@
         }
 
         // ============================================================
-        // HEARTBEAT — a cada 15 segundos (backup, principal é na leitura)
+        // HEARTBEAT — backup a cada 15s
         // ============================================================
         function iniciarHeartbeat() {
             enviarHeartbeat();
@@ -268,11 +276,9 @@
         setInterval(function() {
             var agora = Date.now();
             var semLeitura = (agora - lastReadTimestamp) / 1000;
-            
             if (semLeitura > 60 && scanner && restartCount < 5) {
                 restartCount++;
                 log('🔄 Sem leitura há ' + Math.round(semLeitura) + 's — reiniciando (#' + restartCount + ')');
-                
                 scanner.stop().then(function() {
                     setTimeout(function() { initReader(); }, 1000);
                 }).catch(function() {
@@ -280,6 +286,15 @@
                 });
             }
         }, 30000);
+
+        // ============================================================
+        // FLUSH DO BUFFER: garante envio mesmo com throttle
+        // ============================================================
+        setInterval(function() {
+            if (Object.keys(bufferMudancas).length > 0) {
+                enviarMudancas();
+            }
+        }, 3500);
 
         // ============================================================
         // PARSER PARA FORMATO DO FACTORYTALK
@@ -324,7 +339,7 @@
         }
 
         // ============================================================
-        // PROCESSAR QR
+        // PROCESSAR QR — OTIMIZADO (envia só o que mudou)
         // ============================================================
         function processQR(decodedText) {
             var tags = [];
@@ -332,7 +347,6 @@
             try {
                 var dados = JSON.parse(decodedText);
                 log('📋 JSON válido');
-                
                 if (dados.d && Array.isArray(dados.d)) {
                     tags = dados.d;
                 } else {
@@ -357,45 +371,89 @@
                 return;
             }
 
-            log('📊 ' + tags.length + ' vars');
+            // Atualiza timestamp de leitura (para auto-restart)
+            lastReadTimestamp = Date.now();
+            restartCount = 0;
+
+            // ===== COMPARAR COM ÚLTIMOS VALORES =====
+            var mudou = false;
+            var mudancasAgora = {};
+
+            for (var i = 0; i < tags.length; i++) {
+                var tag = tags[i];
+                var valorAnterior = ultimosValores[tag.id];
+                
+                // Verifica se mudou (com tolerância para ruído)
+                if (valorAnterior === undefined || Math.abs(tag.v - valorAnterior) > TOLERANCIA) {
+                    mudou = true;
+                    mudancasAgora[tag.id] = {
+                        nome: tag.nome,
+                        v: tag.v,
+                        u: tag.u
+                    };
+                    ultimosValores[tag.id] = tag.v;
+                }
+            }
+
+            // Se nada mudou, ignora completamente
+            if (!mudou) {
+                skipCount++;
+                document.getElementById('skip-count').textContent = skipCount;
+                return;
+            }
+
+            // Acumula no buffer
+            var bufKeys = Object.keys(mudancasAgora);
+            for (var b = 0; b < bufKeys.length; b++) {
+                bufferMudancas[bufKeys[b]] = mudancasAgora[bufKeys[b]];
+            }
+
+            // ===== THROTTLE: respeita intervalo mínimo =====
+            var agora = Date.now();
+            if (agora - ultimoEnvio < MIN_INTERVALO_ENVIO) {
+                log('⏳ Buffer (' + Object.keys(bufferMudancas).length + ' vars aguardando)');
+                return;
+            }
+
+            // Enviar
+            enviarMudancas();
+        }
+
+        // ============================================================
+        // ENVIAR MUDANÇAS AO FIREBASE
+        // ============================================================
+        function enviarMudancas() {
+            var keys = Object.keys(bufferMudancas);
+            if (keys.length === 0) return;
 
             var dadosFirebase = {
                 _timestamp: Date.now(),
                 _readAt: new Date().toLocaleString('pt-BR'),
-                _varCount: tags.length
+                _varCount: keys.length
             };
 
-            for (var i = 0; i < tags.length; i++) {
-                var tag = tags[i];
-                dadosFirebase[tag.id] = {
-                    nome: tag.nome,
-                    v: tag.v,
-                    u: tag.u
-                };
+            for (var i = 0; i < keys.length; i++) {
+                dadosFirebase[keys[i]] = bufferMudancas[keys[i]];
             }
 
-            // Duplicatas — aceita se passaram > 5s
-            var checkStr = '';
-            for (var j = 0; j < tags.length; j++) {
-                checkStr += tags[j].id + ':' + tags[j].v + ';';
-            }
-            var agora = Date.now();
-            if (checkStr === lastData && (agora - lastDataTime) < 5000) {
-                return;
-            }
-            lastData = checkStr;
-            lastDataTime = agora;
-            lastReadTimestamp = agora;
-            restartCount = 0;
+            var qtdMudou = keys.length;
+            var qtdTotal = Object.keys(ultimosValores).length;
 
-            // Enviar para Firebase — UPDATE (merge, não sobrescreve)
+            log('📊 ' + qtdMudou + '/' + qtdTotal + ' vars mudaram');
             log('☁️ Enviando...');
+
+            ultimoEnvio = Date.now();
+
+            // Limpa buffer ANTES do envio
+            bufferMudancas = {};
+
+            // UPDATE (merge) — não sobrescreve variáveis de outros QRs
             db.ref('current').update(dadosFirebase)
                 .then(function() {
-                    log('✅ current OK!');
-                    // HEARTBEAT junto com leitura bem-sucedida
                     readCount++;
                     document.getElementById('read-count').textContent = readCount;
+                    log('✅ OK! (' + qtdMudou + ' vars)');
+                    // Heartbeat junto com leitura
                     db.ref('leitor_status').update({
                         lastHeartbeat: Date.now(),
                         leituras: readCount,
@@ -405,16 +463,28 @@
                 .catch(function(e) {
                     log('❌ ' + e.message);
                 });
-            
-            db.ref('history').push().set(dadosFirebase)
-                .catch(function(e) { log('❌ history: ' + e.message); });
+
+            // History — só a cada 30s (snapshot completo)
+            if (Date.now() - lastHistoryTime > 30000) {
+                var snapshot = {
+                    _timestamp: Date.now(),
+                    _readAt: new Date().toLocaleString('pt-BR')
+                };
+                var allKeys = Object.keys(ultimosValores);
+                for (var j = 0; j < allKeys.length; j++) {
+                    snapshot[allKeys[j]] = ultimosValores[allKeys[j]];
+                }
+                db.ref('history').push().set(snapshot);
+                lastHistoryTime = Date.now();
+                log('📝 History salvo');
+            }
 
             // UI
-            document.getElementById('vars-count').textContent = tags.length;
+            document.getElementById('vars-count').textContent = qtdTotal;
             document.getElementById('last-read').textContent = 'Última: ' + dadosFirebase._readAt;
-            document.getElementById('status').textContent = '✅ #' + (readCount + 1) + ' | ' + tags.length + ' vars';
+            document.getElementById('status').textContent = '✅ #' + (readCount + 1) + ' | ' + qtdMudou + ' mudaram';
             document.getElementById('status-bar').classList.add('pulse');
-            setTimeout(function() { 
+            setTimeout(function() {
                 document.getElementById('status-bar').classList.remove('pulse');
                 document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
             }, 2000);
