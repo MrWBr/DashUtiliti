@@ -99,7 +99,6 @@
                     letter-spacing: 0.3px;
                     white-space: nowrap;
                    }
-        /* REMOVE overflow: hidden e text-overflow: ellipsis */
         .card-valor { font-size: 1.3em; font-weight: 700; color: #fff; margin-top: 2px; }
         .card-valor .unidade { font-size: 0.55em; color: #666; font-weight: 400; margin-left: 3px; }
         .card-row.alarm .card-valor { color: #ef5350; }
@@ -181,7 +180,6 @@
 
         // ============ CONFIGURAÇÃO DAS TAGS (24 variáveis) ============
         var tagConfig = {
-            // TEMPERATURAS
             "TO8001_2_3_4": { nome: "Torres C.A.G.", grupo: "temp", limiteAlto: 32, limiteBaixo: null, escalaMin: 20, escalaMax: 35 },
             "TO8006_Retorno": { nome: "Torre Wafer", grupo: "temp", limiteAlto: 35, limiteBaixo: null, escalaMin: 25, escalaMax: 40 },
             "CH8007": { nome: "Chiller 8007", grupo: "temp", limiteAlto: 2, limiteBaixo: -5, escalaMin: -8, escalaMax: 5 },
@@ -192,7 +190,6 @@
             "Temperatura_Ar_Comp_Chocolate": { nome: "Temp Ar Choco", grupo: "qualidade", limiteAlto: 50, limiteBaixo: null, escalaMin: 25, escalaMax: 60 },
             "Temperatura_Ar_Comp_BG": { nome: "Temp Ar B&G", grupo: "qualidade", limiteAlto: 50, limiteBaixo: null, escalaMin: 25, escalaMax: 60 },
 
-            // SALAS DE CURA (NOVAS)
             "Temperatura_Sala_Cura_Bubba": { nome: "Sala Cura Bubba", grupo: "cura", limiteAlto: 17, limiteBaixo: 13, escalaMin: 8, escalaMax: 22 },
             "Temperatura_Sala_Cura_Chiclets": { nome: "Sala Cura Chiclets", grupo: "cura", limiteAlto: 14, limiteBaixo: 10, escalaMin: 8, escalaMax: 22 },
             "Temperatura_Sala_Cura_Trident": { nome: "Sala Cura Trident", grupo: "cura", limiteAlto: 15, limiteBaixo: 10, escalaMin: 8, escalaMax: 22 },
@@ -200,18 +197,15 @@
             "Umidade_Sala_Cura_Chiclets": { nome: "Umid. Cura Chiclets", grupo: "cura", limiteAlto: 35, limiteBaixo: 30, escalaMin: 15, escalaMax: 45 },
             "Umidade_Sala_Cura_Trident": { nome: "Umid. Cura Trident", grupo: "cura", limiteAlto: 35, limiteBaixo: 30, escalaMin: 15, escalaMax: 45 },
 
-            // AR COMPRIMIDO / VÁCUO
             "Ar_Comp_DM": { nome: "Ar Comp Dry Mix", grupo: "ar", limiteAlto: null, limiteBaixo: 5.5, escalaMin: 4, escalaMax: 8 },
             "Ar_Comp_DM_Boge": { nome: "Ar Comp Boge", grupo: "ar", limiteAlto: null, limiteBaixo: 5.0, escalaMin: 4, escalaMax: 8 },
             "Ar_Comp_Choco": { nome: "Ar Comp Chocolate", grupo: "ar", limiteAlto: null, limiteBaixo: 5.5, escalaMin: 4, escalaMax: 8 },
             "Vacuo_Dry_Mix": { nome: "Vácuo Dry Mix", grupo: "ar", limiteAlto: null, limiteBaixo: 15, escalaMin: 10, escalaMax: 30 },
 
-            // VAPOR / PRESSÃO
             "Pressao_Cavalete_BG": { nome: "Pressão Cavalete B&G", grupo: "vapor", limiteAlto: null, limiteBaixo: 10, escalaMin: 8, escalaMax: 15 },
             "Pressao_Vapor_Choco": { nome: "Pressão Vapor Choco", grupo: "vapor", limiteAlto: null, limiteBaixo: 5, escalaMin: 3, escalaMax: 10 },
             "Nivel_TQ_CD8006_7": { nome: "Nível TQ CD8006/7", grupo: "vapor", limiteAlto: null, limiteBaixo: 40, escalaMin: 20, escalaMax: 100 },
 
-            // QUALIDADE DO AR
             "Umidade_Ar_Comp_Chocolate": { nome: "Umidade Ar Choco", grupo: "qualidade", limiteAlto: 25, limiteBaixo: null, escalaMin: 0, escalaMax: 35 },
             "Umidade_Ar_Comp_BG": { nome: "Umidade Ar B&G", grupo: "qualidade", limiteAlto: 25, limiteBaixo: null, escalaMin: 0, escalaMax: 35 }
         };
@@ -230,6 +224,7 @@
         var notificacoesAtivas = false;
         var alarmesAtivos = {};
         var miniWidgetWindow = null;
+        var pipWindow = null;
         var ultimosDados = null;
 
         function initDashboard() {
@@ -322,9 +317,77 @@
             }
         }
 
-        // ============ MINI WIDGET ============
-        function abrirMiniWidget() {
+        // ============ MINI WIDGET — PiP (sempre visível) + Fallback popup ============
+        var widgetStyles = [
+            '* { margin: 0; padding: 0; box-sizing: border-box; }',
+            'body { font-family: -apple-system, sans-serif; background: #0a0e1a; color: #e0e0e0; padding: 8px; font-size: 12px; overflow-y: auto; }',
+            '.header { text-align: center; color: #4fc3f7; font-size: 11px; padding: 6px 0; border-bottom: 1px solid #2a2f45; margin-bottom: 6px; font-weight: 600; }',
+            '.item { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; border-radius: 4px; margin-bottom: 2px; background: #141929; }',
+            '.item.alarm { background: #1a1015; border-left: 2px solid #ef5350; }',
+            '.item .nome { color: #888; font-size: 10px; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
+            '.item .valor { font-weight: 700; color: #fff; font-size: 12px; }',
+            '.item.alarm .valor { color: #ef5350; }',
+            '.item .unidade { color: #555; font-size: 9px; margin-left: 2px; }',
+            '.grupo { color: #4fc3f7; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 4px 2px; font-weight: 600; }',
+            '.update { text-align: center; color: #444; font-size: 9px; padding: 4px; margin-top: 4px; position: sticky; bottom: 0; background: #0a0e1a; }'
+        ].join('\n');
+
+        async function abrirMiniWidget() {
+            // Se já está aberto, foca
             if (miniWidgetWindow && !miniWidgetWindow.closed) { miniWidgetWindow.focus(); return; }
+            if (pipWindow) { return; } // PiP já aberto
+
+            // ===== TENTA PiP PRIMEIRO (Chrome 116+ — sempre visível) =====
+            if ('documentPictureInPicture' in window) {
+                try {
+                    pipWindow = await window.documentPictureInPicture.requestWindow({
+                        width: 300,
+                        height: 520
+                    });
+
+                    var style = pipWindow.document.createElement('style');
+                    style.textContent = widgetStyles;
+                    pipWindow.document.head.appendChild(style);
+                    pipWindow.document.title = 'Utilidades - Widget';
+
+                    var header = pipWindow.document.createElement('div');
+                    header.className = 'header';
+                    header.textContent = 'Utilidades - Online';
+                    pipWindow.document.body.appendChild(header);
+
+                    var content = pipWindow.document.createElement('div');
+                    content.id = 'widget-content';
+                    content.textContent = 'Aguardando dados...';
+                    pipWindow.document.body.appendChild(content);
+
+                    var updateDiv = pipWindow.document.createElement('div');
+                    updateDiv.className = 'update';
+                    updateDiv.id = 'widget-update';
+                    pipWindow.document.body.appendChild(updateDiv);
+
+                    miniWidgetWindow = pipWindow;
+
+                    document.getElementById('btn-widget').classList.add('active');
+                    document.getElementById('btn-widget').textContent = '📌 Widget Ativo (PiP)';
+
+                    pipWindow.addEventListener('pagehide', function() {
+                        miniWidgetWindow = null;
+                        pipWindow = null;
+                        document.getElementById('btn-widget').classList.remove('active');
+                        document.getElementById('btn-widget').textContent = '📌 Mini Widget';
+                    });
+
+                    if (ultimosDados) {
+                        setTimeout(function() { atualizarMiniWidget(ultimosDados); }, 100);
+                    }
+                    return;
+
+                } catch(e) {
+                    console.log('PiP não disponível, usando popup:', e);
+                }
+            }
+
+            // ===== FALLBACK: popup normal =====
             var largura = 300; var altura = 550;
             var esquerda = screen.width - largura - 20; var topo = 50;
             miniWidgetWindow = window.open('', 'mini_widget',
@@ -333,20 +396,8 @@
             if (!miniWidgetWindow) { alert('Popup bloqueado! Permita popups.'); return; }
             var doc = miniWidgetWindow.document;
             doc.open();
-            doc.write('<!DOCTYPE html><html><head><title>Mini Widget</title>');
-            doc.write('<style>');
-            doc.write('* { margin: 0; padding: 0; box-sizing: border-box; }');
-            doc.write('body { font-family: -apple-system, sans-serif; background: #0a0e1a; color: #e0e0e0; padding: 8px; font-size: 12px; }');
-            doc.write('.header { text-align: center; color: #4fc3f7; font-size: 11px; padding: 6px 0; border-bottom: 1px solid #2a2f45; margin-bottom: 6px; font-weight: 600; }');
-            doc.write('.item { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; border-radius: 4px; margin-bottom: 2px; background: #141929; }');
-            doc.write('.item.alarm { background: #1a1015; border-left: 2px solid #ef5350; }');
-            doc.write('.item .nome { color: #888; font-size: 10px; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }');
-            doc.write('.item .valor { font-weight: 700; color: #fff; font-size: 12px; }');
-            doc.write('.item.alarm .valor { color: #ef5350; }');
-            doc.write('.item .unidade { color: #555; font-size: 9px; margin-left: 2px; }');
-            doc.write('.grupo { color: #4fc3f7; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 4px 2px; font-weight: 600; }');
-            doc.write('.update { text-align: center; color: #444; font-size: 9px; padding: 4px; margin-top: 4px; }');
-            doc.write('</style></head><body>');
+            doc.write('<!DOCTYPE html><html><head><title>Utilidades - Widget</title>');
+            doc.write('<style>' + widgetStyles + '</style></head><body>');
             doc.write('<div class="header">Utilidades - Online</div>');
             doc.write('<div id="widget-content">Aguardando dados...</div>');
             doc.write('<div class="update" id="widget-update"></div>');
@@ -354,16 +405,18 @@
             doc.close();
             if (ultimosDados) { setTimeout(function() { atualizarMiniWidget(ultimosDados); }, 200); }
             document.getElementById('btn-widget').classList.add('active');
+            document.getElementById('btn-widget').textContent = '📌 Widget Ativo';
             var checkClosed = setInterval(function() {
                 if (miniWidgetWindow && miniWidgetWindow.closed) {
                     clearInterval(checkClosed); miniWidgetWindow = null;
                     document.getElementById('btn-widget').classList.remove('active');
+                    document.getElementById('btn-widget').textContent = '📌 Mini Widget';
                 }
             }, 1000);
         }
 
         function atualizarMiniWidget(data) {
-            if (!miniWidgetWindow || miniWidgetWindow.closed) return;
+            if (!miniWidgetWindow || (miniWidgetWindow.closed !== undefined && miniWidgetWindow.closed)) return;
             var doc = miniWidgetWindow.document;
             var container = doc.getElementById('widget-content');
             if (!container) return;
@@ -396,7 +449,7 @@
                 var grupoKey = gruposOrdem[g];
                 var items = agrupados[grupoKey];
                 if (!items || items.length === 0) continue;
-                html += '<div class="grupo">' + (grupos[grupoKey] || '📌 Outros') + '</div>';
+                html += '<div class="grupo">' + (grupos[grupoKey] || 'Outros') + '</div>';
                 for (var k = 0; k < items.length; k++) {
                     var item = items[k];
                     var cfg2 = tagConfig[item.id] || {};
@@ -498,7 +551,7 @@
                 if (!items || items.length === 0) continue;
                 var titulo = document.createElement('div');
                 titulo.className = 'section-title';
-                titulo.textContent = grupos[grupoKey] || '📌 Outros';
+                titulo.textContent = grupos[grupoKey] || 'Outros';
                 container.appendChild(titulo);
                 for (var k = 0; k < items.length; k++) {
                     container.appendChild(criarCardRow(items[k]));
