@@ -78,7 +78,6 @@
             50% { background: #1b5e20; }
             100% { background: #111; }
         }
-        /* BLOQUEIO */
         .blocked-overlay {
             display: none;
             position: fixed;
@@ -109,7 +108,6 @@
 <body>
     <button class="btn-logout" onclick="logout()">Sair</button>
 
-    <!-- Overlay de bloqueio -->
     <div class="blocked-overlay" id="blocked-overlay">
         <div class="icon">🚫</div>
         <h2>Leitor já conectado</h2>
@@ -207,7 +205,7 @@
                     var ultimoHeartbeat = data.lastHeartbeat || 0;
                     var diffSegundos = (agora - ultimoHeartbeat) / 1000;
                     
-                    if (diffSegundos < 30 && data.leitorID !== leitorID) {
+                    if (diffSegundos < 60 && data.leitorID !== leitorID) {
                         log('🚫 Outro leitor ativo (' + Math.round(diffSegundos) + 's)');
                         document.getElementById('blocked-overlay').classList.add('show');
                         return;
@@ -249,11 +247,11 @@
         }
 
         // ============================================================
-        // HEARTBEAT — a cada 10 segundos
+        // HEARTBEAT — a cada 15 segundos (backup, principal é na leitura)
         // ============================================================
         function iniciarHeartbeat() {
             enviarHeartbeat();
-            heartbeatInterval = setInterval(enviarHeartbeat, 10000);
+            heartbeatInterval = setInterval(enviarHeartbeat, 15000);
         }
 
         function enviarHeartbeat() {
@@ -273,19 +271,15 @@
             
             if (semLeitura > 60 && scanner && restartCount < 5) {
                 restartCount++;
-                log('🔄 Sem leitura há ' + Math.round(semLeitura) + 's — reiniciando scanner (#' + restartCount + ')');
+                log('🔄 Sem leitura há ' + Math.round(semLeitura) + 's — reiniciando (#' + restartCount + ')');
                 
                 scanner.stop().then(function() {
-                    setTimeout(function() {
-                        initReader();
-                    }, 1000);
+                    setTimeout(function() { initReader(); }, 1000);
                 }).catch(function() {
-                    setTimeout(function() {
-                        initReader();
-                    }, 1000);
+                    setTimeout(function() { initReader(); }, 1000);
                 });
             }
-        }, 30000); // Verifica a cada 30s
+        }, 30000);
 
         // ============================================================
         // PARSER PARA FORMATO DO FACTORYTALK
@@ -380,36 +374,45 @@
                 };
             }
 
-            // Duplicatas — aceita se passaram > 10s
+            // Duplicatas — aceita se passaram > 5s
             var checkStr = '';
             for (var j = 0; j < tags.length; j++) {
                 checkStr += tags[j].id + ':' + tags[j].v + ';';
             }
             var agora = Date.now();
-            if (checkStr === lastData && (agora - lastDataTime) < 10000) {
+            if (checkStr === lastData && (agora - lastDataTime) < 5000) {
                 return;
             }
             lastData = checkStr;
             lastDataTime = agora;
-            lastReadTimestamp = agora; // Reset do auto-restart
-            restartCount = 0; // Reset do contador de restarts
+            lastReadTimestamp = agora;
+            restartCount = 0;
 
-            // Enviar para Firebase
+            // Enviar para Firebase — UPDATE (merge, não sobrescreve)
             log('☁️ Enviando...');
             db.ref('current').update(dadosFirebase)
-                .then(function() { log('✅ current OK!'); })
-                .catch(function(e) { log('❌ ' + e.message); });
+                .then(function() {
+                    log('✅ current OK!');
+                    // HEARTBEAT junto com leitura bem-sucedida
+                    readCount++;
+                    document.getElementById('read-count').textContent = readCount;
+                    db.ref('leitor_status').update({
+                        lastHeartbeat: Date.now(),
+                        leituras: readCount,
+                        uptime: Math.floor((Date.now() - startTime) / 1000)
+                    });
+                })
+                .catch(function(e) {
+                    log('❌ ' + e.message);
+                });
             
             db.ref('history').push().set(dadosFirebase)
-                .then(function() { log('✅ history OK!'); })
                 .catch(function(e) { log('❌ history: ' + e.message); });
 
             // UI
-            readCount++;
-            document.getElementById('read-count').textContent = readCount;
             document.getElementById('vars-count').textContent = tags.length;
             document.getElementById('last-read').textContent = 'Última: ' + dadosFirebase._readAt;
-            document.getElementById('status').textContent = '✅ #' + readCount + ' | ' + tags.length + ' vars';
+            document.getElementById('status').textContent = '✅ #' + (readCount + 1) + ' | ' + tags.length + ' vars';
             document.getElementById('status-bar').classList.add('pulse');
             setTimeout(function() { 
                 document.getElementById('status-bar').classList.remove('pulse');
@@ -418,7 +421,7 @@
         }
 
         // ============================================================
-        // INICIAR LEITOR — OTIMIZADO PARA CÂMERA FRACA
+        // INICIAR LEITOR
         // ============================================================
         function initReader() {
             log('📷 Iniciando câmera...');
@@ -426,14 +429,9 @@
 
             scanner = new Html5Qrcode("reader");
 
-            // CONFIG OTIMIZADA PARA CÂMERA FRACA:
-            // - fps: 3 → mais tempo pra processar cada frame
-            // - qrbox menor → menos pixels pra analisar
-            // - experimentalFeatures → usa BarcodeDetector nativo se disponível
             var config = {
-                fps: 3,
+                fps: 5,
                 qrbox: function(viewfinderWidth, viewfinderHeight) {
-                    // 95% da tela
                     var w = Math.floor(viewfinderWidth * 0.95);
                     var h = Math.floor(viewfinderHeight * 0.95);
                     return { width: w, height: h };
@@ -452,25 +450,25 @@
                 },
                 function() {}
             ).then(function() {
-                log('✅ Câmera OK! (fps=3, qrbox=95%)');
+                log('✅ Câmera OK! (fps=5, qrbox=95%)');
                 document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
                 lastReadTimestamp = Date.now();
             }).catch(function(err) {
                 log('❌ Câmera erro: ' + err);
                 log('🔄 Fallback...');
-                // Fallback: sem qrbox, fps ainda mais baixo
                 scanner.start(
                     { facingMode: "environment" },
                     { 
-                        fps: 2,
-                        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+                        fps: 3,
+                        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+                        experimentalFeatures: { useBarCodeDetectorIfSupported: true }
                     },
                     function(decodedText) {
                         processQR(decodedText);
                     },
                     function() {}
                 ).then(function() {
-                    log('✅ Fallback OK! (fps=2, sem qrbox)');
+                    log('✅ Fallback OK! (fps=3)');
                     document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
                     lastReadTimestamp = Date.now();
                 }).catch(function(err2) {
