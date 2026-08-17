@@ -37,6 +37,31 @@
             padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.7em;
         }
 
+        /* TOOLBAR */
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            padding: 8px 14px;
+            background: #0d1117;
+            border-bottom: 1px solid #1a1f3a;
+        }
+        .toolbar button {
+            background: #1a2035;
+            color: #4fc3f7;
+            border: 1px solid #2a3050;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.72em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .toolbar button:hover { background: #2a3050; }
+        .toolbar button.active {
+            background: #4fc3f7;
+            color: #000;
+            border-color: #4fc3f7;
+        }
+
         .leitor-status {
             display: flex; align-items: center; justify-content: space-between;
             padding: 8px 14px; background: #0d1117;
@@ -101,11 +126,17 @@
 </head>
 <body>
     <div class="header">
-        <h1> Utilidades</h1>
+        <h1>🏭 Utilidades - Mondelēz</h1>
         <div class="header-right">
             <span class="connection" id="conn-status">● Conectado</span>
             <button class="btn-logout" onclick="logout()">Sair</button>
         </div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+        <button onclick="abrirMiniWidget()" id="btn-widget">📌 Mini Widget</button>
+        <button onclick="toggleNotificacoes()" id="btn-notif">🔔 Ativar Alertas</button>
     </div>
 
     <div class="leitor-status" id="leitor-bar">
@@ -179,15 +210,22 @@
 
         var historico = {};
         var MAX_HIST = 30;
+        var notificacoesAtivas = false;
+        var alarmesAtivos = {}; // Evita notificação repetida
+        var miniWidgetWindow = null;
+        var ultimosDados = null;
 
         function initDashboard() {
             db.ref('current').on('value', function(snapshot) {
                 var data = snapshot.val();
                 if (!data) return;
                 
+                ultimosDados = data;
                 atualizarHistorico(data);
                 renderCards(data);
                 updateConnectionStatus(true);
+                verificarAlarmes(data);
+                atualizarMiniWidget(data);
                 
                 document.getElementById('last-update').textContent = 
                     '🔄 Última atualização: ' + (data._readAt || new Date().toLocaleString('pt-BR'));
@@ -202,7 +240,229 @@
             });
         }
 
-        // ============ STATUS DO LEITOR (tolerância 60s) ============
+        // ============================================================
+        // NOTIFICAÇÕES DE ALARME
+        // ============================================================
+        function toggleNotificacoes() {
+            var btn = document.getElementById('btn-notif');
+            
+            if (notificacoesAtivas) {
+                notificacoesAtivas = false;
+                btn.textContent = '🔔 Ativar Alertas';
+                btn.classList.remove('active');
+                return;
+            }
+
+            // Pedir permissão
+            if (!('Notification' in window)) {
+                alert('Seu navegador não suporta notificações.');
+                return;
+            }
+
+            if (Notification.permission === 'granted') {
+                notificacoesAtivas = true;
+                btn.textContent = '🔕 Desativar Alertas';
+                btn.classList.add('active');
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(function(permission) {
+                    if (permission === 'granted') {
+                        notificacoesAtivas = true;
+                        btn.textContent = '🔕 Desativar Alertas';
+                        btn.classList.add('active');
+                        new Notification('✅ Alertas ativados', {
+                            body: 'Você será notificado quando um valor sair dos limites.',
+                            icon: '🏭'
+                        });
+                    }
+                });
+            } else {
+                alert('Notificações bloqueadas. Libere nas configurações do navegador.');
+            }
+        }
+
+        function verificarAlarmes(data) {
+            if (!notificacoesAtivas) return;
+
+            var keys = Object.keys(data);
+            for (var i = 0; i < keys.length; i++) {
+                var key = keys[i];
+                if (key.startsWith('_')) continue;
+                
+                var val = data[key];
+                var valor = null;
+                if (val && typeof val === 'object' && 'v' in val) { valor = val.v; }
+                else if (typeof val === 'number') { valor = val; }
+                if (valor === null) continue;
+
+                var cfg = tagConfig[key];
+                if (!cfg) continue;
+
+                var nome = cfg.nome || key;
+                var emAlarme = false;
+                var msg = '';
+
+                if (cfg.limiteAlto !== null && cfg.limiteAlto !== undefined && valor > cfg.limiteAlto) {
+                    emAlarme = true;
+                    msg = nome + ': ' + valor.toFixed(1) + ' (limite alto: ' + cfg.limiteAlto + ')';
+                }
+                if (cfg.limiteBaixo !== null && cfg.limiteBaixo !== undefined && valor < cfg.limiteBaixo) {
+                    emAlarme = true;
+                    msg = nome + ': ' + valor.toFixed(1) + ' (limite baixo: ' + cfg.limiteBaixo + ')';
+                }
+
+                if (emAlarme && !alarmesAtivos[key]) {
+                    // Novo alarme — notificar
+                    alarmesAtivos[key] = true;
+                    enviarNotificacao('🚨 ALARME - Utilidades', msg);
+                } else if (!emAlarme && alarmesAtivos[key]) {
+                    // Saiu do alarme — notificar normalização
+                    delete alarmesAtivos[key];
+                    enviarNotificacao('✅ Normalizado', nome + ': ' + valor.toFixed(1));
+                }
+            }
+        }
+
+        function enviarNotificacao(titulo, corpo) {
+            if (Notification.permission === 'granted') {
+                new Notification(titulo, {
+                    body: corpo,
+                    icon: titulo.includes('ALARME') ? '🚨' : '✅',
+                    tag: 'utilidades-alarme',
+                    requireInteraction: true
+                });
+            }
+        }
+
+        // ============================================================
+        // MINI WIDGET (POPUP)
+        // ============================================================
+        function abrirMiniWidget() {
+            // Fecha se já está aberto
+            if (miniWidgetWindow && !miniWidgetWindow.closed) {
+                miniWidgetWindow.focus();
+                return;
+            }
+
+            var largura = 300;
+            var altura = 500;
+            var esquerda = screen.width - largura - 20;
+            var topo = 50;
+
+            miniWidgetWindow = window.open('', 'mini_widget',
+                'width=' + largura + ',height=' + altura +
+                ',left=' + esquerda + ',top=' + topo +
+                ',resizable=yes,scrollbars=yes,toolbar=no,menubar=no,location=no,status=no'
+            );
+
+            if (!miniWidgetWindow) {
+                alert('Popup bloqueado! Permita popups para este site.');
+                return;
+            }
+
+            var doc = miniWidgetWindow.document;
+            doc.open();
+            doc.write('<!DOCTYPE html><html><head><title>🏭 Mini Widget</title>');
+            doc.write('<style>');
+            doc.write('* { margin: 0; padding: 0; box-sizing: border-box; }');
+            doc.write('body { font-family: -apple-system, sans-serif; background: #0a0e1a; color: #e0e0e0; padding: 8px; font-size: 12px; }');
+            doc.write('.header { text-align: center; color: #4fc3f7; font-size: 11px; padding: 6px 0; border-bottom: 1px solid #2a2f45; margin-bottom: 6px; font-weight: 600; }');
+            doc.write('.item { display: flex; justify-content: space-between; align-items: center; padding: 5px 8px; border-radius: 4px; margin-bottom: 3px; background: #141929; }');
+            doc.write('.item.alarm { background: #1a1015; border-left: 2px solid #ef5350; }');
+            doc.write('.item .nome { color: #888; font-size: 10px; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }');
+            doc.write('.item .valor { font-weight: 700; color: #fff; font-size: 13px; }');
+            doc.write('.item.alarm .valor { color: #ef5350; }');
+            doc.write('.item .unidade { color: #555; font-size: 9px; margin-left: 2px; }');
+            doc.write('.grupo { color: #4fc3f7; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 4px 2px; font-weight: 600; }');
+            doc.write('.update { text-align: center; color: #444; font-size: 9px; padding: 4px; margin-top: 6px; }');
+            doc.write('</style></head><body>');
+            doc.write('<div class="header">🏭 Utilidades - Mondelēz</div>');
+            doc.write('<div id="widget-content">Aguardando dados...</div>');
+            doc.write('<div class="update" id="widget-update"></div>');
+            doc.write('</body></html>');
+            doc.close();
+
+            // Atualizar imediatamente se já tem dados
+            if (ultimosDados) {
+                setTimeout(function() { atualizarMiniWidget(ultimosDados); }, 200);
+            }
+
+            document.getElementById('btn-widget').classList.add('active');
+
+            // Detectar quando fecha
+            var checkClosed = setInterval(function() {
+                if (miniWidgetWindow && miniWidgetWindow.closed) {
+                    clearInterval(checkClosed);
+                    miniWidgetWindow = null;
+                    document.getElementById('btn-widget').classList.remove('active');
+                }
+            }, 1000);
+        }
+
+        function atualizarMiniWidget(data) {
+            if (!miniWidgetWindow || miniWidgetWindow.closed) return;
+
+            var doc = miniWidgetWindow.document;
+            var container = doc.getElementById('widget-content');
+            if (!container) return;
+
+            var vars = [];
+            var keys = Object.keys(data);
+            for (var i = 0; i < keys.length; i++) {
+                var key = keys[i];
+                if (key.startsWith('_')) continue;
+                var val = data[key];
+                if (val && typeof val === 'object' && 'v' in val) {
+                    vars.push({ id: key, nome: val.nome || key, v: val.v, u: val.u || '' });
+                } else if (typeof val === 'number') {
+                    vars.push({ id: key, nome: key, v: val, u: '' });
+                }
+            }
+
+            var gruposOrdem = ['temp', 'ar', 'agua', 'vapor', 'qualidade', 'outro'];
+            var agrupados = {};
+            for (var j = 0; j < vars.length; j++) {
+                var v = vars[j];
+                var cfg = tagConfig[v.id];
+                var grupo = cfg ? cfg.grupo : 'outro';
+                if (!agrupados[grupo]) agrupados[grupo] = [];
+                agrupados[grupo].push(v);
+            }
+
+            var html = '';
+            for (var g = 0; g < gruposOrdem.length; g++) {
+                var grupoKey = gruposOrdem[g];
+                var items = agrupados[grupoKey];
+                if (!items || items.length === 0) continue;
+
+                html += '<div class="grupo">' + (grupos[grupoKey] || '📌 Outros') + '</div>';
+
+                for (var k = 0; k < items.length; k++) {
+                    var item = items[k];
+                    var cfg2 = tagConfig[item.id] || {};
+                    var nome = cfg2.nome || item.nome;
+                    var valor = item.v;
+                    var alarme = false;
+
+                    if (cfg2.limiteAlto !== null && cfg2.limiteAlto !== undefined && valor > cfg2.limiteAlto) alarme = true;
+                    if (cfg2.limiteBaixo !== null && cfg2.limiteBaixo !== undefined && valor < cfg2.limiteBaixo) alarme = true;
+
+                    html += '<div class="item' + (alarme ? ' alarm' : '') + '">';
+                    html += '<span class="nome">' + nome + '</span>';
+                    html += '<span class="valor">' + (typeof valor === 'number' ? valor.toFixed(1) : valor);
+                    html += '<span class="unidade">' + item.u + '</span></span>';
+                    html += '</div>';
+                }
+            }
+
+            container.innerHTML = html;
+
+            var updateEl = doc.getElementById('widget-update');
+            if (updateEl) {
+                updateEl.textContent = '🔄 ' + (data._readAt || new Date().toLocaleTimeString('pt-BR'));
+            }
+        }
+
+        // ============ STATUS DO LEITOR ============
         function atualizarStatusLeitor(data) {
             var dot = document.getElementById('leitor-dot');
             var label = document.getElementById('leitor-label');
@@ -221,7 +481,6 @@
             var ultimoHeartbeat = data.lastHeartbeat || 0;
             var diffSegundos = (agora - ultimoHeartbeat) / 1000;
 
-            // Tolerância aumentada para 60 segundos
             if (data.ativo && diffSegundos < 60) {
                 dot.className = 'leitor-dot';
                 label.textContent = 'Leitor: online';
@@ -398,7 +657,6 @@
 
             if (valores.length < 2) return;
 
-            // Escala fixa
             var min, max;
             if (cfg.escalaMin !== undefined && cfg.escalaMax !== undefined) {
                 min = cfg.escalaMin;
@@ -417,7 +675,7 @@
                 return h - padding - ((clamped - min) / range) * (h - padding * 2);
             }
 
-            // Linha limite ALTO
+            // Limite ALTO
             if (cfg.limiteAlto !== null && cfg.limiteAlto !== undefined) {
                 var yAlto = valToY(cfg.limiteAlto);
                 ctx.strokeStyle = 'rgba(239, 83, 80, 0.4)';
@@ -430,7 +688,7 @@
                 ctx.setLineDash([]);
             }
 
-            // Linha limite BAIXO
+            // Limite BAIXO
             if (cfg.limiteBaixo !== null && cfg.limiteBaixo !== undefined) {
                 var yBaixo = valToY(cfg.limiteBaixo);
                 ctx.strokeStyle = 'rgba(255, 167, 38, 0.4)';
@@ -443,7 +701,7 @@
                 ctx.setLineDash([]);
             }
 
-            // Área preenchida
+            // Área
             ctx.beginPath();
             for (var i = 0; i < valores.length; i++) {
                 var x = (i / (valores.length - 1)) * w;
@@ -457,7 +715,7 @@
             ctx.fillStyle = alarme ? 'rgba(239, 83, 80, 0.12)' : 'rgba(79, 195, 247, 0.12)';
             ctx.fill();
 
-            // Linha principal
+            // Linha
             ctx.beginPath();
             for (var j = 0; j < valores.length; j++) {
                 var px = (j / (valores.length - 1)) * w;
