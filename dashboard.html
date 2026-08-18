@@ -91,17 +91,29 @@
         }
         .card-row:hover { background: #1a2035; }
 
-        /* ALARME ALTO — Vermelho */
-        .card-row.alarm-high { border-left-color: #ef5350; background: #1a1015; }
-        .card-row.alarm-high:hover { background: #251520; }
-        .card-row.alarm-high .card-valor { color: #ef5350; }
-        .card-row.alarm-high .card-nome { color: #ef9a9a; }
+        /* ALARME VERMELHO (crítico) */
+        .card-row.alarm-red { border-left-color: #ef5350; background: #1a1015; }
+        .card-row.alarm-red:hover { background: #251520; }
+        .card-row.alarm-red .card-valor { color: #ef5350; }
+        .card-row.alarm-red .card-nome { color: #ef9a9a; }
 
-        /* ALARME BAIXO — Azul/Ciano frio */
-        .card-row.alarm-low { border-left-color: #42a5f5; background: #0d1520; }
-        .card-row.alarm-low:hover { background: #122030; }
-        .card-row.alarm-low .card-valor { color: #42a5f5; }
-        .card-row.alarm-low .card-nome { color: #90caf9; }
+        /* ALARME AZUL (atenção) */
+        .card-row.alarm-blue { border-left-color: #42a5f5; background: #0d1520; }
+        .card-row.alarm-blue:hover { background: #122030; }
+        .card-row.alarm-blue .card-valor { color: #42a5f5; }
+        .card-row.alarm-blue .card-nome { color: #90caf9; }
+
+        /* ALARME LARANJA (aviso) */
+        .card-row.alarm-orange { border-left-color: #ffa726; background: #1a1508; }
+        .card-row.alarm-orange:hover { background: #252010; }
+        .card-row.alarm-orange .card-valor { color: #ffa726; }
+        .card-row.alarm-orange .card-nome { color: #ffcc80; }
+
+        /* ALARME AMARELO (leve) */
+        .card-row.alarm-yellow { border-left-color: #ffee58; background: #1a1a08; }
+        .card-row.alarm-yellow:hover { background: #252510; }
+        .card-row.alarm-yellow .card-valor { color: #ffee58; }
+        .card-row.alarm-yellow .card-nome { color: #fff9c4; }
 
         .card-info { flex-shrink: 0; min-width: fit-content; padding-right: 8px; }
 
@@ -187,35 +199,38 @@
         });
 
         // ============ CONFIGURAÇÃO DAS TAGS (24 variáveis) ============
+        // corAlto / corBaixo: "red", "blue", "orange", "yellow"
+        // red = crítico | blue = atenção | orange = aviso | yellow = leve
         var tagConfig = {
-            "TO8001_2_3_4": { nome: "Torres C.A.G.", grupo: "temp", limiteAlto: 32, limiteBaixo: null, escalaMin: 20, escalaMax: 35 },
-            "TO8006_Retorno": { nome: "Torre Wafer", grupo: "temp", limiteAlto: 35, limiteBaixo: null, escalaMin: 25, escalaMax: 40 },
-            "CH8007": { nome: "Chiller 8007", grupo: "temp", limiteAlto: 2, limiteBaixo: -5, escalaMin: -8, escalaMax: 5 },
-            "CH8008": { nome: "Chiller 8008", grupo: "temp", limiteAlto: 2, limiteBaixo: -5, escalaMin: -8, escalaMax: 5 },
-            "CH8011_14": { nome: "Chillers 8011/14", grupo: "temp", limiteAlto: 2, limiteBaixo: -5, escalaMin: -8, escalaMax: 5 },
-            "CV8004_Retorno": { nome: "Sala de gordura", grupo: "temp", limiteAlto: 50, limiteBaixo: null, escalaMin: 35, escalaMax: 55 },
-            "Agua_6C": { nome: "Água Gelada 6°C", grupo: "agua", limiteAlto: 8, limiteBaixo: null, escalaMin: 3, escalaMax: 10 },
-            "Temperatura_Ar_Comp_Chocolate": { nome: "Temp Ar Choco", grupo: "qualidade", limiteAlto: 50, limiteBaixo: null, escalaMin: 25, escalaMax: 60 },
-            "Temperatura_Ar_Comp_BG": { nome: "Temp Ar B&G", grupo: "qualidade", limiteAlto: 50, limiteBaixo: null, escalaMin: 25, escalaMax: 60 },
+            "TO8001_2_3_4":   { nome: "Torres C.A.G.",       grupo: "temp",  limiteAlto: 32, limiteBaixo: null, escalaMin: 20, escalaMax: 35, corAlto: "red", corBaixo: null },
+            "TO8006_Retorno": { nome: "Torre Wafer",         grupo: "temp",  limiteAlto: 35, limiteBaixo: null, escalaMin: 25, escalaMax: 40, corAlto: "red", corBaixo: null },
+            "CH8007":         { nome: "Chiller 8007",        grupo: "temp",  limiteAlto: 2,  limiteBaixo: -5,   escalaMin: -8, escalaMax: 5,  corAlto: "red", corBaixo: "blue" },
+            "CH8008":         { nome: "Chiller 8008",        grupo: "temp",  limiteAlto: 2,  limiteBaixo: -5,   escalaMin: -8, escalaMax: 5,  corAlto: "red", corBaixo: "blue" },
+            "CH8011_14":      { nome: "Chillers 8011/14",    grupo: "temp",  limiteAlto: 2,  limiteBaixo: -5,   escalaMin: -8, escalaMax: 5,  corAlto: "red", corBaixo: "blue" },
+            "CV8004_Retorno": { nome: "Sala de gordura",     grupo: "temp",  limiteAlto: 50, limiteBaixo: null, escalaMin: 35, escalaMax: 55, corAlto: "red", corBaixo: null },
+            "Agua_6C":        { nome: "Água Gelada 6°C",     grupo: "agua",  limiteAlto: 8,  limiteBaixo: null, escalaMin: 3,  escalaMax: 10, corAlto: "red", corBaixo: null },
 
-            "Temperatura_Sala_Cura_Bubba": { nome: "Sala Cura Bubba", grupo: "cura", limiteAlto: 17, limiteBaixo: 13, escalaMin: 8, escalaMax: 22 },
-            "Temperatura_Sala_Cura_Chiclets": { nome: "Sala Cura Chiclets", grupo: "cura", limiteAlto: 14, limiteBaixo: 10, escalaMin: 8, escalaMax: 22 },
-            "Temperatura_Sala_Cura_Trident": { nome: "Sala Cura Trident", grupo: "cura", limiteAlto: 15, limiteBaixo: 10, escalaMin: 8, escalaMax: 22 },
-            "Umidade_Sala_Cura_Bubba": { nome: "Umid. Cura Bubba", grupo: "cura", limiteAlto: 35, limiteBaixo: 30, escalaMin: 15, escalaMax: 45 },
-            "Umidade_Sala_Cura_Chiclets": { nome: "Umid. Cura Chiclets", grupo: "cura", limiteAlto: 35, limiteBaixo: 30, escalaMin: 15, escalaMax: 45 },
-            "Umidade_Sala_Cura_Trident": { nome: "Umid. Cura Trident", grupo: "cura", limiteAlto: 35, limiteBaixo: 30, escalaMin: 15, escalaMax: 45 },
+            "Temperatura_Ar_Comp_Chocolate": { nome: "Temp Ar Choco",  grupo: "qualidade", limiteAlto: 50, limiteBaixo: null, escalaMin: 25, escalaMax: 60, corAlto: "orange", corBaixo: null },
+            "Temperatura_Ar_Comp_BG":        { nome: "Temp Ar B&G",    grupo: "qualidade", limiteAlto: 50, limiteBaixo: null, escalaMin: 25, escalaMax: 60, corAlto: "orange", corBaixo: null },
 
-            "Ar_Comp_DM": { nome: "Ar Comp Dry Mix", grupo: "ar", limiteAlto: null, limiteBaixo: 5.5, escalaMin: 4, escalaMax: 8 },
-            "Ar_Comp_DM_Boge": { nome: "Ar Comp Boge", grupo: "ar", limiteAlto: null, limiteBaixo: 5.0, escalaMin: 4, escalaMax: 8 },
-            "Ar_Comp_Choco": { nome: "Ar Comp Chocolate", grupo: "ar", limiteAlto: null, limiteBaixo: 5.5, escalaMin: 4, escalaMax: 8 },
-            "Vacuo_Dry_Mix": { nome: "Vácuo Dry Mix", grupo: "ar", limiteAlto: null, limiteBaixo: 15, escalaMin: 10, escalaMax: 30 },
+            "Temperatura_Sala_Cura_Bubba":    { nome: "Sala Cura Bubba",    grupo: "cura", limiteAlto: 17, limiteBaixo: 13, escalaMin: 8, escalaMax: 22, corAlto: "red", corBaixo: "blue" },
+            "Temperatura_Sala_Cura_Chiclets": { nome: "Sala Cura Chiclets", grupo: "cura", limiteAlto: 14, limiteBaixo: 10, escalaMin: 8, escalaMax: 22, corAlto: "red", corBaixo: "blue" },
+            "Temperatura_Sala_Cura_Trident":  { nome: "Sala Cura Trident",  grupo: "cura", limiteAlto: 15, limiteBaixo: 10, escalaMin: 8, escalaMax: 22, corAlto: "red", corBaixo: "blue" },
+            "Umidade_Sala_Cura_Bubba":        { nome: "Umid. Cura Bubba",    grupo: "cura", limiteAlto: 35, limiteBaixo: 30, escalaMin: 15, escalaMax: 45, corAlto: "red", corBaixo: "blue" },
+            "Umidade_Sala_Cura_Chiclets":     { nome: "Umid. Cura Chiclets", grupo: "cura", limiteAlto: 35, limiteBaixo: 30, escalaMin: 15, escalaMax: 45, corAlto: "red", corBaixo: "blue" },
+            "Umidade_Sala_Cura_Trident":      { nome: "Umid. Cura Trident",  grupo: "cura", limiteAlto: 35, limiteBaixo: 30, escalaMin: 15, escalaMax: 45, corAlto: "red", corBaixo: "blue" },
 
-            "Pressao_Cavalete_BG": { nome: "Pressão Cavalete B&G", grupo: "vapor", limiteAlto: null, limiteBaixo: 10, escalaMin: 8, escalaMax: 15 },
-            "Pressao_Vapor_Choco": { nome: "Pressão Vapor Choco", grupo: "vapor", limiteAlto: null, limiteBaixo: 5, escalaMin: 3, escalaMax: 10 },
-            "Nivel_TQ_CD8006_7": { nome: "Nível TQ CD8006/7", grupo: "vapor", limiteAlto: null, limiteBaixo: 40, escalaMin: 20, escalaMax: 100 },
+            "Ar_Comp_DM":      { nome: "Ar Comp Dry Mix",    grupo: "ar", limiteAlto: null, limiteBaixo: 5.5, escalaMin: 4, escalaMax: 8,  corAlto: null, corBaixo: "red" },
+            "Ar_Comp_DM_Boge": { nome: "Ar Comp Boge",       grupo: "ar", limiteAlto: null, limiteBaixo: 5.0, escalaMin: 4, escalaMax: 8,  corAlto: null, corBaixo: "red" },
+            "Ar_Comp_Choco":   { nome: "Ar Comp Chocolate",  grupo: "ar", limiteAlto: null, limiteBaixo: 5.5, escalaMin: 4, escalaMax: 8,  corAlto: null, corBaixo: "red" },
+            "Vacuo_Dry_Mix":   { nome: "Vácuo Dry Mix",      grupo: "ar", limiteAlto: null, limiteBaixo: 15,  escalaMin: 10, escalaMax: 30, corAlto: null, corBaixo: "red" },
 
-            "Umidade_Ar_Comp_Chocolate": { nome: "Umidade Ar Choco", grupo: "qualidade", limiteAlto: 25, limiteBaixo: null, escalaMin: 0, escalaMax: 35 },
-            "Umidade_Ar_Comp_BG": { nome: "Umidade Ar B&G", grupo: "qualidade", limiteAlto: 25, limiteBaixo: null, escalaMin: 0, escalaMax: 35 }
+            "Pressao_Cavalete_BG": { nome: "Pressão Cavalete B&G", grupo: "vapor", limiteAlto: null, limiteBaixo: 10, escalaMin: 8,  escalaMax: 15,  corAlto: null, corBaixo: "red" },
+            "Pressao_Vapor_Choco": { nome: "Pressão Vapor Choco",  grupo: "vapor", limiteAlto: null, limiteBaixo: 5,  escalaMin: 3,  escalaMax: 10,  corAlto: null, corBaixo: "red" },
+            "Nivel_TQ_CD8006_7":   { nome: "Nível TQ CD8006/7",    grupo: "vapor", limiteAlto: null, limiteBaixo: 40, escalaMin: 20, escalaMax: 100, corAlto: null, corBaixo: "red" },
+
+            "Umidade_Ar_Comp_Chocolate": { nome: "Umidade Ar Choco", grupo: "qualidade", limiteAlto: 25, limiteBaixo: null, escalaMin: 0, escalaMax: 35, corAlto: "red", corBaixo: null },
+            "Umidade_Ar_Comp_BG":        { nome: "Umidade Ar B&G",   grupo: "qualidade", limiteAlto: 25, limiteBaixo: null, escalaMin: 0, escalaMax: 35, corAlto: "red", corBaixo: null }
         };
 
         var grupos = {
@@ -225,6 +240,14 @@
             "agua": "Água",
             "vapor": "Vapor / Pressão",
             "qualidade": "Qualidade do Ar"
+        };
+
+        // Mapa de cores → valores CSS
+        var corMap = {
+            "red":    { linha: '#ef5350', fill: 'rgba(239, 83, 80, 0.12)', classe: 'alarm-red' },
+            "blue":   { linha: '#42a5f5', fill: 'rgba(66, 165, 245, 0.12)', classe: 'alarm-blue' },
+            "orange": { linha: '#ffa726', fill: 'rgba(255, 167, 38, 0.12)', classe: 'alarm-orange' },
+            "yellow": { linha: '#ffee58', fill: 'rgba(255, 238, 88, 0.12)', classe: 'alarm-yellow' }
         };
 
         var historico = {};
@@ -258,6 +281,24 @@
             db.ref('.info/connected').on('value', function(snap) {
                 updateConnectionStatus(snap.val());
             });
+        }
+
+        // ============ DETERMINAR COR DO ALARME ============
+        function getAlarmInfo(tagId, valor) {
+            var cfg = tagConfig[tagId];
+            if (!cfg) return { tipo: 'none', cor: null };
+
+            // Verifica limite alto
+            if (cfg.limiteAlto !== null && cfg.limiteAlto !== undefined && valor > cfg.limiteAlto) {
+                var cor = cfg.corAlto || 'red'; // default: red
+                return { tipo: 'high', cor: cor };
+            }
+            // Verifica limite baixo
+            if (cfg.limiteBaixo !== null && cfg.limiteBaixo !== undefined && valor < cfg.limiteBaixo) {
+                var cor2 = cfg.corBaixo || 'blue'; // default: blue
+                return { tipo: 'low', cor: cor2 };
+            }
+            return { tipo: 'none', cor: null };
         }
 
         // ============ NOTIFICAÇÕES ============
@@ -299,22 +340,18 @@
                 var cfg = tagConfig[key];
                 if (!cfg) continue;
                 var nome = cfg.nome || key;
-                var emAlarme = false;
-                var tipo = '';
-                var msg = '';
-                if (cfg.limiteAlto !== null && cfg.limiteAlto !== undefined && valor > cfg.limiteAlto) {
-                    emAlarme = true;
-                    tipo = 'high';
-                    msg = '🔴 ' + nome + ': ' + valor.toFixed(1) + ' (limite alto: ' + cfg.limiteAlto + ')';
-                }
-                if (cfg.limiteBaixo !== null && cfg.limiteBaixo !== undefined && valor < cfg.limiteBaixo) {
-                    emAlarme = true;
-                    tipo = 'low';
-                    msg = '🔵 ' + nome + ': ' + valor.toFixed(1) + ' (limite baixo: ' + cfg.limiteBaixo + ')';
-                }
+
+                var alarm = getAlarmInfo(key, valor);
+                var emAlarme = alarm.tipo !== 'none';
+
                 if (emAlarme && !alarmesAtivos[key]) {
-                    alarmesAtivos[key] = tipo;
-                    enviarNotificacao(tipo === 'high' ? '🔴 ALARME ALTO' : '🔵 ALARME BAIXO', msg);
+                    alarmesAtivos[key] = alarm.cor;
+                    var icone = alarm.cor === 'red' ? '🔴' : alarm.cor === 'blue' ? '🔵' : alarm.cor === 'orange' ? '🟠' : '🟡';
+                    var direcao = alarm.tipo === 'high' ? 'alto' : 'baixo';
+                    var limite = alarm.tipo === 'high' ? cfg.limiteAlto : cfg.limiteBaixo;
+                    var msg = icone + ' ' + nome + ': ' + valor.toFixed(1) + ' (limite ' + direcao + ': ' + limite + ')';
+                    var titulo = alarm.cor === 'red' ? '🚨 ALARME CRÍTICO' : alarm.cor === 'blue' ? '🔵 ALARME ATENÇÃO' : '⚠️ AVISO';
+                    enviarNotificacao(titulo, msg);
                 } else if (!emAlarme && alarmesAtivos[key]) {
                     delete alarmesAtivos[key];
                     enviarNotificacao('✅ Normalizado', nome + ': ' + valor.toFixed(1));
@@ -334,12 +371,16 @@
             'body { font-family: -apple-system, sans-serif; background: #0a0e1a; color: #e0e0e0; padding: 8px; font-size: 12px; overflow-y: auto; }',
             '.header { text-align: center; color: #4fc3f7; font-size: 11px; padding: 6px 0; border-bottom: 1px solid #2a2f45; margin-bottom: 6px; font-weight: 600; }',
             '.item { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; border-radius: 4px; margin-bottom: 2px; background: #141929; }',
-            '.item.alarm-high { background: #1a1015; border-left: 2px solid #ef5350; }',
-            '.item.alarm-low { background: #0d1520; border-left: 2px solid #42a5f5; }',
+            '.item.alarm-red { background: #1a1015; border-left: 2px solid #ef5350; }',
+            '.item.alarm-blue { background: #0d1520; border-left: 2px solid #42a5f5; }',
+            '.item.alarm-orange { background: #1a1508; border-left: 2px solid #ffa726; }',
+            '.item.alarm-yellow { background: #1a1a08; border-left: 2px solid #ffee58; }',
             '.item .nome { color: #888; font-size: 10px; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
             '.item .valor { font-weight: 700; color: #fff; font-size: 12px; }',
-            '.item.alarm-high .valor { color: #ef5350; }',
-            '.item.alarm-low .valor { color: #42a5f5; }',
+            '.item.alarm-red .valor { color: #ef5350; }',
+            '.item.alarm-blue .valor { color: #42a5f5; }',
+            '.item.alarm-orange .valor { color: #ffa726; }',
+            '.item.alarm-yellow .valor { color: #ffee58; }',
             '.item .unidade { color: #555; font-size: 9px; margin-left: 2px; }',
             '.grupo { color: #4fc3f7; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 4px 2px; font-weight: 600; }',
             '.update { text-align: center; color: #444; font-size: 9px; padding: 4px; margin-top: 4px; position: sticky; bottom: 0; background: #0a0e1a; }'
@@ -466,9 +507,8 @@
                     var cfg2 = tagConfig[item.id] || {};
                     var nome = cfg2.nome || item.nome;
                     var valor = item.v;
-                    var alarmClass = '';
-                    if (cfg2.limiteAlto !== null && cfg2.limiteAlto !== undefined && valor > cfg2.limiteAlto) alarmClass = ' alarm-high';
-                    else if (cfg2.limiteBaixo !== null && cfg2.limiteBaixo !== undefined && valor < cfg2.limiteBaixo) alarmClass = ' alarm-low';
+                    var alarm = getAlarmInfo(item.id, valor);
+                    var alarmClass = alarm.cor ? ' ' + corMap[alarm.cor].classe : '';
                     html += '<div class="item' + alarmClass + '">';
                     html += '<span class="nome">' + nome + '</span>';
                     html += '<span class="valor">' + (typeof valor === 'number' ? valor.toFixed(1) : valor);
@@ -576,13 +616,13 @@
             for (var i = 0; i < canvases.length; i++) {
                 var canvas = canvases[i];
                 var tagId = canvas.getAttribute('data-tag');
-                var alarmType = canvas.getAttribute('data-alarm-type');
+                var alarmCor = canvas.getAttribute('data-alarm-cor');
                 var hist = historico[tagId] || [];
                 var cfg = tagConfig[tagId] || {};
                 var rect = canvas.parentElement.getBoundingClientRect();
                 canvas.width = Math.floor(rect.width * 2);
                 canvas.height = Math.floor(rect.height * 2);
-                if (hist.length >= 2) { desenharSparkline(canvas, hist, alarmType, cfg); }
+                if (hist.length >= 2) { desenharSparkline(canvas, hist, alarmCor, cfg); }
             }
         }
         window.addEventListener('resize', function() { setTimeout(redesenharSparklines, 100); });
@@ -591,9 +631,9 @@
             var cfg = tagConfig[item.id] || {};
             var nome = cfg.nome || item.nome || item.id.replace(/_/g, ' ');
             var valor = item.v; var unidade = item.u;
-            var alarmType = 'none'; // 'none', 'high', 'low'
-            if (cfg.limiteAlto !== null && cfg.limiteAlto !== undefined && valor > cfg.limiteAlto) alarmType = 'high';
-            else if (cfg.limiteBaixo !== null && cfg.limiteBaixo !== undefined && valor < cfg.limiteBaixo) alarmType = 'low';
+
+            var alarm = getAlarmInfo(item.id, valor);
+            var alarmCor = alarm.cor; // null, "red", "blue", "orange", "yellow"
 
             var hist = historico[item.id] || [];
             var tendencia = ''; var tendenciaClass = 'trend-stable';
@@ -605,9 +645,7 @@
             }
 
             var row = document.createElement('div');
-            if (alarmType === 'high') row.className = 'card-row alarm-high';
-            else if (alarmType === 'low') row.className = 'card-row alarm-low';
-            else row.className = 'card-row';
+            row.className = 'card-row' + (alarmCor ? ' ' + corMap[alarmCor].classe : '');
 
             var info = document.createElement('div');
             info.className = 'card-info';
@@ -619,7 +657,7 @@
             sparkDiv.className = 'card-spark';
             var canvas = document.createElement('canvas');
             canvas.setAttribute('data-tag', item.id);
-            canvas.setAttribute('data-alarm-type', alarmType);
+            canvas.setAttribute('data-alarm-cor', alarmCor || 'none');
             sparkDiv.appendChild(canvas);
 
             var labels = document.createElement('div');
@@ -639,7 +677,7 @@
             return row;
         }
 
-        function desenharSparkline(canvas, valores, alarmType, cfg) {
+        function desenharSparkline(canvas, valores, alarmCor, cfg) {
             var ctx = canvas.getContext('2d');
             var w = canvas.width; var h = canvas.height; var padding = 6;
             ctx.clearRect(0, 0, w, h);
@@ -670,14 +708,11 @@
                 ctx.beginPath(); ctx.moveTo(0, valToY(cfg.limiteBaixo)); ctx.lineTo(w, valToY(cfg.limiteBaixo)); ctx.stroke(); ctx.setLineDash([]);
             }
 
-            // Cores baseadas no tipo de alarme
+            // Cores baseadas na cor do alarme configurada
             var corLinha, corFill;
-            if (alarmType === 'high') {
-                corLinha = '#ef5350';
-                corFill = 'rgba(239, 83, 80, 0.12)';
-            } else if (alarmType === 'low') {
-                corLinha = '#42a5f5';
-                corFill = 'rgba(66, 165, 245, 0.12)';
+            if (alarmCor && alarmCor !== 'none' && corMap[alarmCor]) {
+                corLinha = corMap[alarmCor].linha;
+                corFill = corMap[alarmCor].fill;
             } else {
                 corLinha = '#4fc3f7';
                 corFill = 'rgba(79, 195, 247, 0.12)';
