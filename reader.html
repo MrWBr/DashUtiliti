@@ -273,12 +273,18 @@
 
 
         function enviarHeartbeat() {
-            db.ref('leitor_status').update({
-                lastHeartbeat: Date.now(),
-                leituras: readCount,
-                uptime: Math.floor((Date.now() - startTime) / 1000)
-            }).catch(function(){});
+        db.ref('leitor_status').update({
+        ativo: true,                    // ← ADICIONA ISSO
+        lastHeartbeat: Date.now(),
+        leituras: readCount,
+        uptime: Math.floor((Date.now() - startTime) / 1000)
+        }).then(function() {
+        // OK
+        }).catch(function(e) {
+        log('⚠️ Heartbeat falhou: ' + e.message);
+        });
         }
+
 
         // ============================================================
         // AUTO-RESTART: Se não leu em 60s, reinicia o scanner
