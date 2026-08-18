@@ -90,8 +90,18 @@
             gap: 10px; transition: background 0.2s;
         }
         .card-row:hover { background: #1a2035; }
-        .card-row.alarm { border-left-color: #ef5350; background: #1a1015; }
-        .card-row.alarm:hover { background: #251520; }
+
+        /* ALARME ALTO — Vermelho */
+        .card-row.alarm-high { border-left-color: #ef5350; background: #1a1015; }
+        .card-row.alarm-high:hover { background: #251520; }
+        .card-row.alarm-high .card-valor { color: #ef5350; }
+        .card-row.alarm-high .card-nome { color: #ef9a9a; }
+
+        /* ALARME BAIXO — Azul/Ciano frio */
+        .card-row.alarm-low { border-left-color: #42a5f5; background: #0d1520; }
+        .card-row.alarm-low:hover { background: #122030; }
+        .card-row.alarm-low .card-valor { color: #42a5f5; }
+        .card-row.alarm-low .card-nome { color: #90caf9; }
 
         .card-info { flex-shrink: 0; min-width: fit-content; padding-right: 8px; }
 
@@ -101,8 +111,6 @@
                    }
         .card-valor { font-size: 1.3em; font-weight: 700; color: #fff; margin-top: 2px; }
         .card-valor .unidade { font-size: 0.55em; color: #666; font-weight: 400; margin-left: 3px; }
-        .card-row.alarm .card-valor { color: #ef5350; }
-        .card-row.alarm .card-nome { color: #ef9a9a; }
 
         .card-spark { flex: 1; min-width: 60px; height: 50px; position: relative; }
         .card-spark canvas { width: 100%; height: 100%; display: block; }
@@ -292,18 +300,21 @@
                 if (!cfg) continue;
                 var nome = cfg.nome || key;
                 var emAlarme = false;
+                var tipo = '';
                 var msg = '';
                 if (cfg.limiteAlto !== null && cfg.limiteAlto !== undefined && valor > cfg.limiteAlto) {
                     emAlarme = true;
-                    msg = nome + ': ' + valor.toFixed(1) + ' (limite alto: ' + cfg.limiteAlto + ')';
+                    tipo = 'high';
+                    msg = '🔴 ' + nome + ': ' + valor.toFixed(1) + ' (limite alto: ' + cfg.limiteAlto + ')';
                 }
                 if (cfg.limiteBaixo !== null && cfg.limiteBaixo !== undefined && valor < cfg.limiteBaixo) {
                     emAlarme = true;
-                    msg = nome + ': ' + valor.toFixed(1) + ' (limite baixo: ' + cfg.limiteBaixo + ')';
+                    tipo = 'low';
+                    msg = '🔵 ' + nome + ': ' + valor.toFixed(1) + ' (limite baixo: ' + cfg.limiteBaixo + ')';
                 }
                 if (emAlarme && !alarmesAtivos[key]) {
-                    alarmesAtivos[key] = true;
-                    enviarNotificacao('🚨 ALARME - Utilidades', msg);
+                    alarmesAtivos[key] = tipo;
+                    enviarNotificacao(tipo === 'high' ? '🔴 ALARME ALTO' : '🔵 ALARME BAIXO', msg);
                 } else if (!emAlarme && alarmesAtivos[key]) {
                     delete alarmesAtivos[key];
                     enviarNotificacao('✅ Normalizado', nome + ': ' + valor.toFixed(1));
@@ -323,21 +334,21 @@
             'body { font-family: -apple-system, sans-serif; background: #0a0e1a; color: #e0e0e0; padding: 8px; font-size: 12px; overflow-y: auto; }',
             '.header { text-align: center; color: #4fc3f7; font-size: 11px; padding: 6px 0; border-bottom: 1px solid #2a2f45; margin-bottom: 6px; font-weight: 600; }',
             '.item { display: flex; justify-content: space-between; align-items: center; padding: 4px 8px; border-radius: 4px; margin-bottom: 2px; background: #141929; }',
-            '.item.alarm { background: #1a1015; border-left: 2px solid #ef5350; }',
+            '.item.alarm-high { background: #1a1015; border-left: 2px solid #ef5350; }',
+            '.item.alarm-low { background: #0d1520; border-left: 2px solid #42a5f5; }',
             '.item .nome { color: #888; font-size: 10px; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }',
             '.item .valor { font-weight: 700; color: #fff; font-size: 12px; }',
-            '.item.alarm .valor { color: #ef5350; }',
+            '.item.alarm-high .valor { color: #ef5350; }',
+            '.item.alarm-low .valor { color: #42a5f5; }',
             '.item .unidade { color: #555; font-size: 9px; margin-left: 2px; }',
             '.grupo { color: #4fc3f7; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 4px 2px; font-weight: 600; }',
             '.update { text-align: center; color: #444; font-size: 9px; padding: 4px; margin-top: 4px; position: sticky; bottom: 0; background: #0a0e1a; }'
         ].join('\n');
 
         async function abrirMiniWidget() {
-            // Se já está aberto, foca
             if (miniWidgetWindow && !miniWidgetWindow.closed) { miniWidgetWindow.focus(); return; }
-            if (pipWindow) { return; } // PiP já aberto
+            if (pipWindow) { return; }
 
-            // ===== TENTA PiP PRIMEIRO (Chrome 116+ — sempre visível) =====
             if ('documentPictureInPicture' in window) {
                 try {
                     pipWindow = await window.documentPictureInPicture.requestWindow({
@@ -387,7 +398,7 @@
                 }
             }
 
-            // ===== FALLBACK: popup normal =====
+            // FALLBACK: popup normal
             var largura = 300; var altura = 550;
             var esquerda = screen.width - largura - 20; var topo = 50;
             miniWidgetWindow = window.open('', 'mini_widget',
@@ -455,10 +466,10 @@
                     var cfg2 = tagConfig[item.id] || {};
                     var nome = cfg2.nome || item.nome;
                     var valor = item.v;
-                    var alarme = false;
-                    if (cfg2.limiteAlto !== null && cfg2.limiteAlto !== undefined && valor > cfg2.limiteAlto) alarme = true;
-                    if (cfg2.limiteBaixo !== null && cfg2.limiteBaixo !== undefined && valor < cfg2.limiteBaixo) alarme = true;
-                    html += '<div class="item' + (alarme ? ' alarm' : '') + '">';
+                    var alarmClass = '';
+                    if (cfg2.limiteAlto !== null && cfg2.limiteAlto !== undefined && valor > cfg2.limiteAlto) alarmClass = ' alarm-high';
+                    else if (cfg2.limiteBaixo !== null && cfg2.limiteBaixo !== undefined && valor < cfg2.limiteBaixo) alarmClass = ' alarm-low';
+                    html += '<div class="item' + alarmClass + '">';
                     html += '<span class="nome">' + nome + '</span>';
                     html += '<span class="valor">' + (typeof valor === 'number' ? valor.toFixed(1) : valor);
                     html += '<span class="unidade">' + item.u + '</span></span></div>';
@@ -565,13 +576,13 @@
             for (var i = 0; i < canvases.length; i++) {
                 var canvas = canvases[i];
                 var tagId = canvas.getAttribute('data-tag');
-                var alarme = canvas.getAttribute('data-alarm') === 'true';
+                var alarmType = canvas.getAttribute('data-alarm-type');
                 var hist = historico[tagId] || [];
                 var cfg = tagConfig[tagId] || {};
                 var rect = canvas.parentElement.getBoundingClientRect();
                 canvas.width = Math.floor(rect.width * 2);
                 canvas.height = Math.floor(rect.height * 2);
-                if (hist.length >= 2) { desenharSparkline(canvas, hist, alarme, cfg); }
+                if (hist.length >= 2) { desenharSparkline(canvas, hist, alarmType, cfg); }
             }
         }
         window.addEventListener('resize', function() { setTimeout(redesenharSparklines, 100); });
@@ -580,9 +591,9 @@
             var cfg = tagConfig[item.id] || {};
             var nome = cfg.nome || item.nome || item.id.replace(/_/g, ' ');
             var valor = item.v; var unidade = item.u;
-            var alarme = false;
-            if (cfg.limiteAlto !== null && cfg.limiteAlto !== undefined && valor > cfg.limiteAlto) alarme = true;
-            if (cfg.limiteBaixo !== null && cfg.limiteBaixo !== undefined && valor < cfg.limiteBaixo) alarme = true;
+            var alarmType = 'none'; // 'none', 'high', 'low'
+            if (cfg.limiteAlto !== null && cfg.limiteAlto !== undefined && valor > cfg.limiteAlto) alarmType = 'high';
+            else if (cfg.limiteBaixo !== null && cfg.limiteBaixo !== undefined && valor < cfg.limiteBaixo) alarmType = 'low';
 
             var hist = historico[item.id] || [];
             var tendencia = ''; var tendenciaClass = 'trend-stable';
@@ -594,7 +605,9 @@
             }
 
             var row = document.createElement('div');
-            row.className = 'card-row' + (alarme ? ' alarm' : '');
+            if (alarmType === 'high') row.className = 'card-row alarm-high';
+            else if (alarmType === 'low') row.className = 'card-row alarm-low';
+            else row.className = 'card-row';
 
             var info = document.createElement('div');
             info.className = 'card-info';
@@ -606,7 +619,7 @@
             sparkDiv.className = 'card-spark';
             var canvas = document.createElement('canvas');
             canvas.setAttribute('data-tag', item.id);
-            canvas.setAttribute('data-alarm', alarme ? 'true' : 'false');
+            canvas.setAttribute('data-alarm-type', alarmType);
             sparkDiv.appendChild(canvas);
 
             var labels = document.createElement('div');
@@ -626,7 +639,7 @@
             return row;
         }
 
-        function desenharSparkline(canvas, valores, alarme, cfg) {
+        function desenharSparkline(canvas, valores, alarmType, cfg) {
             var ctx = canvas.getContext('2d');
             var w = canvas.width; var h = canvas.height; var padding = 6;
             ctx.clearRect(0, 0, w, h);
@@ -646,33 +659,51 @@
                 return h - padding - ((clamped - min) / range) * (h - padding * 2);
             }
 
+            // Linha limite alto (vermelho tracejado)
             if (cfg.limiteAlto !== null && cfg.limiteAlto !== undefined) {
                 ctx.strokeStyle = 'rgba(239, 83, 80, 0.4)'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
                 ctx.beginPath(); ctx.moveTo(0, valToY(cfg.limiteAlto)); ctx.lineTo(w, valToY(cfg.limiteAlto)); ctx.stroke(); ctx.setLineDash([]);
             }
+            // Linha limite baixo (azul tracejado)
             if (cfg.limiteBaixo !== null && cfg.limiteBaixo !== undefined) {
-                ctx.strokeStyle = 'rgba(255, 167, 38, 0.4)'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+                ctx.strokeStyle = 'rgba(66, 165, 245, 0.4)'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
                 ctx.beginPath(); ctx.moveTo(0, valToY(cfg.limiteBaixo)); ctx.lineTo(w, valToY(cfg.limiteBaixo)); ctx.stroke(); ctx.setLineDash([]);
             }
 
+            // Cores baseadas no tipo de alarme
+            var corLinha, corFill;
+            if (alarmType === 'high') {
+                corLinha = '#ef5350';
+                corFill = 'rgba(239, 83, 80, 0.12)';
+            } else if (alarmType === 'low') {
+                corLinha = '#42a5f5';
+                corFill = 'rgba(66, 165, 245, 0.12)';
+            } else {
+                corLinha = '#4fc3f7';
+                corFill = 'rgba(79, 195, 247, 0.12)';
+            }
+
+            // Área preenchida
             ctx.beginPath();
             for (var i = 0; i < valores.length; i++) {
                 var x = (i / (valores.length - 1)) * w; var y = valToY(valores[i]);
                 if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
             }
             ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
-            ctx.fillStyle = alarme ? 'rgba(239, 83, 80, 0.12)' : 'rgba(79, 195, 247, 0.12)'; ctx.fill();
+            ctx.fillStyle = corFill; ctx.fill();
 
+            // Linha
             ctx.beginPath();
             for (var j = 0; j < valores.length; j++) {
                 var px = (j / (valores.length - 1)) * w; var py = valToY(valores[j]);
                 if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
             }
-            ctx.strokeStyle = alarme ? '#ef5350' : '#4fc3f7'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.strokeStyle = corLinha; ctx.lineWidth = 2; ctx.stroke();
 
+            // Ponto final
             var lastX = w - 4; var lastY = valToY(valores[valores.length - 1]);
             ctx.beginPath(); ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
-            ctx.fillStyle = alarme ? '#ef5350' : '#4fc3f7'; ctx.fill();
+            ctx.fillStyle = corLinha; ctx.fill();
         }
 
         function updateConnectionStatus(connected) {
