@@ -483,7 +483,7 @@
             var agora = Date.now();
             var ultimoHeartbeat = data.lastHeartbeat || 0;
             var diffSegundos = (agora - ultimoHeartbeat) / 1000;
-            if (data.ativo && diffSegundos < 60) {
+            if (data.ativo && diffSegundos < 30) {
                 dot.className = 'leitor-dot';
                 label.textContent = 'Leitor: online';
                 leituras.textContent = data.leituras || '0';
