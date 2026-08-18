@@ -254,13 +254,23 @@
             registrarLeitor();
         }
 
-        // ============================================================
-        // HEARTBEAT — backup a cada 15s
-        // ============================================================
+       // HEARTBEAT — independente das leituras
         function iniciarHeartbeat() {
-            enviarHeartbeat();
-            heartbeatInterval = setInterval(enviarHeartbeat, 15000);
+        enviarHeartbeat();
+        heartbeatInterval = setInterval(function() {
+            db.ref('leitor_status').update({
+            ativo: true,                    // <-- SEMPRE reafirma "ativo: true"
+            lastHeartbeat: Date.now(),
+            leituras: readCount,
+            uptime: Math.floor((Date.now() - startTime) / 1000)
+        }).then(function() {
+            // OK — silencioso
+        }).catch(function(e) {
+            log('⚠️ Heartbeat falhou: ' + e.message);
+            });
+            }, 10000);  // <-- A cada 10s (era 15s) — mais margem
         }
+
 
         function enviarHeartbeat() {
             db.ref('leitor_status').update({
