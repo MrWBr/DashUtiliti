@@ -57,7 +57,7 @@
             font-family: monospace;
             font-size: 0.65em;
             color: #4caf50;
-            max-height: 25vh;
+            max-height: 20vh;
             overflow-y: auto;
             z-index: 100;
         }
@@ -83,7 +83,6 @@
     </div>
 
     <div id="reader-container"></div>
-
     <div class="debug-bar" id="debug"></div>
 
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -92,8 +91,9 @@
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
     <script>
-        // ============ FIREBASE CONFIG ============
-        var firebaseConfig = {
+    (function() {
+        // ============ FIREBASE ============
+        firebase.initializeApp({
             apiKey: "AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",
             authDomain: "dshutili.firebaseapp.com",
             databaseURL: "https://dshutili-default-rtdb.firebaseio.com",
@@ -102,17 +102,16 @@
             messagingSenderId: "1065134772507",
             appId: "1:1065134772507:web:aed91d6d1953f69cb403be",
             measurementId: "G-B3NS6YKTLV"
-        };
-        firebase.initializeApp(firebaseConfig);
+        });
         var db = firebase.database();
 
-        // ============ VARIÁVEIS GLOBAIS ============
+        // ============ VARIÁVEIS ============
         var contLeituras = 0;
         var contEnvios = 0;
         var startTime = Date.now();
         var lastData = '';
         var ultimoHistory = 0;
-        var INTERVALO_HISTORY = 60000; // 60 segundos entre saves no history
+        var INTERVALO_HISTORY = 60000; // 60s entre saves no history
         var html5QrCode = null;
 
         // ============ DEBUG ============
@@ -123,29 +122,26 @@
             line.textContent = new Date().toLocaleTimeString('pt-BR') + ' | ' + msg;
             el.appendChild(line);
             el.scrollTop = el.scrollHeight;
-            if (el.children.length > 50) el.removeChild(el.firstChild);
+            if (el.children.length > 40) el.removeChild(el.firstChild);
         }
 
         // ============ UPTIME ============
         setInterval(function() {
             var diff = Math.floor((Date.now() - startTime) / 1000);
             var h = Math.floor(diff / 3600);
-            var m = Math.floor((diff % 3600) / 60).toString();
-            var s = (diff % 60).toString();
-            if (m.length < 2) m = '0' + m;
-            if (s.length < 2) s = '0' + s;
+            var m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
+            var s = (diff % 60).toString().padStart(2, '0');
             document.getElementById('uptime').textContent = h > 0 ? h + ':' + m + ':' + s : m + ':' + s;
         }, 1000);
 
         // ============ HEARTBEAT ============
         function enviarHeartbeat() {
-            var diff = Math.floor((Date.now() - startTime) / 1000);
             db.ref('leitor_status').update({
                 ativo: true,
                 lastHeartbeat: Date.now(),
                 leituras: contLeituras,
-                uptime: diff
-            }).catch(function(e) { log('Heartbeat falhou: ' + e.message, 'error'); });
+                uptime: Math.floor((Date.now() - startTime) / 1000)
+            }).catch(function(e) { log('Heartbeat erro: ' + e.message, 'error'); });
         }
         setInterval(enviarHeartbeat, 10000);
         enviarHeartbeat();
@@ -155,7 +151,7 @@
             db.ref('leitor_status').update({ ativo: false, desconectadoEm: Date.now() });
         });
 
-        // ============ PARSE DO QR CODE (texto puro) ============
+        // ============ PARSE QR (texto puro) ============
         function parseQR(texto) {
             var dados = {};
             var linhas = texto.split('\n');
@@ -167,7 +163,6 @@
                 var tag = partes[0].trim();
                 var valorStr = partes.slice(1).join(':').trim();
 
-                // Extrair valor numérico e unidade
                 var match = valorStr.match(/([-\d.]+)\s*(.*)/);
                 if (!match) continue;
 
@@ -175,163 +170,135 @@
                 var unidade = match[2].trim() || '';
                 if (isNaN(valor)) continue;
 
-                // Normalizar nome da tag para chave Firebase
                 var chave = tag
                     .replace(/\//g, '_')
                     .replace(/\s+/g, '_')
                     .replace(/[^a-zA-Z0-9_]/g, '')
                     .replace(/__+/g, '_');
 
-                dados[chave] = { v: valor, u: unidade, nome: tag };
+                dados[chave] = { v: valor, u: unidade };
             }
             return dados;
         }
 
         // ============ PROCESSAR QR ============
         function processQR(texto) {
+            // Ignorar se igual ao último (não conta, não loga)
+            if (texto === lastData) return;
+            lastData = texto;
+
+            // Agora sim conta como leitura real
             contLeituras++;
             document.getElementById('leituras').textContent = contLeituras;
-            log('QR detectado (' + texto.length + ' bytes)', 'success');
-
-            // Verificar se é igual ao último
-            if (texto === lastData) {
-                log('Dados iguais — ignorando envio');
-                return;
-            }
-            lastData = texto;
+            log('QR lido (' + texto.length + ' bytes)', 'success');
 
             // Parse
             var dados = parseQR(texto);
             var numVars = Object.keys(dados).length;
             if (numVars === 0) {
-                log('Nenhuma variável extraída do QR', 'error');
+                log('Nenhuma variável extraída', 'error');
                 return;
             }
-            log('Parseado: ' + numVars + ' variáveis');
 
-            // Adicionar metadata
+            // Metadata
             dados._readAt = new Date().toLocaleString('pt-BR');
             dados._timestamp = Date.now();
 
-            // Enviar para current (sempre)
+            // Enviar para current
             db.ref('current').update(dados).then(function() {
                 contEnvios++;
                 document.getElementById('envios').textContent = contEnvios;
                 document.getElementById('status').textContent = '✅ Online';
                 document.getElementById('status').className = 'status';
                 log('✅ current OK — ' + numVars + ' vars', 'success');
-
-                // Atualizar heartbeat junto com a leitura
                 enviarHeartbeat();
             }).catch(function(e) {
-                log('❌ Erro current: ' + e.message, 'error');
+                log('❌ Erro: ' + e.message, 'error');
                 document.getElementById('status').textContent = '❌ Erro';
                 document.getElementById('status').className = 'status error';
             });
 
-            // Enviar para history (no máximo 1x por minuto)
+            // History (máximo 1x por minuto)
             var agora = Date.now();
             if (agora - ultimoHistory >= INTERVALO_HISTORY) {
                 ultimoHistory = agora;
                 db.ref('history').push(dados).then(function() {
-                    log('📊 history salvo', 'success');
+                    log('📊 history salvo');
                 }).catch(function(e) {
-                    log('❌ Erro history: ' + e.message, 'error');
+                    log('history erro: ' + e.message, 'error');
                 });
             }
         }
 
-        // ============ LIMPEZA AUTOMÁTICA (a cada 2h, apaga > 7 dias) ============
-        function limparHistoricoAntigo() {
-            var limite = Date.now() - (7 * 24 * 60 * 60 * 1000); // 7 dias
+        // ============ LIMPEZA AUTOMÁTICA (>7 dias, a cada 2h) ============
+        function limparHistorico() {
+            var limite = Date.now() - (7 * 24 * 60 * 60 * 1000);
             db.ref('history').orderByChild('_timestamp').endAt(limite).once('value', function(snap) {
                 var updates = {};
                 snap.forEach(function(child) { updates[child.key] = null; });
                 var total = Object.keys(updates).length;
                 if (total > 0) {
                     db.ref('history').update(updates).then(function() {
-                        log('🧹 Limpou ' + total + ' registros antigos (>7d)', 'success');
+                        log('🧹 Limpou ' + total + ' registros antigos');
                     });
-                } else {
-                    log('🧹 Nada para limpar');
                 }
-            }).catch(function(e) {
-                log('Erro limpeza: ' + e.message, 'error');
-            });
+            }).catch(function() {});
         }
-        // Rodar limpeza ao iniciar e depois a cada 2h
-        setTimeout(limparHistoricoAntigo, 30000); // 30s após iniciar
-        setInterval(limparHistoricoAntigo, 7200000); // a cada 2h
+        setTimeout(limparHistorico, 60000); // 1min após iniciar
+        setInterval(limparHistorico, 7200000); // a cada 2h
 
-        // ============ RECONEXÃO AUTOMÁTICA ============
-        var reconectando = false;
+        // ============ RECONEXÃO ============
         window.addEventListener('online', function() {
-            log('🌐 Internet voltou — reconectando...', 'success');
-            if (reconectando) return;
-            reconectando = true;
-            setTimeout(function() {
-                db.goOnline();
-                enviarHeartbeat();
-                reconectando = false;
-                log('✅ Reconectado', 'success');
-            }, 2000);
+            log('🌐 Internet voltou', 'success');
+            setTimeout(function() { db.goOnline(); enviarHeartbeat(); }, 2000);
         });
         window.addEventListener('offline', function() {
             log('⚠️ Sem internet', 'error');
-            document.getElementById('status').textContent = '⚠️ Sem rede';
+            document.getElementById('status').textContent = '⚠️ Offline';
             document.getElementById('status').className = 'status error';
         });
 
-        // ============ INICIAR CÂMERA ============
+        // ============ CÂMERA ============
         function iniciarCamera() {
             html5QrCode = new Html5Qrcode("reader-container");
 
-            var config = {
-        fps: 10,
-        qrbox: function(viewfinderWidth, viewfinderHeight) {
-        var size = Math.min(viewfinderWidth, viewfinderHeight) * 0.95;
-        return { width: Math.floor(size), height: Math.floor(size) };
-        },
-    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
-    };
-
             html5QrCode.start(
                 { facingMode: "environment" },
-                config,
-                function(decodedText) {
-                    processQR(decodedText);
+                {
+                    fps: 10,
+                    qrbox: function(vw, vh) {
+                        var size = Math.min(vw, vh) * 0.85;
+                        return { width: Math.floor(size), height: Math.floor(size) };
+                    },
+                    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
                 },
-                function(errorMessage) {
-                    // Silencioso — não loga erros de scan
-                }
+                function(decodedText) { processQR(decodedText); },
+                function() {} // silencioso
             ).then(function() {
                 log('📷 Câmera ativa', 'success');
                 document.getElementById('status').textContent = '📷 Lendo...';
             }).catch(function(err) {
-                log('❌ Câmera falhou: ' + err, 'error');
+                log('❌ Câmera: ' + err, 'error');
                 document.getElementById('status').textContent = '❌ Câmera';
                 document.getElementById('status').className = 'status error';
-                // Tentar novamente em 3s
                 setTimeout(iniciarCamera, 3000);
             });
         }
 
-        // ============ AUTH E INÍCIO ============
+        // ============ AUTH ============
         firebase.auth().onAuthStateChanged(function(user) {
-            if (!user) {
-                window.location.href = 'index.html';
-            } else {
-                log('✅ Logado como: ' + user.email);
-                iniciarCamera();
-            }
+            if (!user) { window.location.href = 'index.html'; }
+            else { log('✅ Logado: ' + user.email); iniciarCamera(); }
         });
 
-        function sair() {
-            if (html5QrCode) { html5QrCode.stop().catch(function() {}); }
+        // ============ SAIR ============
+        window.sair = function() {
+            if (html5QrCode) html5QrCode.stop().catch(function() {});
             db.ref('leitor_status').update({ ativo: false, desconectadoEm: Date.now() });
             localStorage.removeItem('modo_acesso');
             firebase.auth().signOut().then(function() { window.location.href = 'index.html'; });
-        }
+        };
+    })();
     </script>
 </body>
 </html>
