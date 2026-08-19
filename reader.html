@@ -287,14 +287,13 @@
             html5QrCode = new Html5Qrcode("reader-container");
 
             var config = {
-                fps: 10,
-                qrbox: function(viewfinderWidth, viewfinderHeight) {
-                    var size = Math.min(viewfinderWidth, viewfinderHeight) * 0.95;
-                    return { width: Math.floor(size), height: Math.floor(size) };
-                },
-                aspectRatio: 1.0,
-                formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
-            };
+        fps: 10,
+        qrbox: function(viewfinderWidth, viewfinderHeight) {
+        var size = Math.min(viewfinderWidth, viewfinderHeight) * 0.95;
+        return { width: Math.floor(size), height: Math.floor(size) };
+        },
+    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+    };
 
             html5QrCode.start(
                 { facingMode: "environment" },
