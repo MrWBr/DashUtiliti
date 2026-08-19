@@ -4,159 +4,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QR Reader</title>
+    <title>Leitor QR - Utilidades</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: sans-serif;
+            font-family: -apple-system, sans-serif;
             background: #000;
-            color: #fff;
-            overflow-x: hidden;
-            min-height: 100vh;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
         }
-        #reader {
+        #reader-container {
             width: 100%;
-            height: 60vh;
+            height: 100vh;
+            position: relative;
         }
-        #reader video {
+        #reader-container video {
             width: 100% !important;
-            height: 100% !important;
-            object-fit: cover !important;
+            height: 100vh !important;
+            object-fit: cover;
         }
-        #reader__dashboard_section_swaplink,
-        #reader__dashboard_section_fileselection,
-        #reader__header_message,
-        #reader img { display: none !important; }
-
-        .status-bar {
-            padding: 10px;
-            background: #111;
-            text-align: center;
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.7);
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .status-bar .status {
-            font-size: 0.9em;
-            color: #4fc3f7;
+        .status {
+            font-size: 0.75em;
+            padding: 3px 8px;
+            border-radius: 10px;
+            background: #1b5e20;
+            color: #a5d6a7;
         }
-        .status-bar .last-read {
+        .status.error { background: #b71c1c; color: #ef9a9a; }
+        .stats {
             font-size: 0.7em;
             color: #888;
-            margin-top: 3px;
-        }
-        .stats {
             display: flex;
-            justify-content: space-around;
-            padding: 8px;
-            background: #1a1a2e;
-            font-size: 0.75em;
+            gap: 10px;
         }
-        .stats div { text-align: center; }
-        .stats .value { font-size: 1.2em; font-weight: bold; color: #4fc3f7; }
-        .btn-logout {
+        .stats .val { color: #4fc3f7; font-weight: 600; }
+        .debug-bar {
             position: fixed;
-            top: 5px;
-            right: 5px;
-            background: #333;
-            color: #fff;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 0.7em;
-            z-index: 100;
-        }
-        .debug {
-            background: rgba(0,0,0,0.92);
-            color: #0f0;
+            bottom: 0; left: 0; right: 0;
+            padding: 8px 12px;
+            background: rgba(0, 20, 0, 0.85);
             font-family: monospace;
             font-size: 0.65em;
-            padding: 6px;
-            max-height: 18vh;
+            color: #4caf50;
+            max-height: 25vh;
             overflow-y: auto;
+            z-index: 100;
         }
-        .pulse { animation: pulse 1s ease-in-out; }
-        @keyframes pulse {
-            0% { background: #111; }
-            50% { background: #1b5e20; }
-            100% { background: #111; }
-        }
-        .blocked-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.95);
-            z-index: 999;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            text-align: center;
-            padding: 30px;
-        }
-        .blocked-overlay.show { display: flex; }
-        .blocked-overlay .icon { font-size: 3em; margin-bottom: 15px; }
-        .blocked-overlay h2 { color: #ef5350; margin-bottom: 10px; }
-        .blocked-overlay p { color: #888; font-size: 0.9em; margin-bottom: 20px; }
-        .blocked-overlay button {
-            background: #ef5350;
-            color: #fff;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 1em;
-            cursor: pointer;
-        }
-        .status-offline {
-            background: #b71c1c !important;
-        }
-        .status-offline .status {
-            color: #fff !important;
+        .debug-bar .line { padding: 2px 0; border-bottom: 1px solid rgba(76,175,80,0.1); }
+        .debug-bar .error { color: #ef5350; }
+        .debug-bar .success { color: #4caf50; }
+        .btn-sair {
+            background: #333; color: #fff; border: none;
+            padding: 4px 10px; border-radius: 4px;
+            font-size: 0.7em; cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <button class="btn-logout" onclick="logout()">Sair</button>
+    <div class="overlay">
+        <span class="status" id="status">Iniciando...</span>
+        <div class="stats">
+            <span>📖 <span class="val" id="leituras">0</span></span>
+            <span>📤 <span class="val" id="envios">0</span></span>
+            <span>⏱️ <span class="val" id="uptime">00:00</span></span>
+        </div>
+        <button class="btn-sair" onclick="sair()">Sair</button>
+    </div>
 
-    <div class="blocked-overlay" id="blocked-overlay">
-        <div class="icon">🚫</div>
-        <h2>Leitor já conectado</h2>
-        <p>Outro dispositivo está ativo como leitor.<br>Apenas um leitor pode operar por vez.</p>
-        <button onclick="forcarConexao()">Forçar conexão aqui</button>
-    </div>
-    
-    <div id="reader"></div>
-    
-    <div class="status-bar" id="status-bar">
-        <div class="status" id="status">Iniciando câmera...</div>
-        <div class="last-read" id="last-read">Aguardando leitura...</div>
-    </div>
-    <div class="stats">
-        <div>
-            <div class="value" id="read-count">0</div>
-            <div>Envios</div>
-        </div>
-        <div>
-            <div class="value" id="vars-count">0</div>
-            <div>Variáveis</div>
-        </div>
-        <div>
-            <div class="value" id="skip-count">0</div>
-            <div>Ignorados</div>
-        </div>
-        <div>
-            <div class="value" id="uptime">00:00</div>
-            <div>Uptime</div>
-        </div>
-    </div>
-    
-    <div class="debug" id="debug"></div>
+    <div id="reader-container"></div>
 
-    <!-- Firebase -->
+    <div class="debug-bar" id="debug"></div>
+
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    
-    <!-- html5-qrcode -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
     <script>
+        // ============ FIREBASE CONFIG ============
         var firebaseConfig = {
             apiKey: "AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",
             authDomain: "dshutili.firebaseapp.com",
@@ -170,530 +106,232 @@
         firebase.initializeApp(firebaseConfig);
         var db = firebase.database();
 
-        // ===== VARIÁVEIS GLOBAIS =====
-        var debugEl = document.getElementById('debug');
-        var readCount = 0;
-        var skipCount = 0;
+        // ============ VARIÁVEIS GLOBAIS ============
+        var contLeituras = 0;
+        var contEnvios = 0;
         var startTime = Date.now();
-        var scanner = null;
-        var leitorID = 'leitor_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-        var heartbeatInterval = null;
-        var lastReadTimestamp = Date.now();
-        var restartCount = 0;
+        var lastData = '';
+        var ultimoHistory = 0;
+        var INTERVALO_HISTORY = 60000; // 60 segundos entre saves no history
+        var html5QrCode = null;
 
-        // ===== OTIMIZAÇÃO: enviar só o que mudou =====
-        var ultimosValores = {};
-        var bufferMudancas = {};
-        var ultimoEnvio = 0;
-        var MIN_INTERVALO_ENVIO = 3000;
-        var TOLERANCIA = 0.05;
-        var lastHistoryTime = 0;
-
-        // ===== RECONEXÃO =====
-        var estaOnline = navigator.onLine;
-        var reconectando = false;
-
-        function log(msg) {
-            var time = new Date().toLocaleTimeString('pt-BR');
-            debugEl.innerHTML = '[' + time + '] ' + msg + '<br>' + debugEl.innerHTML;
-            var lines = debugEl.innerHTML.split('<br>');
-            if (lines.length > 12) {
-                debugEl.innerHTML = lines.slice(0, 12).join('<br>');
-            }
+        // ============ DEBUG ============
+        function log(msg, tipo) {
+            var el = document.getElementById('debug');
+            var line = document.createElement('div');
+            line.className = 'line' + (tipo ? ' ' + tipo : '');
+            line.textContent = new Date().toLocaleTimeString('pt-BR') + ' | ' + msg;
+            el.appendChild(line);
+            el.scrollTop = el.scrollHeight;
+            if (el.children.length > 50) el.removeChild(el.firstChild);
         }
 
-        // ============================================================
-        // AUTENTICAÇÃO
-        // ============================================================
-        firebase.auth().onAuthStateChanged(function(user) {
-            if (!user) {
-                window.location.href = 'index.html';
-            } else {
-                log('✅ Logado: ' + user.email);
-                verificarLeitorUnico();
-            }
+        // ============ UPTIME ============
+        setInterval(function() {
+            var diff = Math.floor((Date.now() - startTime) / 1000);
+            var h = Math.floor(diff / 3600);
+            var m = Math.floor((diff % 3600) / 60).toString();
+            var s = (diff % 60).toString();
+            if (m.length < 2) m = '0' + m;
+            if (s.length < 2) s = '0' + s;
+            document.getElementById('uptime').textContent = h > 0 ? h + ':' + m + ':' + s : m + ':' + s;
+        }, 1000);
+
+        // ============ HEARTBEAT ============
+        function enviarHeartbeat() {
+            var diff = Math.floor((Date.now() - startTime) / 1000);
+            db.ref('leitor_status').update({
+                ativo: true,
+                lastHeartbeat: Date.now(),
+                leituras: contLeituras,
+                uptime: diff
+            }).catch(function(e) { log('Heartbeat falhou: ' + e.message, 'error'); });
+        }
+        setInterval(enviarHeartbeat, 10000);
+        enviarHeartbeat();
+
+        // Marcar offline ao sair
+        window.addEventListener('beforeunload', function() {
+            db.ref('leitor_status').update({ ativo: false, desconectadoEm: Date.now() });
         });
 
-        // ============================================================
-        // LEITOR ÚNICO
-        // ============================================================
-        function verificarLeitorUnico() {
-            db.ref('leitor_status').once('value').then(function(snapshot) {
-                var data = snapshot.val();
-                if (data && data.ativo) {
-                    var agora = Date.now();
-                    var ultimoHeartbeat = data.lastHeartbeat || 0;
-                    var diffSegundos = (agora - ultimoHeartbeat) / 1000;
-                    if (diffSegundos < 60 && data.leitorID !== leitorID) {
-                        log('🚫 Outro leitor ativo (' + Math.round(diffSegundos) + 's)');
-                        document.getElementById('blocked-overlay').classList.add('show');
-                        return;
-                    }
-                }
-                registrarLeitor();
-            }).catch(function(e) {
-                log('⚠️ Verificação falhou — iniciando');
-                registrarLeitor();
-            });
-        }
-
-        function registrarLeitor() {
-            db.ref('leitor_status').set({
-                ativo: true,
-                leitorID: leitorID,
-                conectadoEm: Date.now(),
-                conectadoEmStr: new Date().toLocaleString('pt-BR'),
-                lastHeartbeat: Date.now(),
-                leituras: 0,
-                uptime: 0
-            }).then(function() {
-                log('✅ Leitor registrado');
-            }).catch(function(e) {
-                log('⚠️ Registro: ' + e.message);
-            });
-
-            db.ref('leitor_status/ativo').onDisconnect().set(false);
-            db.ref('leitor_status/desconectadoEm').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
-
-            iniciarHeartbeat();
-            iniciarReconexao();
-            initReader();
-        }
-
-        function forcarConexao() {
-            document.getElementById('blocked-overlay').classList.remove('show');
-            registrarLeitor();
-        }
-
-        // ============================================================
-        // HEARTBEAT — a cada 10s, sempre reafirma ativo: true
-        // ============================================================
-        function iniciarHeartbeat() {
-            enviarHeartbeat();
-            heartbeatInterval = setInterval(enviarHeartbeat, 10000);
-        }
-
-        function enviarHeartbeat() {
-            db.ref('leitor_status').update({
-                ativo: true,
-                lastHeartbeat: Date.now(),
-                leituras: readCount,
-                uptime: Math.floor((Date.now() - startTime) / 1000)
-            }).then(function() {
-                // OK
-            }).catch(function(e) {
-                log('⚠️ Heartbeat falhou: ' + e.message);
-            });
-        }
-
-        // ============================================================
-        // RECONEXÃO AUTOMÁTICA — detecta internet volta e recupera
-        // ============================================================
-        function iniciarReconexao() {
-            // Detecta quando a internet volta
-            window.addEventListener('online', function() {
-                if (!estaOnline) {
-                    estaOnline = true;
-                    log('🌐 Internet voltou! Reconectando...');
-                    reconectar();
-                }
-            });
-
-            // Detecta quando a internet cai
-            window.addEventListener('offline', function() {
-                estaOnline = false;
-                log('❌ Internet caiu!');
-                document.getElementById('status').textContent = '⚠️ Sem internet...';
-                document.getElementById('status-bar').classList.add('status-offline');
-            });
-
-            // Firebase também detecta conexão/desconexão
-            db.ref('.info/connected').on('value', function(snap) {
-                if (snap.val() === true) {
-                    if (reconectando) {
-                        reconectando = false;
-                        log('🔥 Firebase reconectado!');
-                    }
-                } else {
-                    if (estaOnline) {
-                        log('⚠️ Firebase desconectou (rede instável?)');
-                    }
-                }
-            });
-        }
-
-        function reconectar() {
-            if (reconectando) return;
-            reconectando = true;
-
-            document.getElementById('status-bar').classList.remove('status-offline');
-
-            // 1. Reafirma status do leitor
-            db.ref('leitor_status').update({
-                ativo: true,
-                lastHeartbeat: Date.now(),
-                leituras: readCount,
-                uptime: Math.floor((Date.now() - startTime) / 1000)
-            }).then(function() {
-                log('✅ Status reafirmado');
-            }).catch(function(e) {
-                log('⚠️ Reconexão status: ' + e.message);
-            });
-
-            // 2. Força reenvio dos últimos dados (limpa cache de duplicata)
-            ultimosValores = {};
-            bufferMudancas = {};
-            log('🔄 Cache limpo — próxima leitura será enviada');
-
-            // 3. Reinicia scanner se parou
-            if (scanner) {
-                try {
-                    scanner.stop().then(function() {
-                        log('🔄 Reiniciando scanner...');
-                        setTimeout(function() { initReader(); }, 1000);
-                    }).catch(function() {
-                        setTimeout(function() { initReader(); }, 1000);
-                    });
-                } catch(e) {
-                    setTimeout(function() { initReader(); }, 1000);
-                }
-            } else {
-                setTimeout(function() { initReader(); }, 1000);
-            }
-
-            // 4. Renova Wake Lock (pode ter perdido)
-            if ('wakeLock' in navigator) {
-                navigator.wakeLock.request('screen').catch(function(){});
-            }
-
-            document.getElementById('status').textContent = '🔄 Reconectando...';
-
-            // Timeout de segurança
-            setTimeout(function() {
-                reconectando = false;
-            }, 5000);
-        }
-
-        // ============================================================
-        // AUTO-RESTART: Se não leu em 60s, reinicia o scanner
-        // ============================================================
-        setInterval(function() {
-            var agora = Date.now();
-            var semLeitura = (agora - lastReadTimestamp) / 1000;
-            if (semLeitura > 60 && scanner && restartCount < 5) {
-                restartCount++;
-                log('🔄 Sem leitura há ' + Math.round(semLeitura) + 's — reiniciando (#' + restartCount + ')');
-                scanner.stop().then(function() {
-                    setTimeout(function() { initReader(); }, 1000);
-                }).catch(function() {
-                    setTimeout(function() { initReader(); }, 1000);
-                });
-            }
-        }, 30000);
-
-        // ============================================================
-        // FLUSH DO BUFFER: garante envio mesmo com throttle
-        // ============================================================
-        setInterval(function() {
-            if (Object.keys(bufferMudancas).length > 0) {
-                enviarMudancas();
-            }
-        }, 3500);
-
-        // ============================================================
-        // PARSER PARA FORMATO DO FACTORYTALK
-        // ============================================================
-        function parsearTextoFactoryTalk(texto) {
+        // ============ PARSE DO QR CODE (texto puro) ============
+        function parseQR(texto) {
+            var dados = {};
             var linhas = texto.split('\n');
-            var tags = [];
-
             for (var i = 0; i < linhas.length; i++) {
                 var linha = linhas[i].trim();
-                if (!linha) continue;
+                if (!linha || linha.indexOf(':') === -1) continue;
 
-                var idxDoisPontos = linha.lastIndexOf(':');
-                if (idxDoisPontos < 0) continue;
+                var partes = linha.split(':');
+                var tag = partes[0].trim();
+                var valorStr = partes.slice(1).join(':').trim();
 
-                var nome = linha.substring(0, idxDoisPontos).trim();
-                var resto = linha.substring(idxDoisPontos + 1).trim();
+                // Extrair valor numérico e unidade
+                var match = valorStr.match(/([-\d.]+)\s*(.*)/);
+                if (!match) continue;
 
-                if (!nome || !resto) continue;
+                var valor = parseFloat(match[1]);
+                var unidade = match[2].trim() || '';
+                if (isNaN(valor)) continue;
 
-                var match = resto.match(/^(-?\d+\.?\d*)\s*(.*)/);
-                
-                if (match) {
-                    var valor = parseFloat(match[1]);
-                    var unidade = match[2] || '';
-                    
-                    var id = nome
-                        .replace(/[\/\s]+/g, '_')
-                        .replace(/[^a-zA-Z0-9_]/g, '')
-                        .substring(0, 30);
+                // Normalizar nome da tag para chave Firebase
+                var chave = tag
+                    .replace(/\//g, '_')
+                    .replace(/\s+/g, '_')
+                    .replace(/[^a-zA-Z0-9_]/g, '')
+                    .replace(/__+/g, '_');
 
-                    tags.push({
-                        id: id,
-                        nome: nome,
-                        v: valor,
-                        u: unidade
-                    });
-                }
+                dados[chave] = { v: valor, u: unidade, nome: tag };
             }
-
-            return tags;
+            return dados;
         }
 
-        // ============================================================
-        // PROCESSAR QR — OTIMIZADO (envia só o que mudou)
-        // ============================================================
-        function processQR(decodedText) {
-            var tags = [];
+        // ============ PROCESSAR QR ============
+        function processQR(texto) {
+            contLeituras++;
+            document.getElementById('leituras').textContent = contLeituras;
+            log('QR detectado (' + texto.length + ' bytes)', 'success');
 
-            try {
-                var dados = JSON.parse(decodedText);
-                log('📋 JSON válido');
-                if (dados.d && Array.isArray(dados.d)) {
-                    tags = dados.d;
-                } else {
-                    var keys = Object.keys(dados);
-                    for (var k = 0; k < keys.length; k++) {
-                        var key = keys[k];
-                        var val = dados[key];
-                        if (typeof val === 'number') {
-                            tags.push({ id: key, nome: key, v: val, u: '' });
-                        } else if (typeof val === 'object' && val && 'v' in val) {
-                            tags.push({ id: key, nome: key, v: val.v, u: val.u || '' });
-                        }
-                    }
-                }
-            } catch(e) {
-                log('📋 Texto (' + decodedText.length + 'b)');
-                tags = parsearTextoFactoryTalk(decodedText);
-            }
-
-            if (tags.length === 0) {
-                log('⚠️ Nenhuma variável!');
+            // Verificar se é igual ao último
+            if (texto === lastData) {
+                log('Dados iguais — ignorando envio');
                 return;
             }
+            lastData = texto;
 
-            // Atualiza timestamp de leitura (para auto-restart)
-            lastReadTimestamp = Date.now();
-            restartCount = 0;
-
-            // ===== COMPARAR COM ÚLTIMOS VALORES =====
-            var mudou = false;
-            var mudancasAgora = {};
-
-            for (var i = 0; i < tags.length; i++) {
-                var tag = tags[i];
-                var valorAnterior = ultimosValores[tag.id];
-                
-                if (valorAnterior === undefined || Math.abs(tag.v - valorAnterior) > TOLERANCIA) {
-                    mudou = true;
-                    mudancasAgora[tag.id] = {
-                        nome: tag.nome,
-                        v: tag.v,
-                        u: tag.u
-                    };
-                    ultimosValores[tag.id] = tag.v;
-                }
-            }
-
-            // Se nada mudou, ignora
-            if (!mudou) {
-                skipCount++;
-                document.getElementById('skip-count').textContent = skipCount;
+            // Parse
+            var dados = parseQR(texto);
+            var numVars = Object.keys(dados).length;
+            if (numVars === 0) {
+                log('Nenhuma variável extraída do QR', 'error');
                 return;
             }
+            log('Parseado: ' + numVars + ' variáveis');
 
-            // Acumula no buffer
-            var bufKeys = Object.keys(mudancasAgora);
-            for (var b = 0; b < bufKeys.length; b++) {
-                bufferMudancas[bufKeys[b]] = mudancasAgora[bufKeys[b]];
-            }
+            // Adicionar metadata
+            dados._readAt = new Date().toLocaleString('pt-BR');
+            dados._timestamp = Date.now();
 
-            // ===== THROTTLE: respeita intervalo mínimo =====
+            // Enviar para current (sempre)
+            db.ref('current').update(dados).then(function() {
+                contEnvios++;
+                document.getElementById('envios').textContent = contEnvios;
+                document.getElementById('status').textContent = '✅ Online';
+                document.getElementById('status').className = 'status';
+                log('✅ current OK — ' + numVars + ' vars', 'success');
+
+                // Atualizar heartbeat junto com a leitura
+                enviarHeartbeat();
+            }).catch(function(e) {
+                log('❌ Erro current: ' + e.message, 'error');
+                document.getElementById('status').textContent = '❌ Erro';
+                document.getElementById('status').className = 'status error';
+            });
+
+            // Enviar para history (no máximo 1x por minuto)
             var agora = Date.now();
-            if (agora - ultimoEnvio < MIN_INTERVALO_ENVIO) {
-                log('⏳ Buffer (' + Object.keys(bufferMudancas).length + ' vars aguardando)');
-                return;
-            }
-
-            enviarMudancas();
-        }
-
-        // ============================================================
-        // ENVIAR MUDANÇAS AO FIREBASE
-        // ============================================================
-        function enviarMudancas() {
-            var keys = Object.keys(bufferMudancas);
-            if (keys.length === 0) return;
-
-            var dadosFirebase = {
-                _timestamp: Date.now(),
-                _readAt: new Date().toLocaleString('pt-BR'),
-                _varCount: keys.length
-            };
-
-            for (var i = 0; i < keys.length; i++) {
-                dadosFirebase[keys[i]] = bufferMudancas[keys[i]];
-            }
-
-            var qtdMudou = keys.length;
-            var qtdTotal = Object.keys(ultimosValores).length;
-
-            log('📊 ' + qtdMudou + '/' + qtdTotal + ' vars mudaram');
-            log('☁️ Enviando...');
-
-            ultimoEnvio = Date.now();
-            bufferMudancas = {};
-
-            db.ref('current').update(dadosFirebase)
-                .then(function() {
-                    readCount++;
-                    document.getElementById('read-count').textContent = readCount;
-                    log('✅ OK! (' + qtdMudou + ' vars)');
-                })
-                .catch(function(e) {
-                    log('❌ ' + e.message);
+            if (agora - ultimoHistory >= INTERVALO_HISTORY) {
+                ultimoHistory = agora;
+                db.ref('history').push(dados).then(function() {
+                    log('📊 history salvo', 'success');
+                }).catch(function(e) {
+                    log('❌ Erro history: ' + e.message, 'error');
                 });
-
-            // History — só a cada 30s
-            if (Date.now() - lastHistoryTime > 30000) {
-                var snapshot = {
-                    _timestamp: Date.now(),
-                    _readAt: new Date().toLocaleString('pt-BR')
-                };
-                var allKeys = Object.keys(ultimosValores);
-                for (var j = 0; j < allKeys.length; j++) {
-                    snapshot[allKeys[j]] = ultimosValores[allKeys[j]];
-                }
-                db.ref('history').push().set(snapshot);
-                lastHistoryTime = Date.now();
-                log('📝 History salvo');
             }
-
-            // UI
-            document.getElementById('vars-count').textContent = qtdTotal;
-            document.getElementById('last-read').textContent = 'Última: ' + dadosFirebase._readAt;
-            document.getElementById('status').textContent = '✅ #' + readCount + ' | ' + qtdMudou + ' mudaram';
-            document.getElementById('status-bar').classList.add('pulse');
-            setTimeout(function() {
-                document.getElementById('status-bar').classList.remove('pulse');
-                document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
-            }, 2000);
         }
 
-        // ============================================================
-        // INICIAR LEITOR
-        // ============================================================
-        function initReader() {
-            log('📷 Iniciando câmera...');
-            document.getElementById('status').textContent = '📷 Iniciando câmera...';
+        // ============ LIMPEZA AUTOMÁTICA (a cada 2h, apaga > 7 dias) ============
+        function limparHistoricoAntigo() {
+            var limite = Date.now() - (7 * 24 * 60 * 60 * 1000); // 7 dias
+            db.ref('history').orderByChild('_timestamp').endAt(limite).once('value', function(snap) {
+                var updates = {};
+                snap.forEach(function(child) { updates[child.key] = null; });
+                var total = Object.keys(updates).length;
+                if (total > 0) {
+                    db.ref('history').update(updates).then(function() {
+                        log('🧹 Limpou ' + total + ' registros antigos (>7d)', 'success');
+                    });
+                } else {
+                    log('🧹 Nada para limpar');
+                }
+            }).catch(function(e) {
+                log('Erro limpeza: ' + e.message, 'error');
+            });
+        }
+        // Rodar limpeza ao iniciar e depois a cada 2h
+        setTimeout(limparHistoricoAntigo, 30000); // 30s após iniciar
+        setInterval(limparHistoricoAntigo, 7200000); // a cada 2h
 
-            scanner = new Html5Qrcode("reader");
+        // ============ RECONEXÃO AUTOMÁTICA ============
+        var reconectando = false;
+        window.addEventListener('online', function() {
+            log('🌐 Internet voltou — reconectando...', 'success');
+            if (reconectando) return;
+            reconectando = true;
+            setTimeout(function() {
+                db.goOnline();
+                enviarHeartbeat();
+                reconectando = false;
+                log('✅ Reconectado', 'success');
+            }, 2000);
+        });
+        window.addEventListener('offline', function() {
+            log('⚠️ Sem internet', 'error');
+            document.getElementById('status').textContent = '⚠️ Sem rede';
+            document.getElementById('status').className = 'status error';
+        });
+
+        // ============ INICIAR CÂMERA ============
+        function iniciarCamera() {
+            html5QrCode = new Html5Qrcode("reader-container");
 
             var config = {
-                fps: 5,
+                fps: 10,
                 qrbox: function(viewfinderWidth, viewfinderHeight) {
-                    var w = Math.floor(viewfinderWidth * 0.95);
-                    var h = Math.floor(viewfinderHeight * 0.95);
-                    return { width: w, height: h };
+                    var size = Math.min(viewfinderWidth, viewfinderHeight) * 0.85;
+                    return { width: Math.floor(size), height: Math.floor(size) };
                 },
-                formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-                experimentalFeatures: {
-                    useBarCodeDetectorIfSupported: true
-                }
+                aspectRatio: 1.0,
+                formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
             };
 
-            scanner.start(
+            html5QrCode.start(
                 { facingMode: "environment" },
                 config,
                 function(decodedText) {
                     processQR(decodedText);
                 },
-                function() {}
-            ).then(function() {
-                log('✅ Câmera OK! (fps=5, qrbox=95%)');
-                document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
-                lastReadTimestamp = Date.now();
-            }).catch(function(err) {
-                log('❌ Câmera erro: ' + err);
-                log('🔄 Fallback...');
-                scanner.start(
-                    { facingMode: "environment" },
-                    { 
-                        fps: 3,
-                        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-                        experimentalFeatures: { useBarCodeDetectorIfSupported: true }
-                    },
-                    function(decodedText) {
-                        processQR(decodedText);
-                    },
-                    function() {}
-                ).then(function() {
-                    log('✅ Fallback OK! (fps=3)');
-                    document.getElementById('status').textContent = '✅ Câmera ativa - Lendo...';
-                    lastReadTimestamp = Date.now();
-                }).catch(function(err2) {
-                    log('❌ Falhou: ' + err2);
-                    document.getElementById('status').textContent = '❌ Erro câmera';
-                });
-            });
-        }
-
-        // ============================================================
-        // WAKE LOCK
-        // ============================================================
-        if ('wakeLock' in navigator) {
-            navigator.wakeLock.request('screen').then(function() {
-                log('🔒 Tela não apaga');
-            }).catch(function(){});
-            
-            document.addEventListener('visibilitychange', function() {
-                if (document.visibilityState === 'visible') {
-                    navigator.wakeLock.request('screen').catch(function(){});
+                function(errorMessage) {
+                    // Silencioso — não loga erros de scan
                 }
+            ).then(function() {
+                log('📷 Câmera ativa', 'success');
+                document.getElementById('status').textContent = '📷 Lendo...';
+            }).catch(function(err) {
+                log('❌ Câmera falhou: ' + err, 'error');
+                document.getElementById('status').textContent = '❌ Câmera';
+                document.getElementById('status').className = 'status error';
+                // Tentar novamente em 3s
+                setTimeout(iniciarCamera, 3000);
             });
         }
 
-        // Uptime
-        setInterval(function() {
-            var elapsed = Math.floor((Date.now() - startTime) / 1000);
-            var hrs = Math.floor(elapsed / 3600);
-            var min = Math.floor((elapsed % 3600) / 60).toString();
-            var sec = (elapsed % 60).toString();
-            if (min.length < 2) min = '0' + min;
-            if (sec.length < 2) sec = '0' + sec;
-            document.getElementById('uptime').textContent = 
-                hrs > 0 ? hrs + ':' + min + ':' + sec : min + ':' + sec;
-        }, 1000);
-
-        // LOGOUT
-        function logout() {
-            db.ref('leitor_status').update({
-                ativo: false,
-                desconectadoEm: Date.now()
-            }).catch(function(){});
-
-            if (heartbeatInterval) clearInterval(heartbeatInterval);
-            localStorage.removeItem('modo_acesso');
-            localStorage.removeItem('login_timestamp');
-            
-            if (scanner) {
-                scanner.stop().then(function() {
-                    firebase.auth().signOut().then(function() {
-                        window.location.href = 'index.html';
-                    });
-                }).catch(function() {
-                    firebase.auth().signOut().then(function() {
-                        window.location.href = 'index.html';
-                    });
-                });
+        // ============ AUTH E INÍCIO ============
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (!user) {
+                window.location.href = 'index.html';
             } else {
-                firebase.auth().signOut().then(function() {
-                    window.location.href = 'index.html';
-                });
+                log('✅ Logado como: ' + user.email);
+                iniciarCamera();
             }
+        });
+
+        function sair() {
+            if (html5QrCode) { html5QrCode.stop().catch(function() {}); }
+            db.ref('leitor_status').update({ ativo: false, desconectadoEm: Date.now() });
+            localStorage.removeItem('modo_acesso');
+            firebase.auth().signOut().then(function() { window.location.href = 'index.html'; });
         }
     </script>
 </body>
