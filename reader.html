@@ -7,68 +7,20 @@
     <title>Leitor QR - Utilidades</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, sans-serif;
-            background: #000;
-            color: #e0e0e0;
-            height: 100vh;
-            overflow: hidden;
-        }
-        #reader-container {
-            width: 100%;
-            height: 100vh;
-            position: relative;
-        }
-        #reader-container video {
-            width: 100% !important;
-            height: 100vh !important;
-            object-fit: cover;
-        }
-        .overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            padding: 8px 12px;
-            background: rgba(0,0,0,0.7);
-            z-index: 100;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .status {
-            font-size: 0.75em;
-            padding: 3px 8px;
-            border-radius: 10px;
-            background: #1b5e20;
-            color: #a5d6a7;
-        }
+        body { font-family: -apple-system, sans-serif; background: #000; color: #e0e0e0; height: 100vh; overflow: hidden; }
+        #reader-container { width: 100%; height: 100vh; position: relative; }
+        #reader-container video { width: 100% !important; height: 100vh !important; object-fit: cover; }
+        .overlay { position: fixed; top: 0; left: 0; right: 0; padding: 8px 12px; background: rgba(0,0,0,0.7); z-index: 100; display: flex; justify-content: space-between; align-items: center; }
+        .status { font-size: 0.75em; padding: 3px 8px; border-radius: 10px; background: #1b5e20; color: #a5d6a7; }
         .status.error { background: #b71c1c; color: #ef9a9a; }
-        .stats {
-            font-size: 0.7em;
-            color: #888;
-            display: flex;
-            gap: 10px;
-        }
+        .stats { font-size: 0.7em; color: #888; display: flex; gap: 10px; }
         .stats .val { color: #4fc3f7; font-weight: 600; }
-        .debug-bar {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            padding: 8px 12px;
-            background: rgba(0, 20, 0, 0.85);
-            font-family: monospace;
-            font-size: 0.65em;
-            color: #4caf50;
-            max-height: 20vh;
-            overflow-y: auto;
-            z-index: 100;
-        }
+        .debug-bar { position: fixed; bottom: 0; left: 0; right: 0; padding: 8px 12px; background: rgba(0,20,0,0.85); font-family: monospace; font-size: 0.65em; color: #4caf50; max-height: 20vh; overflow-y: auto; z-index: 100; }
         .debug-bar .line { padding: 2px 0; border-bottom: 1px solid rgba(76,175,80,0.1); }
         .debug-bar .error { color: #ef5350; }
         .debug-bar .success { color: #4caf50; }
-        .btn-sair {
-            background: #333; color: #fff; border: none;
-            padding: 4px 10px; border-radius: 4px;
-            font-size: 0.7em; cursor: pointer;
-        }
+        .debug-bar .warning { color: #ffa726; }
+        .btn-sair { background: #333; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; font-size: 0.7em; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -77,11 +29,11 @@
         <div class="stats">
             <span>📖 <span class="val" id="leituras">0</span></span>
             <span>📤 <span class="val" id="envios">0</span></span>
+            <span>⚠️ <span class="val" id="alarmes-count">0</span></span>
             <span>⏱️ <span class="val" id="uptime">00:00</span></span>
         </div>
         <button class="btn-sair" onclick="sair()">Sair</button>
     </div>
-
     <div id="reader-container"></div>
     <div class="debug-bar" id="debug"></div>
 
@@ -105,14 +57,48 @@
         });
         var db = firebase.database();
 
+        // ============ CONFIGURAÇÃO DE ALARMES ============
+        var alarmeConfig = {
+            "TO8001_2_3_4":   { limiteAlto: 32, limiteBaixo: null, taxaMax: 3, tempoFaixa: null, corAlto: "red", corBaixo: null },
+            "TO8006_Retorno": { limiteAlto: 35, limiteBaixo: null, taxaMax: 3, tempoFaixa: null, corAlto: "red", corBaixo: null },
+            "CH8007":         { limiteAlto: 2,  limiteBaixo: -5,   taxaMax: 2, tempoFaixa: 600, corAlto: "red", corBaixo: "blue" },
+            "CH8008":         { limiteAlto: 2,  limiteBaixo: -5,   taxaMax: 2, tempoFaixa: 600, corAlto: "red", corBaixo: "blue" },
+            "CH8011_14":      { limiteAlto: 2,  limiteBaixo: -5,   taxaMax: 2, tempoFaixa: 600, corAlto: "red", corBaixo: "blue" },
+            "CV8004_Retorno": { limiteAlto: 50, limiteBaixo: null, taxaMax: 5, tempoFaixa: null, corAlto: "red", corBaixo: null },
+            "Agua_6C":        { limiteAlto: 8,  limiteBaixo: null, taxaMax: 2, tempoFaixa: null, corAlto: "red", corBaixo: null },
+            "Temperatura_Sala_Cura_Bubba":    { limiteAlto: 17, limiteBaixo: 13, taxaMax: 2, tempoFaixa: 600, corAlto: "red", corBaixo: "blue" },
+            "Temperatura_Sala_Cura_Chiclets": { limiteAlto: 14, limiteBaixo: 10, taxaMax: 2, tempoFaixa: 600, corAlto: "red", corBaixo: "blue" },
+            "Temperatura_Sala_Cura_Trident":  { limiteAlto: 15, limiteBaixo: 10, taxaMax: 2, tempoFaixa: 600, corAlto: "red", corBaixo: "blue" },
+            "Umidade_Sala_Cura_Bubba":        { limiteAlto: 35, limiteBaixo: 30, taxaMax: 5, tempoFaixa: null, corAlto: "red", corBaixo: "blue" },
+            "Umidade_Sala_Cura_Chiclets":     { limiteAlto: 35, limiteBaixo: 30, taxaMax: 5, tempoFaixa: null, corAlto: "red", corBaixo: "blue" },
+            "Umidade_Sala_Cura_Trident":      { limiteAlto: 35, limiteBaixo: 30, taxaMax: 5, tempoFaixa: null, corAlto: "red", corBaixo: "blue" },
+            "Ar_Comp_DM":      { limiteAlto: null, limiteBaixo: 5.5, taxaMax: null, tempoFaixa: 300, corAlto: null, corBaixo: "red" },
+            "Ar_Comp_DM_Boge": { limiteAlto: null, limiteBaixo: 5.0, taxaMax: null, tempoFaixa: 300, corAlto: null, corBaixo: "red" },
+            "Ar_Comp_Choco":   { limiteAlto: null, limiteBaixo: 5.5, taxaMax: null, tempoFaixa: 300, corAlto: null, corBaixo: "red" },
+            "Vacuo_Dry_Mix":   { limiteAlto: null, limiteBaixo: 15,  taxaMax: null, tempoFaixa: 300, corAlto: null, corBaixo: "red" },
+            "Pressao_Cavalete_BG": { limiteAlto: null, limiteBaixo: 10, taxaMax: null, tempoFaixa: 300, corAlto: null, corBaixo: "red" },
+            "Pressao_Vapor_Choco": { limiteAlto: null, limiteBaixo: 5,  taxaMax: null, tempoFaixa: 300, corAlto: null, corBaixo: "red" },
+            "Nivel_TQ_CD8006_7":   { limiteAlto: null, limiteBaixo: 40, taxaMax: null, tempoFaixa: 600, corAlto: null, corBaixo: "red" },
+            "Temperatura_Ar_Comp_Chocolate": { limiteAlto: 50, limiteBaixo: null, taxaMax: 5, tempoFaixa: null, corAlto: "orange", corBaixo: null },
+            "Temperatura_Ar_Comp_BG":        { limiteAlto: 50, limiteBaixo: null, taxaMax: 5, tempoFaixa: null, corAlto: "orange", corBaixo: null },
+            "Umidade_Ar_Comp_Chocolate": { limiteAlto: 25, limiteBaixo: null, taxaMax: null, tempoFaixa: null, corAlto: "red", corBaixo: null },
+            "Umidade_Ar_Comp_BG":        { limiteAlto: 25, limiteBaixo: null, taxaMax: null, tempoFaixa: null, corAlto: "red", corBaixo: null }
+        };
+        // taxaMax = variação máxima permitida em 5 minutos (°C, bar, etc.)
+        // tempoFaixa = segundos máximos permitidos fora do limite antes de alarme de tempo
+
         // ============ VARIÁVEIS ============
-        var contLeituras = 0;
-        var contEnvios = 0;
+        var contLeituras = 0, contEnvios = 0, contAlarmes = 0;
         var startTime = Date.now();
         var lastData = '';
         var ultimoHistory = 0;
-        var INTERVALO_HISTORY = 60000; // 60s entre saves no history
+        var INTERVALO_HISTORY = 60000;
         var html5QrCode = null;
+
+        // Alarmes inteligentes
+        var historicoValores = {};  // { tagId: [{t: timestamp, v: valor}, ...] }
+        var alarmesAtivos = {};     // { tagId: { tipo, inicio, valor } }
+        var tempoForaFaixa = {};    // { tagId: timestamp_primeira_vez_fora }
 
         // ============ DEBUG ============
         function log(msg, tipo) {
@@ -140,65 +126,202 @@
                 ativo: true,
                 lastHeartbeat: Date.now(),
                 leituras: contLeituras,
+                alarmes: contAlarmes,
                 uptime: Math.floor((Date.now() - startTime) / 1000)
             }).catch(function(e) { log('Heartbeat erro: ' + e.message, 'error'); });
         }
         setInterval(enviarHeartbeat, 10000);
         enviarHeartbeat();
-
-        // Marcar offline ao sair
         window.addEventListener('beforeunload', function() {
             db.ref('leitor_status').update({ ativo: false, desconectadoEm: Date.now() });
         });
 
-        // ============ PARSE QR (texto puro) ============
+        // ============ PARSE QR ============
         function parseQR(texto) {
             var dados = {};
             var linhas = texto.split('\n');
             for (var i = 0; i < linhas.length; i++) {
                 var linha = linhas[i].trim();
                 if (!linha || linha.indexOf(':') === -1) continue;
-
                 var partes = linha.split(':');
                 var tag = partes[0].trim();
                 var valorStr = partes.slice(1).join(':').trim();
-
                 var match = valorStr.match(/([-\d.]+)\s*(.*)/);
                 if (!match) continue;
-
                 var valor = parseFloat(match[1]);
                 var unidade = match[2].trim() || '';
                 if (isNaN(valor)) continue;
-
-                var chave = tag
-                    .replace(/\//g, '_')
-                    .replace(/\s+/g, '_')
-                    .replace(/[^a-zA-Z0-9_]/g, '')
-                    .replace(/__+/g, '_');
-
+                var chave = tag.replace(/\//g, '_').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '').replace(/__+/g, '_');
                 dados[chave] = { v: valor, u: unidade };
             }
             return dados;
         }
 
+        // ============ VERIFICAR ALARMES INTELIGENTES ============
+        function verificarAlarmes(dados) {
+            var agora = Date.now();
+            var keys = Object.keys(dados);
+
+            for (var i = 0; i < keys.length; i++) {
+                var tagId = keys[i];
+                if (tagId.startsWith('_')) continue;
+                var cfg = alarmeConfig[tagId];
+                if (!cfg) continue;
+
+                var val = dados[tagId];
+                var valor = (typeof val === 'object' && 'v' in val) ? val.v : (typeof val === 'number' ? val : null);
+                if (valor === null) continue;
+
+                // Guardar histórico de valores (últimos 5 min)
+                if (!historicoValores[tagId]) historicoValores[tagId] = [];
+                historicoValores[tagId].push({ t: agora, v: valor });
+                // Manter só últimos 10 minutos
+                while (historicoValores[tagId].length > 0 && (agora - historicoValores[tagId][0].t) > 600000) {
+                    historicoValores[tagId].shift();
+                }
+
+                // --- ALARME 1: Limite fixo ---
+                var emAlarmeFixo = false;
+                var tipoFixo = 'none';
+                if (cfg.limiteAlto != null && valor > cfg.limiteAlto) { emAlarmeFixo = true; tipoFixo = 'high'; }
+                if (cfg.limiteBaixo != null && valor < cfg.limiteBaixo) { emAlarmeFixo = true; tipoFixo = 'low'; }
+
+                // --- ALARME 2: Taxa de variação (últimos 5 min) ---
+                var alarmeTaxa = false;
+                if (cfg.taxaMax != null && historicoValores[tagId].length >= 2) {
+                    var hist = historicoValores[tagId];
+                    // Pegar valor de ~5 min atrás
+                    var valorAntigo = null;
+                    for (var h = 0; h < hist.length; h++) {
+                        if ((agora - hist[h].t) >= 240000) { valorAntigo = hist[h].v; break; } // ~4-5 min atrás
+                    }
+                    if (valorAntigo === null && hist.length > 1) valorAntigo = hist[0].v;
+                    if (valorAntigo !== null) {
+                        var taxa = Math.abs(valor - valorAntigo);
+                        if (taxa >= cfg.taxaMax) {
+                            alarmeTaxa = true;
+                            var direcao = valor > valorAntigo ? 'subiu' : 'desceu';
+                        }
+                    }
+                }
+
+                // --- ALARME 3: Tempo em faixa ---
+                var alarmeTempoFaixa = false;
+                if (cfg.tempoFaixa != null && emAlarmeFixo) {
+                    if (!tempoForaFaixa[tagId]) {
+                        tempoForaFaixa[tagId] = agora; // primeira vez fora
+                    } else {
+                        var tempoFora = (agora - tempoForaFaixa[tagId]) / 1000;
+                        if (tempoFora >= cfg.tempoFaixa) {
+                            alarmeTempoFaixa = true;
+                        }
+                    }
+                } else {
+                    // Voltou ao normal — resetar timer
+                    if (tempoForaFaixa[tagId]) delete tempoForaFaixa[tagId];
+                }
+
+                // --- REGISTRAR ALARMES ---
+                var alarmeAnterior = alarmesAtivos[tagId];
+
+                // Alarme fixo: entrada
+                if (emAlarmeFixo && (!alarmeAnterior || alarmeAnterior.tipo !== tipoFixo)) {
+                    registrarAlarme(tagId, 'limite', tipoFixo, valor, cfg);
+                    alarmesAtivos[tagId] = { tipo: tipoFixo, inicio: agora, valor: valor };
+                }
+                // Alarme fixo: saída
+                if (!emAlarmeFixo && alarmeAnterior) {
+                    registrarSaidaAlarme(tagId, alarmeAnterior, valor);
+                    delete alarmesAtivos[tagId];
+                }
+
+                // Alarme taxa
+                if (alarmeTaxa) {
+                    registrarAlarme(tagId, 'taxa', direcao, valor, cfg, taxa);
+                }
+
+                // Alarme tempo em faixa
+                if (alarmeTempoFaixa && !alarmesAtivos[tagId + '_tempo']) {
+                    var minFora = Math.floor((agora - tempoForaFaixa[tagId]) / 60000);
+                    registrarAlarme(tagId, 'tempo_faixa', tipoFixo, valor, cfg, minFora);
+                    alarmesAtivos[tagId + '_tempo'] = true;
+                }
+                if (!emAlarmeFixo && alarmesAtivos[tagId + '_tempo']) {
+                    delete alarmesAtivos[tagId + '_tempo'];
+                }
+            }
+        }
+
+        function registrarAlarme(tagId, tipo, subtipo, valor, cfg, extra) {
+            contAlarmes++;
+            document.getElementById('alarmes-count').textContent = contAlarmes;
+
+            var nomeTag = tagId.replace(/_/g, ' ');
+            var msg = '';
+            if (tipo === 'limite') {
+                var lim = subtipo === 'high' ? cfg.limiteAlto : cfg.limiteBaixo;
+                msg = '🚨 ' + nomeTag + ': ' + valor.toFixed(1) + ' (limite ' + (subtipo === 'high' ? 'alto' : 'baixo') + ': ' + lim + ')';
+            } else if (tipo === 'taxa') {
+                msg = '📈 ' + nomeTag + ': ' + subtipo + ' ' + extra.toFixed(1) + ' em 5min (máx: ' + cfg.taxaMax + ')';
+            } else if (tipo === 'tempo_faixa') {
+                msg = '⏱️ ' + nomeTag + ': fora do limite há ' + extra + ' min';
+            }
+            log(msg, 'warning');
+
+            // Salvar no Firebase
+            var alarmeData = {
+                tagId: tagId,
+                tipo: tipo,
+                subtipo: subtipo,
+                valor: valor,
+                timestamp: Date.now(),
+                mensagem: msg,
+                status: 'ativo'
+            };
+            if (extra !== undefined) alarmeData.extra = extra;
+            db.ref('alarmes_log').push(alarmeData).catch(function(e) {
+                log('Erro salvar alarme: ' + e.message, 'error');
+            });
+        }
+
+        function registrarSaidaAlarme(tagId, alarmeAnterior, valorAtual) {
+            var duracao = Math.floor((Date.now() - alarmeAnterior.inicio) / 1000);
+            var nomeTag = tagId.replace(/_/g, ' ');
+            var msg = '✅ ' + nomeTag + ': normalizado (' + valorAtual.toFixed(1) + ') — durou ' + formatarDuracao(duracao);
+            log(msg, 'success');
+
+            db.ref('alarmes_log').push({
+                tagId: tagId,
+                tipo: 'saida',
+                valor: valorAtual,
+                valorEntrada: alarmeAnterior.valor,
+                timestamp: Date.now(),
+                duracao: duracao,
+                mensagem: msg,
+                status: 'normalizado'
+            }).catch(function() {});
+        }
+
+        function formatarDuracao(seg) {
+            if (seg < 60) return seg + 's';
+            if (seg < 3600) return Math.floor(seg / 60) + 'min';
+            return Math.floor(seg / 3600) + 'h ' + Math.floor((seg % 3600) / 60) + 'min';
+        }
+
         // ============ PROCESSAR QR ============
         function processQR(texto) {
-            // Ignorar se igual ao último (não conta, não loga)
             if (texto === lastData) return;
             lastData = texto;
 
-            // Agora sim conta como leitura real
             contLeituras++;
             document.getElementById('leituras').textContent = contLeituras;
-            log('QR lido (' + texto.length + ' bytes)', 'success');
 
-            // Parse
             var dados = parseQR(texto);
             var numVars = Object.keys(dados).length;
-            if (numVars === 0) {
-                log('Nenhuma variável extraída', 'error');
-                return;
-            }
+            if (numVars === 0) { log('Nenhuma variável extraída', 'error'); return; }
+
+            // Verificar alarmes inteligentes
+            verificarAlarmes(dados);
 
             // Metadata
             dados._readAt = new Date().toLocaleString('pt-BR');
@@ -210,7 +333,6 @@
                 document.getElementById('envios').textContent = contEnvios;
                 document.getElementById('status').textContent = '✅ Online';
                 document.getElementById('status').className = 'status';
-                log('✅ current OK — ' + numVars + ' vars', 'success');
                 enviarHeartbeat();
             }).catch(function(e) {
                 log('❌ Erro: ' + e.message, 'error');
@@ -218,34 +340,31 @@
                 document.getElementById('status').className = 'status error';
             });
 
-            // History (máximo 1x por minuto)
+            // History (máx 1x/min)
             var agora = Date.now();
             if (agora - ultimoHistory >= INTERVALO_HISTORY) {
                 ultimoHistory = agora;
-                db.ref('history').push(dados).then(function() {
-                    log('📊 history salvo');
-                }).catch(function(e) {
-                    log('history erro: ' + e.message, 'error');
-                });
+                db.ref('history').push(dados).catch(function() {});
             }
         }
 
-        // ============ LIMPEZA AUTOMÁTICA (>7 dias, a cada 2h) ============
-        function limparHistorico() {
-            var limite = Date.now() - (7 * 24 * 60 * 60 * 1000);
-            db.ref('history').orderByChild('_timestamp').endAt(limite).once('value', function(snap) {
-                var updates = {};
-                snap.forEach(function(child) { updates[child.key] = null; });
-                var total = Object.keys(updates).length;
-                if (total > 0) {
-                    db.ref('history').update(updates).then(function() {
-                        log('🧹 Limpou ' + total + ' registros antigos');
-                    });
-                }
+        // ============ LIMPEZA (>7 dias history, >30 dias alarmes) ============
+        function limparDados() {
+            var limite7d = Date.now() - (7 * 24 * 60 * 60 * 1000);
+            var limite30d = Date.now() - (30 * 24 * 60 * 60 * 1000);
+
+            db.ref('history').orderByChild('_timestamp').endAt(limite7d).once('value', function(snap) {
+                var u = {}; snap.forEach(function(c) { u[c.key] = null; });
+                if (Object.keys(u).length > 0) db.ref('history').update(u).then(function() { log('🧹 History limpo'); });
+            }).catch(function() {});
+
+            db.ref('alarmes_log').orderByChild('timestamp').endAt(limite30d).once('value', function(snap) {
+                var u = {}; snap.forEach(function(c) { u[c.key] = null; });
+                if (Object.keys(u).length > 0) db.ref('alarmes_log').update(u).then(function() { log('🧹 Alarmes antigos limpos'); });
             }).catch(function() {});
         }
-        setTimeout(limparHistorico, 60000); // 1min após iniciar
-        setInterval(limparHistorico, 7200000); // a cada 2h
+        setTimeout(limparDados, 60000);
+        setInterval(limparDados, 7200000);
 
         // ============ RECONEXÃO ============
         window.addEventListener('online', function() {
@@ -261,19 +380,18 @@
         // ============ CÂMERA ============
         function iniciarCamera() {
             html5QrCode = new Html5Qrcode("reader-container");
-
             html5QrCode.start(
                 { facingMode: "environment" },
                 {
                     fps: 10,
                     qrbox: function(vw, vh) {
-                        var size = Math.min(vw, vh) * 0.95;
+                        var size = Math.min(vw, vh) * 0.85;
                         return { width: Math.floor(size), height: Math.floor(size) };
                     },
                     formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
                 },
                 function(decodedText) { processQR(decodedText); },
-                function() {} // silencioso
+                function() {}
             ).then(function() {
                 log('📷 Câmera ativa', 'success');
                 document.getElementById('status').textContent = '📷 Lendo...';
@@ -291,7 +409,6 @@
             else { log('✅ Logado: ' + user.email); iniciarCamera(); }
         });
 
-        // ============ SAIR ============
         window.sair = function() {
             if (html5QrCode) html5QrCode.stop().catch(function() {});
             db.ref('leitor_status').update({ ativo: false, desconectadoEm: Date.now() });
