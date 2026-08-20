@@ -537,6 +537,111 @@
 
     })();
     </script>
+    
+<!-- ===== BANNER DE INSTALAÇÃO PWA ===== -->
+<!-- Cole no HTML, antes do </body> -->
+
+<div id="pwa-banner" style="display:none; position:fixed; bottom:0; left:0; right:0; background:linear-gradient(135deg,#1a1f3a,#0d1117); border-top:1px solid #4fc3f7; padding:14px 16px; z-index:9999; animation:slideUp 0.3s ease;">
+    <div style="display:flex; align-items:center; gap:12px;">
+        <div style="font-size:2em;">🏭</div>
+        <div style="flex:1;">
+            <div style="color:#e0e0e0; font-size:0.85em; font-weight:600;">Instalar Utilidades</div>
+            <div style="color:#888; font-size:0.7em; margin-top:2px;">Acesse direto da tela inicial, sem navegador</div>
+        </div>
+        <button id="pwa-install-btn" onclick="instalarPWA()" style="background:#4fc3f7; color:#000; border:none; padding:8px 16px; border-radius:8px; font-weight:700; font-size:0.8em; cursor:pointer;">Instalar</button>
+        <button onclick="fecharBannerPWA()" style="background:none; border:none; color:#666; font-size:1.2em; cursor:pointer; padding:4px 8px;">✕</button>
+    </div>
+    <!-- Instruções iOS (aparece só no iPhone/iPad) -->
+    <div id="pwa-ios-instrucoes" style="display:none; margin-top:10px; padding-top:10px; border-top:1px solid #2a2f45;">
+        <div style="color:#e0e0e0; font-size:0.75em; text-align:center;">
+            Toque em <span style="font-size:1.2em;">⬆️</span> <strong>Compartilhar</strong> e depois <strong>"Adicionar à Tela de Início"</strong>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes slideUp {
+        from { transform: translateY(100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+</style>
+
+<script>
+// ===== PWA INSTALL PROMPT =====
+(function() {
+    var deferredPrompt = null;
+    var banner = document.getElementById('pwa-banner');
+    var installBtn = document.getElementById('pwa-install-btn');
+    var iosInstrucoes = document.getElementById('pwa-ios-instrucoes');
+
+    // Não mostrar se já instalou ou já fechou recentemente
+    if (localStorage.getItem('pwa-instalado') || localStorage.getItem('pwa-banner-fechado')) {
+        // Verificar se o "fechado" expirou (mostrar de novo após 7 dias)
+        var fechadoEm = parseInt(localStorage.getItem('pwa-banner-fechado') || '0');
+        if (Date.now() - fechadoEm < 7 * 24 * 60 * 60 * 1000) return;
+        else localStorage.removeItem('pwa-banner-fechado');
+    }
+
+    // Não mostrar se já está em modo standalone (já instalou)
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+        localStorage.setItem('pwa-instalado', '1');
+        return;
+    }
+
+    // === ANDROID/CHROME: Interceptar evento nativo ===
+    window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        deferredPrompt = e;
+        mostrarBanner('android');
+    });
+
+    // === iOS: Detectar e mostrar instruções manuais ===
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (isIOS && isSafari) {
+        // Mostrar após 3 segundos (não atrapalhar o carregamento)
+        setTimeout(function() { mostrarBanner('ios'); }, 3000);
+    }
+
+    function mostrarBanner(tipo) {
+        banner.style.display = 'block';
+        if (tipo === 'ios') {
+            installBtn.style.display = 'none';
+            iosInstrucoes.style.display = 'block';
+        } else {
+            installBtn.style.display = 'inline-block';
+            iosInstrucoes.style.display = 'none';
+        }
+    }
+
+    // Instalar (Android/Chrome)
+    window.instalarPWA = function() {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function(result) {
+            if (result.outcome === 'accepted') {
+                localStorage.setItem('pwa-instalado', '1');
+            }
+            deferredPrompt = null;
+            banner.style.display = 'none';
+        });
+    };
+
+    // Fechar banner (não mostrar por 7 dias)
+    window.fecharBannerPWA = function() {
+        banner.style.display = 'none';
+        localStorage.setItem('pwa-banner-fechado', Date.now().toString());
+    };
+
+    // Detectar instalação concluída
+    window.addEventListener('appinstalled', function() {
+        banner.style.display = 'none';
+        localStorage.setItem('pwa-instalado', '1');
+    });
+})();
+</script>
+
+
 </body>
 </html>
 
