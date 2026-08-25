@@ -1,4 +1,306 @@
 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utilidades - Mondelēz</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#7c3aed">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        :root {
+            --bg1: #0d1117;
+            --bg2: #161b22;
+            --bg3: rgba(255,255,255,0.03);
+            --bg-card: rgba(255,255,255,0.05);
+            --bg-card-hover: rgba(255,255,255,0.08);
+            --glass: rgba(255,255,255,0.02);
+            --glass-border: rgba(255,255,255,0.08);
+            --t1: #ffffff;
+            --t2: #8b949e;
+            --t3: #484f58;
+            --accent: #7c3aed;
+            --accent2: #06b6d4;
+            --gradient: linear-gradient(135deg, #7c3aed, #06b6d4);
+            --gradient-soft: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(6,182,212,0.15));
+            --gradient-fill: linear-gradient(180deg, rgba(124,58,237,0.3), rgba(6,182,212,0.05));
+            --red: #ef4444;
+            --orange: #f97316;
+            --green: #22c55e;
+            --blue: #3b82f6;
+            --yellow: #eab308;
+            --shadow: 0 4px 24px rgba(0,0,0,0.3);
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif; background: var(--bg1); color: var(--t1); min-height:100vh; overflow-x:hidden; }
+
+        /* === HEADER === */
+        .header { background: var(--bg2); padding: 16px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--glass-border); position:sticky; top:0; z-index:100; backdrop-filter: blur(20px); }
+        .header-left { display:flex; align-items:center; gap:12px; }
+        .header-logo { width:32px; height:32px; border-radius:8px; background: var(--gradient); display:flex; align-items:center; justify-content:center; font-size:16px; }
+        .header h1 { font-size: 1em; font-weight: 600; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .header-right { display:flex; align-items:center; gap:10px; }
+        .status-badge { font-size:.7em; padding:4px 10px; border-radius:20px; background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+        .status-badge.offline { background: rgba(239,68,68,0.15); color: var(--red); border-color: rgba(239,68,68,0.3); }
+        .btn-icon { background: var(--bg-card); border: 1px solid var(--glass-border); color: var(--t2); width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; transition: all .2s; }
+        .btn-icon:hover { background: var(--bg-card-hover); color: var(--t1); }
+
+        /* === TABS === */
+        .tabs { display:flex; gap:4px; padding:12px 16px; background: var(--bg2); border-bottom: 1px solid var(--glass-border); overflow-x:auto; -webkit-overflow-scrolling:touch; }
+        .tabs::-webkit-scrollbar { display:none; }
+        .tab { padding:8px 16px; border-radius:10px; font-size:.75em; font-weight:500; color: var(--t2); background: transparent; border: none; cursor:pointer; white-space:nowrap; transition: all .2s; }
+        .tab:hover { color: var(--t1); background: var(--bg-card); }
+        .tab.active { background: var(--gradient); color: #fff; font-weight:600; }
+
+        /* === LEITOR STATUS === */
+        .leitor-bar { display:flex; align-items:center; justify-content:space-between; padding:10px 20px; background: var(--glass); border-bottom: 1px solid var(--glass-border); }
+        .leitor-left { display:flex; align-items:center; gap:10px; font-size:.75em; }
+        .leitor-dot { width:8px; height:8px; border-radius:50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+        .leitor-dot.offline { background: var(--red); box-shadow: 0 0 8px var(--red); animation:none; }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.85)} }
+        .leitor-right { display:flex; gap:16px; font-size:.7em; color: var(--t2); }
+        .leitor-right .val { color: var(--accent2); font-weight:600; }
+        .last-update { text-align:center; font-size:.68em; color: var(--t3); padding:6px 20px; background: var(--bg2); }
+
+        /* === OVERVIEW CARDS (Visão Geral) === */
+        .overview-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; padding:16px; }
+        .overview-card { background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius); padding:16px; position:relative; overflow:hidden; transition: all .3s; }
+        .overview-card:hover { background: var(--bg-card-hover); transform: translateY(-2px); box-shadow: var(--shadow); }
+        .overview-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: var(--gradient); border-radius: var(--radius) var(--radius) 0 0; }
+        .overview-label { font-size:.65em; color: var(--t2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+        .overview-value { font-size:1.8em; font-weight:700; background: var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .overview-sub { font-size:.7em; color: var(--t3); margin-top:4px; }
+        .overview-card .donut-container { position:absolute; top:12px; right:12px; width:44px; height:44px; }
+
+        /* === DATA CARDS === */
+        .section-container { padding:12px 16px; }
+        .section-title { font-size:.7em; color: var(--accent); text-transform:uppercase; letter-spacing:1px; font-weight:600; margin-bottom:10px; padding-left:4px; }
+        .cards-grid { display:flex; flex-direction:column; gap:8px; }
+        .data-card { display:flex; align-items:center; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding:14px 16px; gap:14px; transition: all .3s; cursor:pointer; position:relative; overflow:hidden; }
+        .data-card:hover { background: var(--bg-card-hover); transform: translateX(4px); }
+        .data-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background: var(--gradient); }
+        .data-card.alarm-red::before { background: var(--red); }
+        .data-card.alarm-red { border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.05); }
+        .data-card.alarm-red .card-value { color: var(--red); }
+        .data-card.alarm-blue::before { background: var(--blue); }
+        .data-card.alarm-blue { border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.05); }
+        .data-card.alarm-blue .card-value { color: var(--blue); }
+        .data-card.alarm-orange::before { background: var(--orange); }
+        .data-card.alarm-orange { border-color: rgba(249,115,22,0.3); background: rgba(249,115,22,0.05); }
+        .data-card.alarm-orange .card-value { color: var(--orange); }
+        .card-info { flex-shrink:0; min-width:fit-content; }
+        .card-name { font-size:.7em; color: var(--t2); text-transform:uppercase; letter-spacing:.3px; white-space:nowrap; }
+        .card-value { font-size:1.5em; font-weight:700; color: var(--t1); margin-top:2px; }
+        .card-value .unit { font-size:.5em; color: var(--t3); font-weight:400; margin-left:3px; }
+        .card-spark { flex:1; min-width:60px; height:50px; position:relative; }
+        .card-spark canvas { width:100%; height:100%; display:block; }
+        .card-trend { font-size:1.1em; width:24px; text-align:center; flex-shrink:0; }
+        .trend-up { color: var(--red); }
+        .trend-down { color: var(--green); }
+        .trend-stable { color: var(--t3); }
+
+        /* === ENERGIA TAB === */
+        .energia-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:12px; padding:16px; }
+        .trafo-card { background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius); padding:18px; position:relative; overflow:hidden; }
+        .trafo-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: var(--gradient); }
+        .trafo-card.offline::before { background: var(--red); }
+        .trafo-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+        .trafo-nome { font-size:.85em; font-weight:600; color: var(--t1); }
+        .trafo-status { font-size:.65em; padding:3px 8px; border-radius:12px; }
+        .trafo-status.online { background: rgba(34,197,94,0.15); color: var(--green); }
+        .trafo-status.offline { background: rgba(239,68,68,0.15); color: var(--red); }
+        .trafo-status.alerta { background: rgba(249,115,22,0.15); color: var(--orange); }
+        .trafo-body { display:flex; gap:16px; align-items:center; }
+        .trafo-donut { width:80px; height:80px; position:relative; flex-shrink:0; }
+        .trafo-donut canvas { width:100%; height:100%; }
+        .trafo-donut-label { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; }
+        .trafo-donut-value { font-size:1.1em; font-weight:700; color: var(--t1); }
+        .trafo-donut-sub { font-size:.55em; color: var(--t3); }
+        .trafo-metrics { flex:1; display:flex; flex-direction:column; gap:6px; }
+        .trafo-metric { display:flex; justify-content:space-between; align-items:center; font-size:.72em; }
+        .trafo-metric-label { color: var(--t2); }
+        .trafo-metric-value { color: var(--t1); font-weight:600; font-family:monospace; }
+        .trafo-metric-value.alarm { color: var(--red); }
+
+        /* === MODAL === */
+        .modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.9); z-index:200; align-items:center; justify-content:center; padding:15px; backdrop-filter:blur(8px); }
+        .modal-overlay.show { display:flex; }
+        .modal { background: var(--bg2); border-radius: var(--radius); width:100%; max-width:700px; max-height:90vh; overflow-y:auto; padding:24px; position:relative; border: 1px solid var(--glass-border); box-shadow: var(--shadow); }
+        .modal-close { position:absolute; top:12px; right:16px; background:none; border:none; color: var(--t2); font-size:1.5em; cursor:pointer; }
+        .modal h2 { background: var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; font-size:1.1em; margin-bottom:5px; }
+        .modal-valor { font-size:2.2em; font-weight:700; margin-bottom:12px; }
+        .modal-periodo { display:flex; gap:8px; margin-bottom:16px; }
+        .modal-periodo button { background: var(--bg-card); color: var(--accent2); border: 1px solid var(--glass-border); padding:6px 14px; border-radius:8px; font-size:.75em; cursor:pointer; transition: all .2s; }
+        .modal-periodo button.active { background: var(--gradient); color:#fff; border-color:transparent; }
+        .modal canvas { width:100%; height:250px; display:block; border-radius: var(--radius-sm); background: var(--bg-card); }
+        .modal-stats { display:flex; justify-content:space-around; margin-top:14px; font-size:.8em; color: var(--t2); }
+        .modal-stats .stat-val { font-weight:700; color: var(--t1); font-size:1.2em; }
+
+        /* === TOOLBAR === */
+        .toolbar { display:flex; gap:6px; padding:8px 16px; background: var(--bg2); border-bottom: 1px solid var(--glass-border); }
+        .toolbar button { background: var(--bg-card); color: var(--t2); border: 1px solid var(--glass-border); padding:6px 12px; border-radius:8px; font-size:.7em; cursor:pointer; transition: all .2s; }
+        .toolbar button:hover { color: var(--t1); background: var(--bg-card-hover); }
+        .toolbar button.active { background: var(--gradient); color:#fff; border-color:transparent; }
+
+        /* === ALARMES === */
+        .alarmes-section { display:none; padding:16px; }
+        .alarme-item { display:flex; align-items:center; gap:10px; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding:10px 14px; font-size:.75em; margin-bottom:6px; border-left:3px solid var(--t3); }
+        .alarme-item.tipo-limite { border-left-color: var(--red); }
+        .alarme-item.tipo-taxa { border-left-color: var(--orange); }
+        .alarme-item.tipo-tempo_faixa { border-left-color: var(--blue); }
+        .alarme-item.tipo-saida { border-left-color: var(--green); }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 480px) {
+            .overview-grid { grid-template-columns: repeat(2, 1fr); gap:8px; }
+            .energia-grid { grid-template-columns: 1fr; }
+            .card-value { font-size:1.3em; }
+            .overview-value { font-size:1.5em; }
+        }
+
+        /* === SCROLLBAR === */
+        ::-webkit-scrollbar { width:4px; }
+        ::-webkit-scrollbar-track { background: var(--bg1); }
+        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius:4px; }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-left">
+            <div class="header-logo">🏭</div>
+            <h1>Utilidades</h1>
+        </div>
+        <div class="header-right">
+            <span class="status-badge" id="conn-status">● Online</span>
+            <button class="btn-icon" onclick="toggleTheme()" id="btn-theme">☀️</button>
+            <button class="btn-icon" onclick="exportarCSV()">📥</button>
+            <button class="btn-icon" onclick="toggleNotificacoes()" id="btn-notif">🔔</button>
+            <button class="btn-icon" onclick="logout()">⏻</button>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+        <button class="tab active" onclick="mudarTab('overview',this)">📊 Visão Geral</button>
+        <button class="tab" onclick="mudarTab('temp',this)">🌡️ Temperaturas</button>
+        <button class="tab" onclick="mudarTab('ar',this)">💨 Ar Comprimido</button>
+        <button class="tab" onclick="mudarTab('cura',this)">🧊 Salas de Cura</button>
+        <button class="tab" onclick="mudarTab('vapor',this)">♨️ Vapor/Água</button>
+        <button class="tab" onclick="mudarTab('energia',this)">⚡ Energia</button>
+        <button class="tab" onclick="mudarTab('alarmes',this)">📋 Alarmes</button>
+    </div>
+
+    <!-- LEITOR STATUS -->
+    <div class="leitor-bar">
+        <div class="leitor-left">
+            <div class="leitor-dot" id="leitor-dot"></div>
+            <span id="leitor-label" style="color:var(--t2)">Leitor: verificando...</span>
+        </div>
+        <div class="leitor-right">
+            <span>📖 <span class="val" id="leitor-leituras">0</span></span>
+            <span>⏱️ <span class="val" id="leitor-uptime">00:00</span></span>
+        </div>
+    </div>
+    <div class="last-update" id="last-update">Aguardando dados...</div>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div id="content-area">
+        <!-- Overview (padrão) -->
+        <div id="tab-overview" class="tab-content">
+            <div class="overview-grid" id="overview-grid"></div>
+            <div class="section-container">
+                <div class="section-title">Variáveis em Alarme</div>
+                <div class="cards-grid" id="alarme-cards"></div>
+            </div>
+        </div>
+
+        <!-- Temperaturas -->
+        <div id="tab-temp" class="tab-content" style="display:none">
+            <div class="section-container">
+                <div class="cards-grid" id="cards-temp"></div>
+            </div>
+        </div>
+
+        <!-- Ar Comprimido -->
+        <div id="tab-ar" class="tab-content" style="display:none">
+            <div class="section-container">
+                <div class="cards-grid" id="cards-ar"></div>
+            </div>
+        </div>
+
+        <!-- Salas de Cura -->
+        <div id="tab-cura" class="tab-content" style="display:none">
+            <div class="section-container">
+                <div class="cards-grid" id="cards-cura"></div>
+            </div>
+        </div>
+
+        <!-- Vapor/Água -->
+        <div id="tab-vapor" class="tab-content" style="display:none">
+            <div class="section-container">
+                <div class="cards-grid" id="cards-vapor"></div>
+            </div>
+        </div>
+
+        <!-- Energia Elétrica -->
+        <div id="tab-energia" class="tab-content" style="display:none">
+            <div class="section-container">
+                <div class="section-title">⚡ Subestações & Transformadores</div>
+                <div class="overview-grid" id="energia-resumo"></div>
+            </div>
+            <div class="energia-grid" id="energia-trafos"></div>
+            <div class="section-container">
+                <div class="section-title">📊 Medições Gerais</div>
+                <div class="cards-grid" id="cards-energia"></div>
+            </div>
+        </div>
+
+        <!-- Alarmes -->
+        <div id="tab-alarmes" class="tab-content" style="display:none">
+            <div class="alarmes-section" style="display:block">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                    <h2 style="color:var(--accent);font-size:.9em">📋 Log de Alarmes</h2>
+                    <div style="display:flex;gap:6px" id="alarme-filtros"></div>
+                </div>
+                <div class="overview-grid" id="alarme-resumo" style="margin-bottom:12px"></div>
+                <div id="alarmes-lista"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)this.classList.remove('show')">
+        <div class="modal">
+            <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('show')">✕</button>
+            <h2 id="modal-titulo">—</h2>
+            <div class="modal-valor" id="modal-valor">—</div>
+            <div class="modal-periodo">
+                <button class="active" onclick="mudarPeriodo('1h',this)">1h</button>
+                <button onclick="mudarPeriodo('6h',this)">6h</button>
+                <button onclick="mudarPeriodo('24h',this)">24h</button>
+                <button onclick="mudarPeriodo('7d',this)">7d</button>
+            </div>
+            <canvas id="modal-canvas"></canvas>
+            <div class="modal-stats">
+                <div><div class="stat-val" id="stat-min">—</div>Mínimo</div>
+                <div><div class="stat-val" id="stat-med">—</div>Média</div>
+                <div><div class="stat-val" id="stat-max">—</div>Máximo</div>
+                <div><div class="stat-val" id="stat-pts">—</div>Pontos</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    
     <script>
     (function(){
         firebase.initializeApp({apiKey:"AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",authDomain:"dshutili.firebaseapp.com",databaseURL:"https://dshutili-default-rtdb.firebaseio.com",projectId:"dshutili",storageBucket:"dshutili.firebasestorage.app",messagingSenderId:"1065134772507",appId:"1:1065134772507:web:aed91d6d1953f69cb403be",measurementId:"G-B3NS6YKTLV"});
