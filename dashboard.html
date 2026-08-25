@@ -2,156 +2,289 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-
-    <link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#4fc3f7">
-<link rel="apple-touch-icon" href="icon-192.png">
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Utilidades - Dashboard</title>
+    <title>Utilidades - Mondelēz</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#7c3aed">
+    <link rel="apple-touch-icon" href="icon-192.png">
     <style>
-        :root{--bg1:#0a0e1a;--bg2:#0d1117;--bg3:#141929;--bg3h:#1a2035;--bgh:linear-gradient(135deg,#1a1f3a,#0d1117);--t1:#e0e0e0;--t2:#888;--t3:#555;--brd:#2a2f45;--acc:#4fc3f7;--spk:rgba(20,25,40,0.5)}
-        [data-theme="light"]{--bg1:#f5f5f5;--bg2:#fff;--bg3:#fff;--bg3h:#f0f4f8;--bgh:linear-gradient(135deg,#e3f2fd,#fff);--t1:#212121;--t2:#616161;--t3:#9e9e9e;--brd:#e0e0e0;--acc:#0288d1;--spk:rgba(240,244,248,0.8)}
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg1);color:var(--t1);min-height:100vh;transition:background .3s,color .3s}
-        .header{background:var(--bgh);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--brd);position:sticky;top:0;z-index:50}
-        .header h1{font-size:1em;color:var(--acc);font-weight:600}
-        .header-right{display:flex;align-items:center;gap:8px}
-        .connection{font-size:.7em;padding:3px 8px;border-radius:10px;background:#1b5e20;color:#a5d6a7}
-        .connection.offline{background:#b71c1c;color:#ef9a9a}
-        .btn-s{background:#333;color:#fff;border:none;padding:5px 10px;border-radius:4px;cursor:pointer;font-size:.7em}
-        [data-theme="light"] .btn-s{background:#e0e0e0;color:#333}
-        .toolbar{display:flex;gap:6px;padding:8px 14px;background:var(--bg2);border-bottom:1px solid var(--brd);flex-wrap:wrap}
-        .toolbar button{background:var(--bg3);color:var(--acc);border:1px solid var(--brd);padding:5px 10px;border-radius:6px;font-size:.68em;cursor:pointer}
-        .toolbar button.active{background:var(--acc);color:#000;border-color:var(--acc)}
-        .filter-bar{display:flex;gap:5px;padding:6px 14px;background:var(--bg2);border-bottom:1px solid var(--brd);flex-wrap:wrap}
-        .filter-bar button{background:var(--bg3);color:var(--t2);border:1px solid var(--brd);padding:4px 8px;border-radius:12px;font-size:.65em;cursor:pointer}
-        .filter-bar button.active{background:var(--acc);color:#000;border-color:var(--acc)}
-        .leitor-status{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--bg2);border-bottom:1px solid var(--brd);font-size:.7em}
-        .leitor-info{display:flex;align-items:center;gap:8px}
-        .leitor-dot{width:8px;height:8px;border-radius:50%;background:#4caf50;animation:blink 2s infinite}
-        .leitor-dot.offline{background:#ef5350;animation:none}
-        @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
-        .leitor-stats{display:flex;gap:12px}.leitor-stats span{color:var(--t2)}.leitor-stats .val{color:var(--acc);font-weight:600}
-        .last-update{text-align:center;font-size:.7em;color:var(--t3);padding:6px;background:var(--bg2)}
-        .last-update.stale-yellow{color:#ffa726}.last-update.stale-red{color:#ef5350;font-weight:600}
-        .cards-container{padding:10px;display:flex;flex-direction:column;gap:6px}
-        .card-row{display:flex;align-items:center;background:var(--bg3);border-radius:8px;padding:10px 12px;border-left:3px solid var(--acc);gap:10px;transition:background .2s;cursor:pointer}
-        .card-row:hover{background:var(--bg3h)}
-        .card-row.alarm-red{border-left-color:#ef5350;background:#1a1015}.card-row.alarm-red:hover{background:#251520}.card-row.alarm-red .card-valor{color:#ef5350}.card-row.alarm-red .card-nome{color:#ef9a9a}
-        .card-row.alarm-blue{border-left-color:#42a5f5;background:#0d1520}.card-row.alarm-blue:hover{background:#122030}.card-row.alarm-blue .card-valor{color:#42a5f5}.card-row.alarm-blue .card-nome{color:#90caf9}
-        .card-row.alarm-orange{border-left-color:#ffa726;background:#1a1508}.card-row.alarm-orange:hover{background:#252010}.card-row.alarm-orange .card-valor{color:#ffa726}.card-row.alarm-orange .card-nome{color:#ffcc80}
-        .card-row.alarm-yellow{border-left-color:#ffee58;background:#1a1a08}.card-row.alarm-yellow:hover{background:#252510}.card-row.alarm-yellow .card-valor{color:#ffee58}.card-row.alarm-yellow .card-nome{color:#fff9c4}
-        [data-theme="light"] .card-row.alarm-red{background:#ffebee}[data-theme="light"] .card-row.alarm-blue{background:#e3f2fd}[data-theme="light"] .card-row.alarm-orange{background:#fff3e0}[data-theme="light"] .card-row.alarm-yellow{background:#fffde7}
-        .card-info{flex-shrink:0;min-width:fit-content;padding-right:8px}
-        .card-nome{font-size:.7em;color:var(--t2);text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
-        .card-valor{font-size:1.3em;font-weight:700;color:var(--t1);margin-top:2px}.card-valor .unidade{font-size:.55em;color:var(--t3);font-weight:400;margin-left:3px}
-        .card-spark{flex:1;min-width:60px;height:50px;position:relative}.card-spark canvas{width:100%;height:100%;display:block}
-        .spark-labels{position:absolute;top:0;right:2px;bottom:0;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none}
-        .spark-labels span{font-size:.5em;color:var(--t3);font-family:monospace}
-        .card-trend{font-size:1em;width:20px;text-align:center;flex-shrink:0}
-        .trend-up{color:#ef5350}.trend-down{color:#4caf50}.trend-stable{color:var(--t3)}
-        .section-title{font-size:.75em;color:var(--acc);text-transform:uppercase;letter-spacing:1px;padding:12px 12px 4px;font-weight:600}
-        .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);z-index:200;align-items:center;justify-content:center;padding:15px}
-        .modal-overlay.show{display:flex}
-        .modal{background:var(--bg2);border-radius:12px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;padding:20px;position:relative;border:1px solid var(--brd)}
-        .modal-close{position:absolute;top:10px;right:15px;background:none;border:none;color:var(--t2);font-size:1.5em;cursor:pointer}
-        .modal h2{color:var(--acc);font-size:1em;margin-bottom:5px}
-        .modal-valor-atual{font-size:1.8em;font-weight:700;margin-bottom:10px}
-        .modal-periodo{display:flex;gap:8px;margin-bottom:15px}
-        .modal-periodo button{background:var(--bg3);color:var(--acc);border:1px solid var(--brd);padding:5px 12px;border-radius:6px;font-size:.75em;cursor:pointer}
-        .modal-periodo button.active{background:var(--acc);color:#000}
-        .modal canvas{width:100%;height:250px;display:block;border-radius:8px;background:var(--spk)}
-        .modal-stats{display:flex;justify-content:space-around;margin-top:12px;font-size:.8em;color:var(--t2)}
-        .modal-stats .stat-val{font-weight:700;color:var(--t1);font-size:1.1em}
-        .alarme-item{display:flex;align-items:center;gap:10px;background:var(--bg3);border-radius:6px;padding:8px 12px;font-size:.75em;border-left:3px solid var(--brd)}
-        .alarme-item.tipo-limite{border-left-color:#ef5350}.alarme-item.tipo-taxa{border-left-color:#ffa726}.alarme-item.tipo-tempo_faixa{border-left-color:#42a5f5}.alarme-item.tipo-saida{border-left-color:#4caf50}
-        .alarme-item .alarme-hora{color:var(--t3);font-family:monospace;min-width:50px}
-        .alarme-item .alarme-icone{font-size:1.2em}
-        .alarme-item .alarme-msg{flex:1;color:var(--t1)}
-        .alarme-item .alarme-duracao{color:var(--t2);font-size:.9em}
-        .filtro-alarme.active{background:var(--acc)!important;color:#000!important}
-        .alarmes-section{display:none;padding:10px}
-        .alarmes-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-        .alarmes-header h2{color:var(--acc);font-size:.9em}
-        .alarmes-filtros{display:flex;gap:6px}
-        .alarmes-filtros button{background:var(--bg3);color:var(--acc);border:1px solid var(--brd);padding:4px 8px;border-radius:6px;font-size:.65em;cursor:pointer}
-        .resumo-box{background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:12px;border-left:3px solid var(--acc)}
-        .resumo-titulo{font-size:.75em;color:var(--acc);font-weight:600;margin-bottom:6px}
-        .resumo-stats{display:flex;gap:20px;font-size:.8em;flex-wrap:wrap}
-        .resumo-stats span{color:var(--t2)}.resumo-stats .val{font-weight:700}
+        :root {
+            --bg1: #0d1117;
+            --bg2: #161b22;
+            --bg3: rgba(255,255,255,0.03);
+            --bg-card: rgba(255,255,255,0.05);
+            --bg-card-hover: rgba(255,255,255,0.08);
+            --glass: rgba(255,255,255,0.02);
+            --glass-border: rgba(255,255,255,0.08);
+            --t1: #ffffff;
+            --t2: #8b949e;
+            --t3: #484f58;
+            --accent: #7c3aed;
+            --accent2: #06b6d4;
+            --gradient: linear-gradient(135deg, #7c3aed, #06b6d4);
+            --gradient-soft: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(6,182,212,0.15));
+            --gradient-fill: linear-gradient(180deg, rgba(124,58,237,0.3), rgba(6,182,212,0.05));
+            --red: #ef4444;
+            --orange: #f97316;
+            --green: #22c55e;
+            --blue: #3b82f6;
+            --yellow: #eab308;
+            --shadow: 0 4px 24px rgba(0,0,0,0.3);
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif; background: var(--bg1); color: var(--t1); min-height:100vh; overflow-x:hidden; }
+
+        /* === HEADER === */
+        .header { background: var(--bg2); padding: 16px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--glass-border); position:sticky; top:0; z-index:100; backdrop-filter: blur(20px); }
+        .header-left { display:flex; align-items:center; gap:12px; }
+        .header-logo { width:32px; height:32px; border-radius:8px; background: var(--gradient); display:flex; align-items:center; justify-content:center; font-size:16px; }
+        .header h1 { font-size: 1em; font-weight: 600; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .header-right { display:flex; align-items:center; gap:10px; }
+        .status-badge { font-size:.7em; padding:4px 10px; border-radius:20px; background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+        .status-badge.offline { background: rgba(239,68,68,0.15); color: var(--red); border-color: rgba(239,68,68,0.3); }
+        .btn-icon { background: var(--bg-card); border: 1px solid var(--glass-border); color: var(--t2); width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; transition: all .2s; }
+        .btn-icon:hover { background: var(--bg-card-hover); color: var(--t1); }
+
+        /* === TABS === */
+        .tabs { display:flex; gap:4px; padding:12px 16px; background: var(--bg2); border-bottom: 1px solid var(--glass-border); overflow-x:auto; -webkit-overflow-scrolling:touch; }
+        .tabs::-webkit-scrollbar { display:none; }
+        .tab { padding:8px 16px; border-radius:10px; font-size:.75em; font-weight:500; color: var(--t2); background: transparent; border: none; cursor:pointer; white-space:nowrap; transition: all .2s; }
+        .tab:hover { color: var(--t1); background: var(--bg-card); }
+        .tab.active { background: var(--gradient); color: #fff; font-weight:600; }
+
+        /* === LEITOR STATUS === */
+        .leitor-bar { display:flex; align-items:center; justify-content:space-between; padding:10px 20px; background: var(--glass); border-bottom: 1px solid var(--glass-border); }
+        .leitor-left { display:flex; align-items:center; gap:10px; font-size:.75em; }
+        .leitor-dot { width:8px; height:8px; border-radius:50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+        .leitor-dot.offline { background: var(--red); box-shadow: 0 0 8px var(--red); animation:none; }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.85)} }
+        .leitor-right { display:flex; gap:16px; font-size:.7em; color: var(--t2); }
+        .leitor-right .val { color: var(--accent2); font-weight:600; }
+        .last-update { text-align:center; font-size:.68em; color: var(--t3); padding:6px 20px; background: var(--bg2); }
+
+        /* === OVERVIEW CARDS (Visão Geral) === */
+        .overview-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; padding:16px; }
+        .overview-card { background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius); padding:16px; position:relative; overflow:hidden; transition: all .3s; }
+        .overview-card:hover { background: var(--bg-card-hover); transform: translateY(-2px); box-shadow: var(--shadow); }
+        .overview-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: var(--gradient); border-radius: var(--radius) var(--radius) 0 0; }
+        .overview-label { font-size:.65em; color: var(--t2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+        .overview-value { font-size:1.8em; font-weight:700; background: var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .overview-sub { font-size:.7em; color: var(--t3); margin-top:4px; }
+        .overview-card .donut-container { position:absolute; top:12px; right:12px; width:44px; height:44px; }
+
+        /* === DATA CARDS === */
+        .section-container { padding:12px 16px; }
+        .section-title { font-size:.7em; color: var(--accent); text-transform:uppercase; letter-spacing:1px; font-weight:600; margin-bottom:10px; padding-left:4px; }
+        .cards-grid { display:flex; flex-direction:column; gap:8px; }
+        .data-card { display:flex; align-items:center; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding:14px 16px; gap:14px; transition: all .3s; cursor:pointer; position:relative; overflow:hidden; }
+        .data-card:hover { background: var(--bg-card-hover); transform: translateX(4px); }
+        .data-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background: var(--gradient); }
+        .data-card.alarm-red::before { background: var(--red); }
+        .data-card.alarm-red { border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.05); }
+        .data-card.alarm-red .card-value { color: var(--red); }
+        .data-card.alarm-blue::before { background: var(--blue); }
+        .data-card.alarm-blue { border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.05); }
+        .data-card.alarm-blue .card-value { color: var(--blue); }
+        .data-card.alarm-orange::before { background: var(--orange); }
+        .data-card.alarm-orange { border-color: rgba(249,115,22,0.3); background: rgba(249,115,22,0.05); }
+        .data-card.alarm-orange .card-value { color: var(--orange); }
+        .card-info { flex-shrink:0; min-width:fit-content; }
+        .card-name { font-size:.7em; color: var(--t2); text-transform:uppercase; letter-spacing:.3px; white-space:nowrap; }
+        .card-value { font-size:1.5em; font-weight:700; color: var(--t1); margin-top:2px; }
+        .card-value .unit { font-size:.5em; color: var(--t3); font-weight:400; margin-left:3px; }
+        .card-spark { flex:1; min-width:60px; height:50px; position:relative; }
+        .card-spark canvas { width:100%; height:100%; display:block; }
+        .card-trend { font-size:1.1em; width:24px; text-align:center; flex-shrink:0; }
+        .trend-up { color: var(--red); }
+        .trend-down { color: var(--green); }
+        .trend-stable { color: var(--t3); }
+
+        /* === ENERGIA TAB === */
+        .energia-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:12px; padding:16px; }
+        .trafo-card { background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius); padding:18px; position:relative; overflow:hidden; }
+        .trafo-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: var(--gradient); }
+        .trafo-card.offline::before { background: var(--red); }
+        .trafo-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+        .trafo-nome { font-size:.85em; font-weight:600; color: var(--t1); }
+        .trafo-status { font-size:.65em; padding:3px 8px; border-radius:12px; }
+        .trafo-status.online { background: rgba(34,197,94,0.15); color: var(--green); }
+        .trafo-status.offline { background: rgba(239,68,68,0.15); color: var(--red); }
+        .trafo-status.alerta { background: rgba(249,115,22,0.15); color: var(--orange); }
+        .trafo-body { display:flex; gap:16px; align-items:center; }
+        .trafo-donut { width:80px; height:80px; position:relative; flex-shrink:0; }
+        .trafo-donut canvas { width:100%; height:100%; }
+        .trafo-donut-label { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; }
+        .trafo-donut-value { font-size:1.1em; font-weight:700; color: var(--t1); }
+        .trafo-donut-sub { font-size:.55em; color: var(--t3); }
+        .trafo-metrics { flex:1; display:flex; flex-direction:column; gap:6px; }
+        .trafo-metric { display:flex; justify-content:space-between; align-items:center; font-size:.72em; }
+        .trafo-metric-label { color: var(--t2); }
+        .trafo-metric-value { color: var(--t1); font-weight:600; font-family:monospace; }
+        .trafo-metric-value.alarm { color: var(--red); }
+
+        /* === MODAL === */
+        .modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.9); z-index:200; align-items:center; justify-content:center; padding:15px; backdrop-filter:blur(8px); }
+        .modal-overlay.show { display:flex; }
+        .modal { background: var(--bg2); border-radius: var(--radius); width:100%; max-width:700px; max-height:90vh; overflow-y:auto; padding:24px; position:relative; border: 1px solid var(--glass-border); box-shadow: var(--shadow); }
+        .modal-close { position:absolute; top:12px; right:16px; background:none; border:none; color: var(--t2); font-size:1.5em; cursor:pointer; }
+        .modal h2 { background: var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; font-size:1.1em; margin-bottom:5px; }
+        .modal-valor { font-size:2.2em; font-weight:700; margin-bottom:12px; }
+        .modal-periodo { display:flex; gap:8px; margin-bottom:16px; }
+        .modal-periodo button { background: var(--bg-card); color: var(--accent2); border: 1px solid var(--glass-border); padding:6px 14px; border-radius:8px; font-size:.75em; cursor:pointer; transition: all .2s; }
+        .modal-periodo button.active { background: var(--gradient); color:#fff; border-color:transparent; }
+        .modal canvas { width:100%; height:250px; display:block; border-radius: var(--radius-sm); background: var(--bg-card); }
+        .modal-stats { display:flex; justify-content:space-around; margin-top:14px; font-size:.8em; color: var(--t2); }
+        .modal-stats .stat-val { font-weight:700; color: var(--t1); font-size:1.2em; }
+
+        /* === TOOLBAR === */
+        .toolbar { display:flex; gap:6px; padding:8px 16px; background: var(--bg2); border-bottom: 1px solid var(--glass-border); }
+        .toolbar button { background: var(--bg-card); color: var(--t2); border: 1px solid var(--glass-border); padding:6px 12px; border-radius:8px; font-size:.7em; cursor:pointer; transition: all .2s; }
+        .toolbar button:hover { color: var(--t1); background: var(--bg-card-hover); }
+        .toolbar button.active { background: var(--gradient); color:#fff; border-color:transparent; }
+
+        /* === ALARMES === */
+        .alarmes-section { display:none; padding:16px; }
+        .alarme-item { display:flex; align-items:center; gap:10px; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding:10px 14px; font-size:.75em; margin-bottom:6px; border-left:3px solid var(--t3); }
+        .alarme-item.tipo-limite { border-left-color: var(--red); }
+        .alarme-item.tipo-taxa { border-left-color: var(--orange); }
+        .alarme-item.tipo-tempo_faixa { border-left-color: var(--blue); }
+        .alarme-item.tipo-saida { border-left-color: var(--green); }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 480px) {
+            .overview-grid { grid-template-columns: repeat(2, 1fr); gap:8px; }
+            .energia-grid { grid-template-columns: 1fr; }
+            .card-value { font-size:1.3em; }
+            .overview-value { font-size:1.5em; }
+        }
+
+        /* === SCROLLBAR === */
+        ::-webkit-scrollbar { width:4px; }
+        ::-webkit-scrollbar-track { background: var(--bg1); }
+        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius:4px; }
     </style>
 </head>
-<body data-theme="dark">
+<body>
+    <!-- HEADER -->
     <div class="header">
-        <h1>Utilidades - Online</h1>
+        <div class="header-left">
+            <div class="header-logo">🏭</div>
+            <h1>Utilidades</h1>
+        </div>
         <div class="header-right">
-            <span class="connection" id="conn-status">● Conectado</span>
-            <button class="btn-s" onclick="toggleTheme()" id="btn-theme">☀️</button>
-            <button class="btn-s" onclick="logout()">Sair</button>
+            <span class="status-badge" id="conn-status">● Online</span>
+            <button class="btn-icon" onclick="toggleTheme()" id="btn-theme">☀️</button>
+            <button class="btn-icon" onclick="exportarCSV()">📥</button>
+            <button class="btn-icon" onclick="toggleNotificacoes()" id="btn-notif">🔔</button>
+            <button class="btn-icon" onclick="logout()">⏻</button>
         </div>
     </div>
-    <div class="toolbar">
-        <button onclick="abrirMiniWidget()" id="btn-widget">📌 Widget</button>
-        <button onclick="toggleNotificacoes()" id="btn-notif">🔔 Alertas</button>
-        <button onclick="exportarCSV()">📥 CSV</button>
-        <button onclick="toggleLogAlarmes()" id="btn-alarmes">📋 Alarmes</button>
+
+    <!-- TABS -->
+    <div class="tabs">
+        <button class="tab active" onclick="mudarTab('overview',this)">📊 Visão Geral</button>
+        <button class="tab" onclick="mudarTab('temp',this)">🌡️ Temperaturas</button>
+        <button class="tab" onclick="mudarTab('ar',this)">💨 Ar Comprimido</button>
+        <button class="tab" onclick="mudarTab('cura',this)">🧊 Salas de Cura</button>
+        <button class="tab" onclick="mudarTab('vapor',this)">♨️ Vapor/Água</button>
+        <button class="tab" onclick="mudarTab('energia',this)">⚡ Energia</button>
+        <button class="tab" onclick="mudarTab('alarmes',this)">📋 Alarmes</button>
     </div>
-    <div class="filter-bar" id="filter-bar">
-        <button class="active" onclick="filtrar('todos',this)">Todos</button>
-        <button onclick="filtrar('temp',this)">Temperaturas</button>
-        <button onclick="filtrar('cura',this)">Salas de Cura</button>
-        <button onclick="filtrar('ar',this)">Ar Comprimido</button>
-        <button onclick="filtrar('agua',this)">Água</button>
-        <button onclick="filtrar('vapor',this)">Vapor/Pressão</button>
-        <button onclick="filtrar('qualidade',this)">Qualidade Ar</button>
-    </div>
-    <div class="leitor-status">
-        <div class="leitor-info"><div class="leitor-dot" id="leitor-dot"></div><span id="leitor-label">Leitor: verificando...</span></div>
-        <div class="leitor-stats"><span>📖 <span class="val" id="leitor-leituras">0</span></span><span>⏱️ <span class="val" id="leitor-uptime">00:00</span></span></div>
+
+    <!-- LEITOR STATUS -->
+    <div class="leitor-bar">
+        <div class="leitor-left">
+            <div class="leitor-dot" id="leitor-dot"></div>
+            <span id="leitor-label" style="color:var(--t2)">Leitor: verificando...</span>
+        </div>
+        <div class="leitor-right">
+            <span>📖 <span class="val" id="leitor-leituras">0</span></span>
+            <span>⏱️ <span class="val" id="leitor-uptime">00:00</span></span>
+        </div>
     </div>
     <div class="last-update" id="last-update">Aguardando dados...</div>
-    <div class="cards-container" id="cards-container"></div>
 
-    <!-- SEÇÃO DE ALARMES (oculta por padrão) -->
-    <div class="alarmes-section" id="alarmes-section">
-        <div class="alarmes-header">
-            <h2>📋 Log de Alarmes</h2>
-            <div class="alarmes-filtros">
-                <button class="filtro-alarme active" onclick="filtrarAlarmes('todos',this)">Todos</button>
-                <button class="filtro-alarme" onclick="filtrarAlarmes('ativo',this)">Ativos</button>
-                <button class="filtro-alarme" onclick="filtrarAlarmes('limite',this)">Limite</button>
-                <button class="filtro-alarme" onclick="filtrarAlarmes('taxa',this)">Taxa</button>
-                <button class="filtro-alarme" onclick="filtrarAlarmes('tempo_faixa',this)">Tempo</button>
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div id="content-area">
+        <!-- Overview (padrão) -->
+        <div id="tab-overview" class="tab-content">
+            <div class="overview-grid" id="overview-grid"></div>
+            <div class="section-container">
+                <div class="section-title">Variáveis em Alarme</div>
+                <div class="cards-grid" id="alarme-cards"></div>
             </div>
         </div>
-        <div class="resumo-box">
-            <div class="resumo-titulo">📊 Resumo (últimas 24h)</div>
-            <div class="resumo-stats">
-                <span>Total: <span class="val" id="resumo-total">0</span></span>
-                <span style="color:#ef5350">Críticos: <span class="val" id="resumo-criticos" style="color:#ef5350">0</span></span>
-                <span style="color:#ffa726">Taxa: <span class="val" id="resumo-taxa" style="color:#ffa726">0</span></span>
-                <span style="color:#42a5f5">Tempo: <span class="val" id="resumo-tempo" style="color:#42a5f5">0</span></span>
-                <span style="color:#4caf50">Normalizados: <span class="val" id="resumo-normalizados" style="color:#4caf50">0</span></span>
+
+        <!-- Temperaturas -->
+        <div id="tab-temp" class="tab-content" style="display:none">
+            <div class="section-container">
+                <div class="cards-grid" id="cards-temp"></div>
             </div>
         </div>
-        <div id="alarmes-lista"></div>
+
+        <!-- Ar Comprimido -->
+        <div id="tab-ar" class="tab-content" style="display:none">
+            <div class="section-container">
+                <div class="cards-grid" id="cards-ar"></div>
+            </div>
+        </div>
+
+        <!-- Salas de Cura -->
+        <div id="tab-cura" class="tab-content" style="display:none">
+            <div class="section-container">
+                <div class="cards-grid" id="cards-cura"></div>
+            </div>
+        </div>
+
+        <!-- Vapor/Água -->
+        <div id="tab-vapor" class="tab-content" style="display:none">
+            <div class="section-container">
+                <div class="cards-grid" id="cards-vapor"></div>
+            </div>
+        </div>
+
+        <!-- Energia Elétrica -->
+        <div id="tab-energia" class="tab-content" style="display:none">
+            <div class="section-container">
+                <div class="section-title">⚡ Subestações & Transformadores</div>
+                <div class="overview-grid" id="energia-resumo"></div>
+            </div>
+            <div class="energia-grid" id="energia-trafos"></div>
+            <div class="section-container">
+                <div class="section-title">📊 Medições Gerais</div>
+                <div class="cards-grid" id="cards-energia"></div>
+            </div>
+        </div>
+
+        <!-- Alarmes -->
+        <div id="tab-alarmes" class="tab-content" style="display:none">
+            <div class="alarmes-section" style="display:block">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                    <h2 style="color:var(--accent);font-size:.9em">📋 Log de Alarmes</h2>
+                    <div style="display:flex;gap:6px" id="alarme-filtros"></div>
+                </div>
+                <div class="overview-grid" id="alarme-resumo" style="margin-bottom:12px"></div>
+                <div id="alarmes-lista"></div>
+            </div>
+        </div>
     </div>
 
-    <!-- MODAL HISTÓRICO -->
+    <!-- MODAL -->
     <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)this.classList.remove('show')">
         <div class="modal">
             <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('show')">✕</button>
             <h2 id="modal-titulo">—</h2>
-            <div class="modal-valor-atual" id="modal-valor">—</div>
+            <div class="modal-valor" id="modal-valor">—</div>
             <div class="modal-periodo">
-                <button class="active" onclick="mudarPeriodo('1h',this)" id="btn-1h">1h</button>
-                <button onclick="mudarPeriodo('6h',this)" id="btn-6h">6h</button>
-                <button onclick="mudarPeriodo('24h',this)" id="btn-24h">24h</button>
-                <button onclick="mudarPeriodo('7d',this)" id="btn-7d">7d</button>
+                <button class="active" onclick="mudarPeriodo('1h',this)">1h</button>
+                <button onclick="mudarPeriodo('6h',this)">6h</button>
+                <button onclick="mudarPeriodo('24h',this)">24h</button>
+                <button onclick="mudarPeriodo('7d',this)">7d</button>
             </div>
             <canvas id="modal-canvas"></canvas>
             <div class="modal-stats">
@@ -166,288 +299,298 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    
+   
     <script>
     (function(){
         firebase.initializeApp({apiKey:"AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",authDomain:"dshutili.firebaseapp.com",databaseURL:"https://dshutili-default-rtdb.firebaseio.com",projectId:"dshutili",storageBucket:"dshutili.firebasestorage.app",messagingSenderId:"1065134772507",appId:"1:1065134772507:web:aed91d6d1953f69cb403be",measurementId:"G-B3NS6YKTLV"});
         var db=firebase.database();
+        firebase.auth().onAuthStateChanged(function(u){if(!u)window.location.href='index.html';else initDashboard()});
 
-        firebase.auth().onAuthStateChanged(function(user){if(!user){window.location.href='index.html'}else{initDashboard()}});
-
-        // ===== TAG CONFIG =====
+        // ===== CONFIG =====
         var tagConfig={
-            "TO8001_2_3_4":{nome:"Torres C.A.G.",grupo:"temp",limiteAlto:32,limiteBaixo:null,escalaMin:20,escalaMax:35,corAlto:"red",corBaixo:null},
-            "TO8006_Retorno":{nome:"Torre Wafer",grupo:"temp",limiteAlto:35,limiteBaixo:null,escalaMin:25,escalaMax:40,corAlto:"red",corBaixo:null},
-            "CH8007":{nome:"Chiller 8007",grupo:"temp",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
-            "CH8008":{nome:"Chiller 8008",grupo:"temp",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
-            "CH8011_14":{nome:"Chillers 8011/14",grupo:"temp",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
-            "CV8004_Retorno":{nome:"Sala de gordura",grupo:"temp",limiteAlto:50,limiteBaixo:null,escalaMin:35,escalaMax:55,corAlto:"red",corBaixo:null},
-            "Agua_6C":{nome:"Água Gelada 6°C",grupo:"agua",limiteAlto:8,limiteBaixo:null,escalaMin:3,escalaMax:10,corAlto:"red",corBaixo:null},
-            "Temperatura_Ar_Comp_Chocolate":{nome:"Temp Ar Choco",grupo:"qualidade",limiteAlto:50,limiteBaixo:null,escalaMin:25,escalaMax:60,corAlto:"orange",corBaixo:null},
-            "Temperatura_Ar_Comp_BG":{nome:"Temp Ar B&G",grupo:"qualidade",limiteAlto:50,limiteBaixo:null,escalaMin:25,escalaMax:60,corAlto:"orange",corBaixo:null},
-            "Temperatura_Sala_Cura_Bubba":{nome:"Sala Cura Bubba",grupo:"cura",limiteAlto:17,limiteBaixo:13,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
-            "Temperatura_Sala_Cura_Chiclets":{nome:"Sala Cura Chiclets",grupo:"cura",limiteAlto:14,limiteBaixo:10,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
-            "Temperatura_Sala_Cura_Trident":{nome:"Sala Cura Trident",grupo:"cura",limiteAlto:15,limiteBaixo:10,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
-            "Umidade_Sala_Cura_Bubba":{nome:"Umid. Cura Bubba",grupo:"cura",limiteAlto:35,limiteBaixo:30,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
-            "Umidade_Sala_Cura_Chiclets":{nome:"Umid. Cura Chiclets",grupo:"cura",limiteAlto:35,limiteBaixo:30,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
-            "Umidade_Sala_Cura_Trident":{nome:"Umid. Cura Trident",grupo:"cura",limiteAlto:35,limiteBaixo:30,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
-            "Ar_Comp_DM":{nome:"Ar Comp Dry Mix",grupo:"ar",limiteAlto:null,limiteBaixo:5.5,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
-            "Ar_Comp_DM_Boge":{nome:"Ar Comp Boge",grupo:"ar",limiteAlto:null,limiteBaixo:5.0,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
-            "Ar_Comp_Choco":{nome:"Ar Comp Chocolate",grupo:"ar",limiteAlto:null,limiteBaixo:5.5,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
-            "Vacuo_Dry_Mix":{nome:"Vácuo Dry Mix",grupo:"ar",limiteAlto:null,limiteBaixo:17,escalaMin:10,escalaMax:30,corAlto:null,corBaixo:"red"},
-            "Pressao_Cavalete_BG":{nome:"Pressão Cavalete B&G",grupo:"vapor",limiteAlto:null,limiteBaixo:10,escalaMin:8,escalaMax:15,corAlto:null,corBaixo:"red"},
-            "Pressao_Vapor_Choco":{nome:"Pressão Vapor Choco",grupo:"vapor",limiteAlto:null,limiteBaixo:5,escalaMin:3,escalaMax:10,corAlto:null,corBaixo:"red"},
-            "Nivel_TQ_CD8006_7":{nome:"Nível TQ CD8006/7",grupo:"vapor",limiteAlto:null,limiteBaixo:40,escalaMin:20,escalaMax:100,corAlto:null,corBaixo:"red"},
-            "Umidade_Ar_Comp_Chocolate":{nome:"Umidade Ar Choco",grupo:"qualidade",limiteAlto:25,limiteBaixo:null,escalaMin:0,escalaMax:35,corAlto:"red",corBaixo:null},
-            "Umidade_Ar_Comp_BG":{nome:"Umidade Ar B&G",grupo:"qualidade",limiteAlto:25,limiteBaixo:null,escalaMin:0,escalaMax:35,corAlto:"red",corBaixo:null}
-        };
-        var grupos={"temp":"Temperaturas","cura":"Salas de Cura","ar":"Ar Comprimido / Vácuo","agua":"Água","vapor":"Vapor / Pressão","qualidade":"Qualidade do Ar"};
-        var corMap={"red":{linha:'#ef5350',fill:'rgba(239,83,80,0.12)',classe:'alarm-red'},"blue":{linha:'#42a5f5',fill:'rgba(66,165,245,0.12)',classe:'alarm-blue'},"orange":{linha:'#ffa726',fill:'rgba(255,167,38,0.12)',classe:'alarm-orange'},"yellow":{linha:'#ffee58',fill:'rgba(255,238,88,0.12)',classe:'alarm-yellow'}};
-        var gruposOrdem=['temp','cura','ar','agua','vapor','qualidade','outro'];
-
-        var historico={},MAX_HIST=30,notificacoesAtivas=false,alarmesAtivosNotif={};
-        var miniWidgetWindow=null,ultimosDados=null,filtroAtual='todos',ultimoTimestamp=null;
-        var modalTagAtual=null;
-        var logAlarmesVisivel=false,filtroAlarmeAtual='todos',alarmesLogData=[];
-
-        // ===== TEMA =====
-        window.toggleTheme=function(){
-            var b=document.body,btn=document.getElementById('btn-theme');
-            if(b.getAttribute('data-theme')==='dark'){b.setAttribute('data-theme','light');btn.textContent='🌙';localStorage.setItem('tema','light')}
-            else{b.setAttribute('data-theme','dark');btn.textContent='☀️';localStorage.setItem('tema','dark')}
-            setTimeout(redesenharSparklines,100);
-        };
-        (function(){var t=localStorage.getItem('tema');if(t==='light'){document.body.setAttribute('data-theme','light');document.getElementById('btn-theme').textContent='🌙'}})();
-
-        // ===== FILTRO CARDS =====
-        window.filtrar=function(grupo,btn){
-            filtroAtual=grupo;
-            var btns=document.querySelectorAll('.filter-bar button');for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');
-            btn.classList.add('active');if(ultimosDados)renderCards(ultimosDados);
+            "TO8001_2_3_4":{nome:"Torres C.A.G.",grupo:"temp",u:"°C",limiteAlto:32,limiteBaixo:null,escalaMin:20,escalaMax:35,corAlto:"red",corBaixo:null},
+            "TO8006_Retorno":{nome:"Torre Wafer",grupo:"temp",u:"°C",limiteAlto:35,limiteBaixo:null,escalaMin:25,escalaMax:40,corAlto:"red",corBaixo:null},
+            "CH8007":{nome:"Chiller 8007",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
+            "CH8008":{nome:"Chiller 8008",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
+            "CH8011_14":{nome:"Chillers 8011/14",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
+            "CV8004_Retorno":{nome:"Sala de Gordura",grupo:"temp",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:35,escalaMax:55,corAlto:"red",corBaixo:null},
+            "Agua_6C":{nome:"Água Gelada 6°C",grupo:"vapor",u:"°C",limiteAlto:8,limiteBaixo:null,escalaMin:3,escalaMax:10,corAlto:"red",corBaixo:null},
+            "Ar_Comp_DM":{nome:"Ar Comp Dry Mix",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.5,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
+            "Ar_Comp_DM_Boge":{nome:"Ar Comp Boge",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.0,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
+            "Ar_Comp_Choco":{nome:"Ar Comp Chocolate",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.5,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
+            "Vacuo_Dry_Mix":{nome:"Vácuo Dry Mix",grupo:"ar",u:"mbar",limiteAlto:null,limiteBaixo:15,escalaMin:10,escalaMax:30,corAlto:null,corBaixo:"red"},
+            "Pressao_Cavalete_BG":{nome:"Pressão Cavalete B&G",grupo:"vapor",u:"bar",limiteAlto:null,limiteBaixo:10,escalaMin:8,escalaMax:15,corAlto:null,corBaixo:"red"},
+            "Pressao_Vapor_Choco":{nome:"Pressão Vapor Choco",grupo:"vapor",u:"bar",limiteAlto:null,limiteBaixo:5,escalaMin:3,escalaMax:10,corAlto:null,corBaixo:"red"},
+            "Nivel_TQ_CD8006_7":{nome:"Nível TQ CD8006/7",grupo:"vapor",u:"%",limiteAlto:null,limiteBaixo:40,escalaMin:20,escalaMax:100,corAlto:null,corBaixo:"red"},
+            "Temperatura_Ar_Comp_Chocolate":{nome:"Temp Ar Choco",grupo:"ar",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:25,escalaMax:60,corAlto:"orange",corBaixo:null},
+            "Temperatura_Ar_Comp_BG":{nome:"Temp Ar B&G",grupo:"ar",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:25,escalaMax:60,corAlto:"orange",corBaixo:null},
+            "Umidade_Ar_Comp_Chocolate":{nome:"Umidade Ar Choco",grupo:"ar",u:"%",limiteAlto:25,limiteBaixo:null,escalaMin:0,escalaMax:35,corAlto:"red",corBaixo:null},
+            "Umidade_Ar_Comp_BG":{nome:"Umidade Ar B&G",grupo:"ar",u:"%",limiteAlto:25,limiteBaixo:null,escalaMin:0,escalaMax:35,corAlto:"red",corBaixo:null},
+            "Temperatura_Sala_Cura_Bubba":{nome:"Sala Cura Bubba",grupo:"cura",u:"°C",limiteAlto:17,limiteBaixo:13,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
+            "Temperatura_Sala_Cura_Chiclets":{nome:"Sala Cura Chiclets",grupo:"cura",u:"°C",limiteAlto:14,limiteBaixo:10,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
+            "Temperatura_Sala_Cura_Trident":{nome:"Sala Cura Trident",grupo:"cura",u:"°C",limiteAlto:15,limiteBaixo:10,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
+            "Umidade_Sala_Cura_Bubba":{nome:"Umid. Cura Bubba",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:30,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
+            "Umidade_Sala_Cura_Chiclets":{nome:"Umid. Cura Chiclets",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:30,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
+            "Umidade_Sala_Cura_Trident":{nome:"Umid. Cura Trident",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:30,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"}
         };
 
-        // ===== INDICADOR TEMPO =====
-        function atualizarIndicadorTempo(){
-            if(!ultimoTimestamp)return;var el=document.getElementById('last-update');
-            var diff=Math.floor((Date.now()-ultimoTimestamp)/1000);var texto='';
-            if(diff<10)texto='🔄 Atualizado agora';else if(diff<60)texto='🔄 Última leitura há '+diff+'s';
-            else if(diff<3600)texto='🔄 Última leitura há '+Math.floor(diff/60)+'min';
-            else texto='🔄 Última leitura há '+Math.floor(diff/3600)+'h '+Math.floor((diff%3600)/60)+'min';
-            el.textContent=texto;el.className='last-update';
-            if(diff>120)el.classList.add('stale-red');else if(diff>30)el.classList.add('stale-yellow');
-        }
-        setInterval(atualizarIndicadorTempo,5000);
+        // Config Energia (subestações) — PREENCHER COM SEUS DADOS
+        var energiaConfig={
+            trafos:[
+                {id:"TRAFO_01",nome:"Trafo 01 - Subestação Principal",potencia:1500,u:"kVA"},
+                {id:"TRAFO_02",nome:"Trafo 02 - Chocolate",potencia:1000,u:"kVA"},
+                {id:"TRAFO_03",nome:"Trafo 03 - Dry Mix / B&G",potencia:750,u:"kVA"},
+                {id:"TRAFO_04",nome:"Trafo 04 - Utilidades",potencia:1000,u:"kVA"}
+            ],
+            medicoes:[
+                {id:"Demanda_Total",nome:"Demanda Total",u:"kW",limiteAlto:3500,escalaMax:4000},
+                {id:"FP_Geral",nome:"Fator de Potência",u:"",limiteAlto:null,limiteBaixo:0.92,escalaMin:0.85,escalaMax:1.0},
+                {id:"Consumo_Dia",nome:"Consumo Hoje",u:"kWh"},
+                {id:"Tensao_Entrada",nome:"Tensão Entrada",u:"kV",limiteAlto:14.2,limiteBaixo:12.6,escalaMin:12,escalaMax:15}
+            ]
+        };
 
-        // ===== CSV =====
-        window.exportarCSV=function(){
-            if(!ultimosDados){alert('Sem dados.');return}
-            var linhas=['Variável,Valor,Unidade,Grupo,Status'];var keys=Object.keys(ultimosDados);
-            for(var i=0;i<keys.length;i++){var key=keys[i];if(key.startsWith('_'))continue;
-                var val=ultimosDados[key],valor=null,unidade='';
-                if(val&&typeof val==='object'&&'v' in val){valor=val.v;unidade=val.u||''}else if(typeof val==='number')valor=val;
-                if(valor===null)continue;var cfg=tagConfig[key]||{};var nome=cfg.nome||key;var grupo=cfg.grupo||'outro';
-                var alarm=getAlarmInfo(key,valor);var status=alarm.tipo==='none'?'Normal':alarm.tipo==='high'?'Alarme Alto':'Alarme Baixo';
-                linhas.push('"'+nome+'",'+valor.toFixed(2)+',"'+unidade+'","'+(grupos[grupo]||grupo)+'","'+status+'"')}
-            var blob=new Blob(['\ufeff'+linhas.join('\n')],{type:'text/csv;charset=utf-8;'});
-            var link=document.createElement('a');link.href=URL.createObjectURL(blob);
-            link.download='utilidades_'+new Date().toISOString().slice(0,16).replace('T','_').replace(':','h')+'.csv';link.click();
+        var historico={},MAX_HIST=30,ultimosDados=null,ultimoTimestamp=null;
+        var tabAtual='overview',modalTagAtual=null,notificacoesAtivas=false,alarmesAtivosNotif={};
+
+        // ===== TABS =====
+        window.mudarTab=function(tab,btn){
+            tabAtual=tab;
+            document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
+            btn.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(function(c){c.style.display='none'});
+            var el=document.getElementById('tab-'+tab);if(el)el.style.display='block';
+            if(ultimosDados)renderAll(ultimosDados);
         };
 
         // ===== INIT =====
         function initDashboard(){
-            db.ref('current').on('value',function(snapshot){
-                var data=snapshot.val();if(!data)return;
+            db.ref('current').on('value',function(snap){
+                var data=snap.val();if(!data)return;
                 ultimosDados=data;ultimoTimestamp=data._timestamp||Date.now();
-                atualizarHistorico(data);renderCards(data);updateConnectionStatus(true);
-                verificarAlarmesNotif(data);atualizarMiniWidget(data);atualizarIndicadorTempo();
+                atualizarHistorico(data);renderAll(data);atualizarIndicadorTempo();
+                verificarAlarmesNotif(data);
             });
-            db.ref('leitor_status').on('value',function(snapshot){atualizarStatusLeitor(snapshot.val())});
-            db.ref('.info/connected').on('value',function(snap){updateConnectionStatus(snap.val())});
+            db.ref('leitor_status').on('value',function(snap){atualizarStatusLeitor(snap.val())});
+            db.ref('.info/connected').on('value',function(snap){
+                var el=document.getElementById('conn-status');
+                if(snap.val()){el.textContent='● Online';el.className='status-badge'}
+                else{el.textContent='● Offline';el.className='status-badge offline'}
+            });
         }
 
-        // ===== ALARME INFO =====
-        function getAlarmInfo(tagId,valor){
-            var cfg=tagConfig[tagId];if(!cfg)return{tipo:'none',cor:null};
-            if(cfg.limiteAlto!=null&&valor>cfg.limiteAlto)return{tipo:'high',cor:cfg.corAlto||'red'};
-            if(cfg.limiteBaixo!=null&&valor<cfg.limiteBaixo)return{tipo:'low',cor:cfg.corBaixo||'blue'};
-            return{tipo:'none',cor:null};
+        // ===== RENDER ALL =====
+        function renderAll(data){
+            if(tabAtual==='overview')renderOverview(data);
+            else if(tabAtual==='energia')renderEnergia(data);
+            else if(tabAtual==='alarmes')renderAlarmes();
+            else renderGrupo(tabAtual,data);
         }
 
-        // ===== NOTIFICAÇÕES =====
-        window.toggleNotificacoes=function(){
-            var btn=document.getElementById('btn-notif');
-            if(notificacoesAtivas){notificacoesAtivas=false;btn.textContent='🔔 Alertas';btn.classList.remove('active');return}
-            if(!('Notification' in window)){alert('Não suportado.');return}
-            if(Notification.permission==='granted'){notificacoesAtivas=true;btn.textContent='🔕 Alertas';btn.classList.add('active')}
-            else if(Notification.permission!=='denied'){Notification.requestPermission().then(function(p){if(p==='granted'){notificacoesAtivas=true;btn.textContent='🔕 Alertas';btn.classList.add('active')}})}
-            else alert('Bloqueado.');
-        };
-        function verificarAlarmesNotif(data){
-            if(!notificacoesAtivas)return;var keys=Object.keys(data);
-            for(var i=0;i<keys.length;i++){var key=keys[i];if(key.startsWith('_'))continue;
-                var val=data[key],valor=null;
+        // ===== OVERVIEW =====
+        function renderOverview(data){
+            var grid=document.getElementById('overview-grid');
+            var totalVars=0,emAlarme=0,normal=0;
+            var keys=Object.keys(data);
+            for(var i=0;i<keys.length;i++){
+                if(keys[i].startsWith('_'))continue;
+                var val=data[keys[i]],valor=null;
                 if(val&&typeof val==='object'&&'v' in val)valor=val.v;else if(typeof val==='number')valor=val;
-                if(valor===null)continue;var cfg=tagConfig[key];if(!cfg)continue;
-                var alarm=getAlarmInfo(key,valor);var emAlarme=alarm.tipo!=='none';
-                if(emAlarme&&!alarmesAtivosNotif[key]){alarmesAtivosNotif[key]=alarm.cor;
-                    var dir=alarm.tipo==='high'?'alto':'baixo';var lim=alarm.tipo==='high'?cfg.limiteAlto:cfg.limiteBaixo;
-                    new Notification(alarm.cor==='red'?'🚨 CRÍTICO':'⚠️ ATENÇÃO',{body:cfg.nome+': '+valor.toFixed(1)+' (limite '+dir+': '+lim+')',tag:'util-alarm-'+key});
-                }else if(!emAlarme&&alarmesAtivosNotif[key]){delete alarmesAtivosNotif[key]}}
-        }
-
-        // ===== LOG DE ALARMES =====
-        window.toggleLogAlarmes=function(){
-            var section=document.getElementById('alarmes-section');var cards=document.getElementById('cards-container');
-            var btn=document.getElementById('btn-alarmes');logAlarmesVisivel=!logAlarmesVisivel;
-            if(logAlarmesVisivel){section.style.display='block';cards.style.display='none';btn.classList.add('active');carregarLogAlarmes()}
-            else{section.style.display='none';cards.style.display='flex';btn.classList.remove('active')}
-        };
-        window.filtrarAlarmes=function(tipo,btn){
-            filtroAlarmeAtual=tipo;var btns=document.querySelectorAll('.filtro-alarme');
-            for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');btn.classList.add('active');renderizarAlarmes();
-        };
-        function carregarLogAlarmes(){
-            var desde=Date.now()-(24*60*60*1000);
-            db.ref('alarmes_log').orderByChild('timestamp').startAt(desde).once('value',function(snap){
-                alarmesLogData=[];snap.forEach(function(child){alarmesLogData.push(child.val())});
-                alarmesLogData.sort(function(a,b){return b.timestamp-a.timestamp});
-                renderizarAlarmes();atualizarResumo();
-            });
-        }
-        function renderizarAlarmes(){
-            var lista=document.getElementById('alarmes-lista');lista.innerHTML='';
-            var filtrados=alarmesLogData;
-            if(filtroAlarmeAtual!=='todos'){filtrados=alarmesLogData.filter(function(a){
-                if(filtroAlarmeAtual==='ativo')return a.status==='ativo';return a.tipo===filtroAlarmeAtual})}
-            if(filtrados.length===0){lista.innerHTML='<div style="text-align:center;color:var(--t3);padding:20px;font-size:.8em">Nenhum alarme neste período ✅</div>';return}
-            for(var i=0;i<Math.min(filtrados.length,100);i++){var a=filtrados[i];
-                var dt=new Date(a.timestamp);var hora=dt.getHours().toString().padStart(2,'0')+':'+dt.getMinutes().toString().padStart(2,'0');
-                var icone='🚨';if(a.tipo==='taxa')icone='📈';else if(a.tipo==='tempo_faixa')icone='⏱️';else if(a.tipo==='saida')icone='✅';
-                var div=document.createElement('div');div.className='alarme-item tipo-'+(a.tipo||'limite');
-                div.innerHTML='<span class="alarme-hora">'+hora+'</span><span class="alarme-icone">'+icone+'</span><span class="alarme-msg">'+(a.mensagem||a.tagId)+'</span>'+(a.duracao?'<span class="alarme-duracao">'+formatarDuracaoDash(a.duracao)+'</span>':'');
-                lista.appendChild(div)}
-        }
-        function formatarDuracaoDash(seg){if(seg<60)return seg+'s';if(seg<3600)return Math.floor(seg/60)+'min';return Math.floor(seg/3600)+'h '+Math.floor((seg%3600)/60)+'min'}
-        function atualizarResumo(){
-            var total=0,criticos=0,taxa=0,tempo=0,normalizados=0;
-            for(var i=0;i<alarmesLogData.length;i++){var a=alarmesLogData[i];total++;
-                if(a.tipo==='limite')criticos++;else if(a.tipo==='taxa')taxa++;else if(a.tipo==='tempo_faixa')tempo++;else if(a.tipo==='saida')normalizados++}
-            document.getElementById('resumo-total').textContent=total;document.getElementById('resumo-criticos').textContent=criticos;
-            document.getElementById('resumo-taxa').textContent=taxa;document.getElementById('resumo-tempo').textContent=tempo;
-            document.getElementById('resumo-normalizados').textContent=normalizados;
-        }
-
-        // ===== MINI WIDGET =====
-        var wStyles='*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:#0a0e1a;color:#e0e0e0;padding:8px;font-size:12px;overflow-y:auto}.header{text-align:center;color:#4fc3f7;font-size:11px;padding:6px 0;border-bottom:1px solid #2a2f45;margin-bottom:6px;font-weight:600}.item{display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:4px;margin-bottom:2px;background:#141929}.item.alarm-red{background:#1a1015;border-left:2px solid #ef5350}.item.alarm-blue{background:#0d1520;border-left:2px solid #42a5f5}.item.alarm-orange{background:#1a1508;border-left:2px solid #ffa726}.item .nome{color:#888;font-size:10px;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.item .valor{font-weight:700;color:#fff;font-size:12px}.item.alarm-red .valor{color:#ef5350}.item.alarm-blue .valor{color:#42a5f5}.item.alarm-orange .valor{color:#ffa726}.item .unidade{color:#555;font-size:9px;margin-left:2px}.grupo{color:#4fc3f7;font-size:9px;text-transform:uppercase;letter-spacing:.5px;padding:5px 4px 2px;font-weight:600}.update{text-align:center;color:#444;font-size:9px;padding:4px;margin-top:4px}';
-        window.abrirMiniWidget=async function(){
-            if(miniWidgetWindow&&!miniWidgetWindow.closed){miniWidgetWindow.focus();return}
-            if('documentPictureInPicture' in window){
-                try{var pw=await window.documentPictureInPicture.requestWindow({width:300,height:520});
-                    var s=pw.document.createElement('style');s.textContent=wStyles;pw.document.head.appendChild(s);
-                    pw.document.body.innerHTML='<div class="header">Utilidades</div><div id="widget-content">Aguardando...</div><div class="update" id="widget-update"></div>';
-                    miniWidgetWindow=pw;document.getElementById('btn-widget').classList.add('active');
-                    pw.addEventListener('pagehide',function(){miniWidgetWindow=null;document.getElementById('btn-widget').classList.remove('active')});
-                    if(ultimosDados)setTimeout(function(){atualizarMiniWidget(ultimosDados)},100);return}catch(e){}
+                if(valor===null)continue;totalVars++;
+                var alarm=getAlarmInfo(keys[i],valor);
+                if(alarm.tipo!=='none')emAlarme++;else normal++;
             }
-            miniWidgetWindow=window.open('','mini_widget','width=300,height=550,left='+(screen.width-320)+',top=50,resizable=yes,scrollbars=yes');
-            if(!miniWidgetWindow){alert('Popup bloqueado!');return}
-            miniWidgetWindow.document.open();miniWidgetWindow.document.write('<!DOCTYPE html><html><head><style>'+wStyles+'</style></head><body><div class="header">Utilidades</div><div id="widget-content">Aguardando...</div><div class="update" id="widget-update"></div></body></html>');
-            miniWidgetWindow.document.close();document.getElementById('btn-widget').classList.add('active');
-            if(ultimosDados)setTimeout(function(){atualizarMiniWidget(ultimosDados)},200);
-            var ck=setInterval(function(){if(miniWidgetWindow&&miniWidgetWindow.closed){clearInterval(ck);miniWidgetWindow=null;document.getElementById('btn-widget').classList.remove('active')}},1000);
-        };
-        function atualizarMiniWidget(data){
-            if(!miniWidgetWindow||(miniWidgetWindow.closed!==undefined&&miniWidgetWindow.closed))return;
-            var doc=miniWidgetWindow.document;var container=doc.getElementById('widget-content');if(!container)return;
-            var vars=[];var keys=Object.keys(data);
-            for(var i=0;i<keys.length;i++){var key=keys[i];if(key.startsWith('_'))continue;var val=data[key];
-                if(val&&typeof val==='object'&&'v' in val)vars.push({id:key,v:val.v,u:val.u||''});else if(typeof val==='number')vars.push({id:key,v:val,u:''})}
-            var agrupados={};for(var j=0;j<vars.length;j++){var v=vars[j];var cfg=tagConfig[v.id];var g=cfg?cfg.grupo:'outro';if(!agrupados[g])agrupados[g]=[];agrupados[g].push(v)}
-            var html='';for(var gi=0;gi<gruposOrdem.length;gi++){var gk=gruposOrdem[gi];var items=agrupados[gk];if(!items||!items.length)continue;
-                html+='<div class="grupo">'+(grupos[gk]||'Outros')+'</div>';
-                for(var k=0;k<items.length;k++){var it=items[k];var cfg2=tagConfig[it.id]||{};var alarm=getAlarmInfo(it.id,it.v);
-                    var ac=alarm.cor?' '+corMap[alarm.cor].classe:'';
-                    html+='<div class="item'+ac+'"><span class="nome">'+(cfg2.nome||it.id)+'</span><span class="valor">'+it.v.toFixed(1)+'<span class="unidade">'+it.u+'</span></span></div>'}}
-            container.innerHTML=html;var ue=doc.getElementById('widget-update');if(ue)ue.textContent='🔄 '+(data._readAt||new Date().toLocaleTimeString('pt-BR'));
+            var pctOk=totalVars>0?Math.round((normal/totalVars)*100):0;
+            grid.innerHTML='<div class="overview-card"><div class="overview-label">Variáveis</div><div class="overview-value">'+totalVars+'</div><div class="overview-sub">monitoradas</div></div>'
+                +'<div class="overview-card"><div class="overview-label">Em Alarme</div><div class="overview-value" style="background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent">'+emAlarme+'</div><div class="overview-sub">atenção necessária</div></div>'
+                +'<div class="overview-card"><div class="overview-label">Saúde</div><div class="overview-value">'+pctOk+'%</div><div class="overview-sub">dentro dos limites</div></div>'
+                +'<div class="overview-card"><div class="overview-label">Uptime Leitor</div><div class="overview-value" id="ov-uptime">—</div><div class="overview-sub">tempo ativo</div></div>';
+
+            // Cards em alarme
+            var alarmCards=document.getElementById('alarme-cards');alarmCards.innerHTML='';
+            for(var j=0;j<keys.length;j++){
+                if(keys[j].startsWith('_'))continue;
+                var v2=data[keys[j]],val2=null;
+                if(v2&&typeof v2==='object'&&'v' in v2)val2=v2.v;else if(typeof v2==='number')val2=v2;
+                if(val2===null)continue;
+                var a2=getAlarmInfo(keys[j],val2);
+                if(a2.tipo!=='none')alarmCards.appendChild(criarDataCard(keys[j],val2,tagConfig[keys[j]]));
+            }
+            if(!alarmCards.innerHTML)alarmCards.innerHTML='<div style="text-align:center;color:var(--t3);padding:20px;font-size:.8em">✅ Tudo normal — nenhum alarme ativo</div>';
         }
 
-        // ===== STATUS LEITOR =====
-        function atualizarStatusLeitor(data){
-            var dot=document.getElementById('leitor-dot'),label=document.getElementById('leitor-label');
-            var leituras=document.getElementById('leitor-leituras'),uptimeEl=document.getElementById('leitor-uptime');
-            if(!data){dot.className='leitor-dot offline';label.textContent='Leitor: nenhum';leituras.textContent='0';uptimeEl.textContent='00:00';return}
-            var diff=(Date.now()-(data.lastHeartbeat||0))/1000;
-            if(data.ativo&&diff<30){dot.className='leitor-dot';label.textContent='Leitor: online';leituras.textContent=data.leituras||'0';
-                var up=data.uptime||0;var h=Math.floor(up/3600);var m=Math.floor((up%3600)/60).toString().padStart(2,'0');var s=(up%60).toString().padStart(2,'0');
-                uptimeEl.textContent=h>0?h+':'+m+':'+s:m+':'+s;
-            }else{dot.className='leitor-dot offline';label.textContent=data.desconectadoEm?'Leitor: off desde '+new Date(data.desconectadoEm).toLocaleTimeString('pt-BR'):'Leitor: offline';
-                leituras.textContent=data.leituras||'0';uptimeEl.textContent='--:--'}
-        }
-
-        // ===== HISTÓRICO LOCAL =====
-        function atualizarHistorico(data){
-            var keys=Object.keys(data);for(var i=0;i<keys.length;i++){var key=keys[i];if(key.startsWith('_'))continue;
-                var val=data[key],valor=null;if(val&&typeof val==='object'&&'v' in val)valor=val.v;else if(typeof val==='number')valor=val;
-                if(valor!==null&&typeof valor==='number'){if(!historico[key])historico[key]=[];historico[key].push(valor);if(historico[key].length>MAX_HIST)historico[key].shift()}}
-        }
-
-        // ===== RENDER CARDS =====
-        function renderCards(data){
-            if(logAlarmesVisivel)return; // não renderiza cards se tá vendo alarmes
-            var container=document.getElementById('cards-container');container.innerHTML='';
-            var vars=[];var keys=Object.keys(data);
-            for(var i=0;i<keys.length;i++){var key=keys[i];if(key.startsWith('_'))continue;var val=data[key];
-                if(val&&typeof val==='object'&&'v' in val)vars.push({id:key,v:val.v,u:val.u||''});else if(typeof val==='number')vars.push({id:key,v:val,u:''})}
-            var agrupados={};for(var j=0;j<vars.length;j++){var v=vars[j];var cfg=tagConfig[v.id];var g=cfg?cfg.grupo:'outro';if(!agrupados[g])agrupados[g]=[];agrupados[g].push(v)}
-            for(var gi=0;gi<gruposOrdem.length;gi++){var gk=gruposOrdem[gi];var items=agrupados[gk];
-                if(!items||!items.length)continue;if(filtroAtual!=='todos'&&filtroAtual!==gk)continue;
-                var titulo=document.createElement('div');titulo.className='section-title';titulo.textContent=grupos[gk]||'Outros';container.appendChild(titulo);
-                for(var k=0;k<items.length;k++)container.appendChild(criarCardRow(items[k]))}
+        // ===== RENDER GRUPO =====
+        function renderGrupo(grupo,data){
+            var container=document.getElementById('cards-'+grupo);if(!container)return;container.innerHTML='';
+            var keys=Object.keys(tagConfig);
+            for(var i=0;i<keys.length;i++){
+                var cfg=tagConfig[keys[i]];if(cfg.grupo!==grupo)continue;
+                var val=data[keys[i]],valor=null;
+                if(val&&typeof val==='object'&&'v' in val)valor=val.v;else if(typeof val==='number')valor=val;
+                if(valor===null)valor=0;
+                container.appendChild(criarDataCard(keys[i],valor,cfg));
+            }
             setTimeout(redesenharSparklines,50);
         }
+
+        // ===== RENDER ENERGIA =====
+        function renderEnergia(data){
+            // Resumo
+            var resumo=document.getElementById('energia-resumo');
+            var demanda=getVal(data,'Demanda_Total');var fp=getVal(data,'FP_Geral');
+            var consumo=getVal(data,'Consumo_Dia');var tensao=getVal(data,'Tensao_Entrada');
+            resumo.innerHTML='<div class="overview-card"><div class="overview-label">Demanda Atual</div><div class="overview-value">'+(demanda!==null?demanda.toFixed(0):'—')+'</div><div class="overview-sub">kW</div></div>'
+                +'<div class="overview-card"><div class="overview-label">Fator Potência</div><div class="overview-value">'+(fp!==null?fp.toFixed(3):'—')+'</div><div class="overview-sub">'+(fp!==null&&fp<0.92?'⚠️ Abaixo de 0.92':'✅ OK')+'</div></div>'
+                +'<div class="overview-card"><div class="overview-label">Consumo Hoje</div><div class="overview-value">'+(consumo!==null?(consumo/1000).toFixed(1):'—')+'</div><div class="overview-sub">MWh</div></div>'
+                +'<div class="overview-card"><div class="overview-label">Tensão Entrada</div><div class="overview-value">'+(tensao!==null?tensao.toFixed(1):'—')+'</div><div class="overview-sub">kV</div></div>';
+
+            // Trafos
+            var trafosDiv=document.getElementById('energia-trafos');trafosDiv.innerHTML='';
+            for(var i=0;i<energiaConfig.trafos.length;i++){
+                var trafo=energiaConfig.trafos[i];
+                var carga=getVal(data,trafo.id+'_Carga');
+                var temp=getVal(data,trafo.id+'_Temp');
+                var corrente=getVal(data,trafo.id+'_Corrente');
+                var status=getVal(data,trafo.id+'_Status');
+                var pctCarga=carga!==null?(carga/trafo.potencia*100):null;
+
+                var statusClass='online',statusText='Online';
+                if(status===0){statusClass='offline';statusText='Offline'}
+                else if(pctCarga!==null&&pctCarga>85){statusClass='alerta';statusText='Carga Alta'}
+
+                var card=document.createElement('div');card.className='trafo-card'+(statusClass==='offline'?' offline':'');
+                card.innerHTML='<div class="trafo-header"><span class="trafo-nome">'+trafo.nome+'</span><span class="trafo-status '+statusClass+'">● '+statusText+'</span></div>'
+                    +'<div class="trafo-body">'
+                    +'<div class="trafo-donut"><canvas id="donut-'+trafo.id+'" width="160" height="160"></canvas><div class="trafo-donut-label"><div class="trafo-donut-value">'+(pctCarga!==null?pctCarga.toFixed(0)+'%':'—')+'</div><div class="trafo-donut-sub">carga</div></div></div>'
+                    +'<div class="trafo-metrics">'
+                    +'<div class="trafo-metric"><span class="trafo-metric-label">Potência</span><span class="trafo-metric-value">'+(carga!==null?carga.toFixed(0)+' kVA':'—')+'</span></div>'
+                    +'<div class="trafo-metric"><span class="trafo-metric-label">Corrente</span><span class="trafo-metric-value">'+(corrente!==null?corrente.toFixed(1)+' A':'—')+'</span></div>'
+                    +'<div class="trafo-metric"><span class="trafo-metric-label">Temperatura</span><span class="trafo-metric-value'+(temp!==null&&temp>75?' alarm':'')+'">'+(temp!==null?temp.toFixed(0)+'°C':'—')+'</span></div>'
+                    +'<div class="trafo-metric"><span class="trafo-metric-label">Capacidade</span><span class="trafo-metric-value">'+trafo.potencia+' '+trafo.u+'</span></div>'
+                    +'</div></div>';
+                trafosDiv.appendChild(card);
+                if(pctCarga!==null)setTimeout((function(id,pct){return function(){desenharDonut(id,pct)}})(trafo.id,pctCarga),50);
+            }
+
+            // Medições gerais
+            var medContainer=document.getElementById('cards-energia');medContainer.innerHTML='';
+            for(var j=0;j<energiaConfig.medicoes.length;j++){
+                var med=energiaConfig.medicoes[j];var val=getVal(data,med.id);
+                if(val===null)continue;
+                var fakeTag={nome:med.nome,grupo:'energia',u:med.u,limiteAlto:med.limiteAlto||null,limiteBaixo:med.limiteBaixo||null,escalaMin:med.escalaMin||null,escalaMax:med.escalaMax||null,corAlto:'red',corBaixo:'orange'};
+                medContainer.appendChild(criarDataCard(med.id,val,fakeTag));
+            }
+        }
+
+        // ===== DONUT CHART =====
+        function desenharDonut(trafoId,pct){
+            var canvas=document.getElementById('donut-'+trafoId);if(!canvas)return;
+            var ctx=canvas.getContext('2d');var w=canvas.width,h=canvas.height;
+            var cx=w/2,cy=h/2,r=60,lw=12;
+            ctx.clearRect(0,0,w,h);
+            // Background ring
+            ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=lw;ctx.stroke();
+            // Value ring
+            var angle=(pct/100)*Math.PI*2;var startAngle=-Math.PI/2;
+            var grad=ctx.createLinearGradient(0,0,w,h);
+            if(pct>85){grad.addColorStop(0,'#ef4444');grad.addColorStop(1,'#f97316')}
+            else if(pct>70){grad.addColorStop(0,'#f97316');grad.addColorStop(1,'#eab308')}
+            else{grad.addColorStop(0,'#7c3aed');grad.addColorStop(1,'#06b6d4')}
+            ctx.beginPath();ctx.arc(cx,cy,r,startAngle,startAngle+angle);ctx.strokeStyle=grad;ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();
+        }
+
+        // ===== DATA CARD =====
+        function criarDataCard(tagId,valor,cfg){
+            if(!cfg)cfg={nome:tagId,u:'',limiteAlto:null,limiteBaixo:null};
+            var alarm=getAlarmInfo(tagId,valor);
+            var hist=historico[tagId]||[];
+            var tendencia='',tClass='trend-stable';
+            if(hist.length>=2){var d=hist[hist.length-1]-hist[hist.length-2];
+                if(d>0.2){tendencia='▲';tClass='trend-up'}else if(d<-0.2){tendencia='▼';tClass='trend-down'}else{tendencia='─';tClass='trend-stable'}}
+
+            var alarmClass='';
+            if(alarm.cor==='red')alarmClass=' alarm-red';
+            else if(alarm.cor==='blue')alarmClass=' alarm-blue';
+            else if(alarm.cor==='orange')alarmClass=' alarm-orange';
+
+            var card=document.createElement('div');card.className='data-card'+alarmClass;
+            card.onclick=function(){abrirModal(tagId)};
+            card.innerHTML='<div class="card-info"><div class="card-name">'+cfg.nome+'</div><div class="card-value">'+valor.toFixed(1)+'<span class="unit">'+(cfg.u||'')+'</span></div></div>'
+                +'<div class="card-spark"><canvas data-tag="'+tagId+'" data-alarm="'+(alarm.cor||'none')+'"></canvas></div>'
+                +'<div class="card-trend '+tClass+'">'+tendencia+'</div>';
+            return card;
+        }
+
+        // ===== SPARKLINE =====
         function redesenharSparklines(){
-            var canvases=document.querySelectorAll('.card-spark canvas');
-            for(var i=0;i<canvases.length;i++){var canvas=canvases[i];var tagId=canvas.getAttribute('data-tag');
-                var alarmCor=canvas.getAttribute('data-alarm-cor');var hist=historico[tagId]||[];var cfg=tagConfig[tagId]||{};
-                var rect=canvas.parentElement.getBoundingClientRect();canvas.width=Math.floor(rect.width*2);canvas.height=Math.floor(rect.height*2);
-                if(hist.length>=2)desenharSparkline(canvas,hist,alarmCor,cfg)}
+            document.querySelectorAll('.card-spark canvas').forEach(function(canvas){
+                var tagId=canvas.getAttribute('data-tag');var alarmCor=canvas.getAttribute('data-alarm');
+                var hist=historico[tagId]||[];var cfg=tagConfig[tagId]||{};
+                var rect=canvas.parentElement.getBoundingClientRect();
+                canvas.width=Math.floor(rect.width*2);canvas.height=Math.floor(rect.height*2);
+                if(hist.length>=2)desenharSparkline(canvas,hist,alarmCor,cfg);
+            });
         }
         window.addEventListener('resize',function(){setTimeout(redesenharSparklines,100)});
 
-        function criarCardRow(item){
-            var cfg=tagConfig[item.id]||{};var nome=cfg.nome||item.id.replace(/_/g,' ');
-            var valor=item.v,unidade=item.u;var alarm=getAlarmInfo(item.id,valor);var alarmCor=alarm.cor;
-            var hist=historico[item.id]||[];var tendencia='',tendenciaClass='trend-stable';
-            if(hist.length>=2){var d=hist[hist.length-1]-hist[hist.length-2];
-                if(d>0.2){tendencia='▲';tendenciaClass='trend-up'}else if(d<-0.2){tendencia='▼';tendenciaClass='trend-down'}else{tendencia='─';tendenciaClass='trend-stable'}}
-            var row=document.createElement('div');row.className='card-row'+(alarmCor?' '+corMap[alarmCor].classe:'');
-            row.onclick=function(){abrirModal(item.id)};
-            var info=document.createElement('div');info.className='card-info';
-            info.innerHTML='<div class="card-nome">'+nome+'</div><div class="card-valor">'+(typeof valor==='number'?valor.toFixed(1):valor)+'<span class="unidade">'+unidade+'</span></div>';
-            var sparkDiv=document.createElement('div');sparkDiv.className='card-spark';
-            var canvas=document.createElement('canvas');canvas.setAttribute('data-tag',item.id);canvas.setAttribute('data-alarm-cor',alarmCor||'none');sparkDiv.appendChild(canvas);
-            var labels=document.createElement('div');labels.className='spark-labels';
-            labels.innerHTML='<span>'+(cfg.escalaMax!==undefined?cfg.escalaMax:'')+'</span><span>'+(cfg.escalaMin!==undefined?cfg.escalaMin:'')+'</span>';sparkDiv.appendChild(labels);
-            var trendDiv=document.createElement('div');trendDiv.className='card-trend '+tendenciaClass;trendDiv.textContent=tendencia;
-            row.appendChild(info);row.appendChild(sparkDiv);row.appendChild(trendDiv);return row;
-        }
         function desenharSparkline(canvas,valores,alarmCor,cfg){
             var ctx=canvas.getContext('2d');var w=canvas.width,h=canvas.height,p=6;
             ctx.clearRect(0,0,w,h);if(valores.length<2)return;
-            var min,max;if(cfg.escalaMin!==undefined&&cfg.escalaMax!==undefined){min=cfg.escalaMin;max=cfg.escalaMax}
+            var min,max;
+            if(cfg.escalaMin!=null&&cfg.escalaMax!=null){min=cfg.escalaMin;max=cfg.escalaMax}
             else{min=Math.min.apply(null,valores);max=Math.max.apply(null,valores);var mg=(max-min)*0.2||1;min-=mg;max+=mg}
             var range=max-min||1;
             function vY(val){var c=Math.max(min,Math.min(max,val));return h-p-((c-min)/range)*(h-p*2)}
-            if(cfg.limiteAlto!=null){ctx.strokeStyle='rgba(239,83,80,0.4)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(0,vY(cfg.limiteAlto));ctx.lineTo(w,vY(cfg.limiteAlto));ctx.stroke();ctx.setLineDash([])}
-            if(cfg.limiteBaixo!=null){ctx.strokeStyle='rgba(66,165,245,0.4)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(0,vY(cfg.limiteBaixo));ctx.lineTo(w,vY(cfg.limiteBaixo));ctx.stroke();ctx.setLineDash([])}
-            var cL='#4fc3f7',cF='rgba(79,195,247,0.12)';if(alarmCor&&alarmCor!=='none'&&corMap[alarmCor]){cL=corMap[alarmCor].linha;cF=corMap[alarmCor].fill}
+
+            // Limites
+            if(cfg.limiteAlto!=null){ctx.strokeStyle='rgba(239,68,68,0.3)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(0,vY(cfg.limiteAlto));ctx.lineTo(w,vY(cfg.limiteAlto));ctx.stroke();ctx.setLineDash([])}
+            if(cfg.limiteBaixo!=null){ctx.strokeStyle='rgba(59,130,246,0.3)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(0,vY(cfg.limiteBaixo));ctx.lineTo(w,vY(cfg.limiteBaixo));ctx.stroke();ctx.setLineDash([])}
+
+            // Cores
+            var cL='#7c3aed',cF='rgba(124,58,237,0.15)';
+            if(alarmCor==='red'){cL='#ef4444';cF='rgba(239,68,68,0.15)'}
+            else if(alarmCor==='blue'){cL='#3b82f6';cF='rgba(59,130,246,0.15)'}
+            else if(alarmCor==='orange'){cL='#f97316';cF='rgba(249,115,22,0.15)'}
+
+            // Fill
             ctx.beginPath();for(var i=0;i<valores.length;i++){var x=(i/(valores.length-1))*w,y=vY(valores[i]);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
             ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();ctx.fillStyle=cF;ctx.fill();
+            // Line
             ctx.beginPath();for(var j=0;j<valores.length;j++){var px=(j/(valores.length-1))*w,py=vY(valores[j]);if(j===0)ctx.moveTo(px,py);else ctx.lineTo(px,py)}
-            ctx.strokeStyle=cL;ctx.lineWidth=2;ctx.stroke();
-            ctx.beginPath();ctx.arc(w-4,vY(valores[valores.length-1]),4,0,Math.PI*2);ctx.fillStyle=cL;ctx.fill();
+            ctx.strokeStyle=cL;ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();
+            // Dot
+            ctx.beginPath();ctx.arc(w-2,vY(valores[valores.length-1]),4,0,Math.PI*2);ctx.fillStyle=cL;ctx.fill();
         }
 
-        // ===== MODAL HISTÓRICO =====
+        // ===== ALARMES =====
+        function renderAlarmes(){
+            var desde=Date.now()-(24*60*60*1000);
+            db.ref('alarmes_log').orderByChild('timestamp').startAt(desde).once('value',function(snap){
+                var lista=document.getElementById('alarmes-lista');lista.innerHTML='';
+                var logs=[];snap.forEach(function(c){logs.push(c.val())});
+                logs.sort(function(a,b){return b.timestamp-a.timestamp});
+                var total=0,criticos=0,taxa=0,tempo=0,normalizados=0;
+                for(var i=0;i<logs.length;i++){var a=logs[i];total++;
+                    if(a.tipo==='limite')criticos++;else if(a.tipo==='taxa')taxa++;else if(a.tipo==='tempo_faixa')tempo++;else if(a.tipo==='saida')normalizados++}
+                var resumo=document.getElementById('alarme-resumo');
+                resumo.innerHTML='<div class="overview-card"><div class="overview-label">Total</div><div class="overview-value">'+total+'</div></div>'
+                    +'<div class="overview-card"><div class="overview-label">Críticos</div><div class="overview-value" style="-webkit-text-fill-color:var(--red)">'+criticos+'</div></div>'
+                    +'<div class="overview-card"><div class="overview-label">Taxa</div><div class="overview-value" style="-webkit-text-fill-color:var(--orange)">'+taxa+'</div></div>'
+                    +'<div class="overview-card"><div class="overview-label">Tempo</div><div class="overview-value" style="-webkit-text-fill-color:var(--blue)">'+tempo+'</div></div>'
+                    +'<div class="overview-card"><div class="overview-label">Normalizados</div><div class="overview-value" style="-webkit-text-fill-color:var(--green)">'+normalizados+'</div></div>';
+                for(var j=0;j<Math.min(logs.length,50);j++){var l=logs[j];
+                    var dt=new Date(l.timestamp);var hora=dt.getHours().toString().padStart(2,'0')+':'+dt.getMinutes().toString().padStart(2,'0');
+                    var icone='🚨';if(l.tipo==='taxa')icone='📈';else if(l.tipo==='tempo_faixa')icone='⏱️';else if(l.tipo==='saida')icone='✅';
+                    var div=document.createElement('div');div.className='alarme-item tipo-'+(l.tipo||'limite');
+                    div.innerHTML='<span style="color:var(--t3);font-family:monospace;min-width:50px">'+hora+'</span><span style="font-size:1.2em">'+icone+'</span><span style="flex:1;color:var(--t1)">'+(l.mensagem||l.tagId)+'</span>';
+                    lista.appendChild(div)}
+                if(!logs.length)lista.innerHTML='<div style="text-align:center;color:var(--t3);padding:30px;font-size:.8em">✅ Nenhum alarme nas últimas 24h</div>';
+            });
+        }
+
+        // ===== MODAL =====
         function abrirModal(tagId){
             modalTagAtual=tagId;var cfg=tagConfig[tagId]||{};
             document.getElementById('modal-titulo').textContent=cfg.nome||tagId;
@@ -455,22 +598,22 @@
                 valorAtual=(typeof v==='object'&&'v' in v)?v.v.toFixed(1)+' '+(v.u||''):(typeof v==='number'?v.toFixed(1):v)}
             document.getElementById('modal-valor').textContent=valorAtual;
             document.getElementById('modal-overlay').classList.add('show');
-            var btns=document.querySelectorAll('.modal-periodo button');for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');
-            document.getElementById('btn-1h').classList.add('active');carregarHistoricoFirebase(tagId,'1h');
+            document.querySelectorAll('.modal-periodo button').forEach(function(b){b.classList.remove('active')});
+            document.querySelector('.modal-periodo button').classList.add('active');
+            carregarHistoricoModal(tagId,'1h');
         }
         window.mudarPeriodo=function(periodo,btn){
-            var btns=document.querySelectorAll('.modal-periodo button');for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');
-            btn.classList.add('active');if(modalTagAtual)carregarHistoricoFirebase(modalTagAtual,periodo);
+            document.querySelectorAll('.modal-periodo button').forEach(function(b){b.classList.remove('active')});
+            btn.classList.add('active');if(modalTagAtual)carregarHistoricoModal(modalTagAtual,periodo);
         };
-        function carregarHistoricoFirebase(tagId,periodo){
-            var tempoMs={'1h':3600000,'6h':21600000,'24h':86400000,'7d':604800000};
-            var desde=Date.now()-(tempoMs[periodo]||3600000);
-            db.ref('history').orderByChild('_timestamp').startAt(desde).once('value').then(function(snapshot){
-                var dados=snapshot.val();var pontos=[];
-                if(dados){var keys=Object.keys(dados);for(var i=0;i<keys.length;i++){var entry=dados[keys[i]];
-                    if(entry&&entry[tagId]!==undefined){var val=entry[tagId];
-                        var valor=(typeof val==='object'&&'v' in val)?val.v:(typeof val==='number'?val:null);
-                        if(valor!==null)pontos.push({t:entry._timestamp||0,v:valor})}}}
+        function carregarHistoricoModal(tagId,periodo){
+            var ms={'1h':3600000,'6h':21600000,'24h':86400000,'7d':604800000};
+            var desde=Date.now()-(ms[periodo]||3600000);
+            db.ref('history').orderByChild('_timestamp').startAt(desde).once('value').then(function(snap){
+                var dados=snap.val();var pontos=[];
+                if(dados){Object.keys(dados).forEach(function(k){var e=dados[k];
+                    if(e&&e[tagId]!==undefined){var val=(typeof e[tagId]==='object'&&'v' in e[tagId])?e[tagId].v:(typeof e[tagId]==='number'?e[tagId]:null);
+                        if(val!==null)pontos.push({t:e._timestamp||0,v:val})}})}
                 pontos.sort(function(a,b){return a.t-b.t});desenharGraficoModal(pontos,tagId);
             }).catch(function(){var hist=historico[tagId]||[];var pontos=[];
                 for(var i=0;i<hist.length;i++)pontos.push({t:Date.now()-(hist.length-i)*30000,v:hist[i]});desenharGraficoModal(pontos,tagId)});
@@ -479,167 +622,159 @@
             var canvas=document.getElementById('modal-canvas');var rect=canvas.getBoundingClientRect();
             canvas.width=Math.floor(rect.width*2);canvas.height=500;
             var ctx=canvas.getContext('2d');var w=canvas.width,h=canvas.height,pad=40;
-            ctx.clearRect(0,0,w,h);var isDark=document.body.getAttribute('data-theme')!=='light';
-            ctx.fillStyle=isDark?'#0d1117':'#f8f9fa';ctx.fillRect(0,0,w,h);
-            if(pontos.length<2){ctx.fillStyle=isDark?'#555':'#999';ctx.font='24px sans-serif';ctx.textAlign='center';
-                ctx.fillText('Sem dados suficientes para este período',w/2,h/2);
-                document.getElementById('stat-min').textContent='—';document.getElementById('stat-med').textContent='—';
-                document.getElementById('stat-max').textContent='—';document.getElementById('stat-pts').textContent='0';return}
-            var cfg=tagConfig[tagId]||{};var valores=pontos.map(function(p){return p.v});var min,max;
-            if(cfg.escalaMin!==undefined&&cfg.escalaMax!==undefined){min=cfg.escalaMin;max=cfg.escalaMax}
+            ctx.clearRect(0,0,w,h);ctx.fillStyle='rgba(255,255,255,0.02)';ctx.fillRect(0,0,w,h);
+            if(pontos.length<2){ctx.fillStyle='#484f58';ctx.font='24px sans-serif';ctx.textAlign='center';ctx.fillText('Sem dados para este período',w/2,h/2);
+                document.getElementById('stat-min').textContent='—';document.getElementById('stat-med').textContent='—';document.getElementById('stat-max').textContent='—';document.getElementById('stat-pts').textContent='0';return}
+            var cfg=tagConfig[tagId]||{};var valores=pontos.map(function(p){return p.v});
+            var min,max;if(cfg.escalaMin!=null&&cfg.escalaMax!=null){min=cfg.escalaMin;max=cfg.escalaMax}
             else{min=Math.min.apply(null,valores);max=Math.max.apply(null,valores);var mg=(max-min)*0.15||1;min-=mg;max+=mg}
             var range=max-min||1;var vMin=Math.min.apply(null,valores),vMax=Math.max.apply(null,valores);
             var vMed=valores.reduce(function(a,b){return a+b},0)/valores.length;
             document.getElementById('stat-min').textContent=vMin.toFixed(1);document.getElementById('stat-med').textContent=vMed.toFixed(1);
             document.getElementById('stat-max').textContent=vMax.toFixed(1);document.getElementById('stat-pts').textContent=pontos.length.toString();
+           
+            // (continuação de desenharGraficoModal - substitui a última linha cortada "return h-pad-((c")
             function vY(val){var c=Math.max(min,Math.min(max,val));return h-pad-((c-min)/range)*(h-pad*2)}
-            function tX(t){var tMin=pontos[0].t,tMax=pontos[pontos.length-1].t,tR=tMax-tMin||1;return pad+((t-tMin)/tR)*(w-pad*2)}
-            ctx.strokeStyle=isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.08)';ctx.lineWidth=1;
-            for(var g=0;g<=4;g++){var yg=pad+(g/4)*(h-pad*2);ctx.beginPath();ctx.moveTo(pad,yg);ctx.lineTo(w-pad,yg);ctx.stroke();
-                ctx.fillStyle=isDark?'#666':'#999';ctx.font='18px monospace';ctx.textAlign='right';ctx.fillText((max-(g/4)*range).toFixed(1),pad-5,yg+5)}
-            if(cfg.limiteAlto!=null){ctx.strokeStyle='rgba(239,83,80,0.6)';ctx.lineWidth=2;ctx.setLineDash([8,6]);ctx.beginPath();ctx.moveTo(pad,vY(cfg.limiteAlto));ctx.lineTo(w-pad,vY(cfg.limiteAlto));ctx.stroke();ctx.setLineDash([]);
-                ctx.fillStyle='#ef5350';ctx.font='16px sans-serif';ctx.textAlign='left';ctx.fillText('Alto: '+cfg.limiteAlto,w-pad+5,vY(cfg.limiteAlto)+5)}
-            if(cfg.limiteBaixo!=null){ctx.strokeStyle='rgba(66,165,245,0.6)';ctx.lineWidth=2;ctx.setLineDash([8,6]);ctx.beginPath();ctx.moveTo(pad,vY(cfg.limiteBaixo));ctx.lineTo(w-pad,vY(cfg.limiteBaixo));ctx.stroke();ctx.setLineDash([]);
-                ctx.fillStyle='#42a5f5';ctx.font='16px sans-serif';ctx.textAlign='left';ctx.fillText('Baixo: '+cfg.limiteBaixo,w-pad+5,vY(cfg.limiteBaixo)+5)}
-            var alarm=getAlarmInfo(tagId,pontos[pontos.length-1].v);var cL='#4fc3f7',cF='rgba(79,195,247,0.15)';
-            if(alarm.cor&&corMap[alarm.cor]){cL=corMap[alarm.cor].linha;cF=corMap[alarm.cor].fill}
-            ctx.beginPath
+            function tX(t){return pad+((t-pontos[0].t)/(pontos[pontos.length-1].t-pontos[0].t))*(w-pad*2)}
 
-            // (continuação do desenharGraficoModal - cole substituindo a última linha "ctx.beginPath" da parte 1)
+            // Grid
+            ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;
+            for(var g=0;g<5;g++){var gy=pad+g*((h-pad*2)/4);ctx.beginPath();ctx.moveTo(pad,gy);ctx.lineTo(w-pad,gy);ctx.stroke();
+                ctx.fillStyle='#484f58';ctx.font='18px monospace';ctx.textAlign='right';ctx.fillText((max-(g/4)*range).toFixed(1),pad-8,gy+5)}
+
+            // Limites
+            if(cfg.limiteAlto!=null){ctx.strokeStyle='rgba(239,68,68,0.5)';ctx.lineWidth=1;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(pad,vY(cfg.limiteAlto));ctx.lineTo(w-pad,vY(cfg.limiteAlto));ctx.stroke();ctx.setLineDash([])}
+            if(cfg.limiteBaixo!=null){ctx.strokeStyle='rgba(59,130,246,0.5)';ctx.lineWidth=1;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(pad,vY(cfg.limiteBaixo));ctx.lineTo(w-pad,vY(cfg.limiteBaixo));ctx.stroke();ctx.setLineDash([])}
+
+            // Cores
+            var alarm=getAlarmInfo(tagId,pontos[pontos.length-1].v);
+            var cL='#7c3aed',cF='rgba(124,58,237,0.15)';
+            if(alarm.cor==='red'){cL='#ef4444';cF='rgba(239,68,68,0.1)'}
+            else if(alarm.cor==='blue'){cL='#3b82f6';cF='rgba(59,130,246,0.1)'}
+
+            // Fill
             ctx.beginPath();for(var i=0;i<pontos.length;i++){var x=tX(pontos[i].t),y=vY(pontos[i].v);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
             ctx.lineTo(tX(pontos[pontos.length-1].t),h-pad);ctx.lineTo(tX(pontos[0].t),h-pad);ctx.closePath();ctx.fillStyle=cF;ctx.fill();
+            // Line
             ctx.beginPath();for(var j=0;j<pontos.length;j++){var px=tX(pontos[j].t),py=vY(pontos[j].v);if(j===0)ctx.moveTo(px,py);else ctx.lineTo(px,py)}
-            ctx.strokeStyle=cL;ctx.lineWidth=3;ctx.stroke();
+            ctx.strokeStyle=cL;ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();
+            // Last point
             var lx=tX(pontos[pontos.length-1].t),ly=vY(pontos[pontos.length-1].v);
-            ctx.beginPath();ctx.arc(lx,ly,6,0,Math.PI*2);ctx.fillStyle=cL;ctx.fill();ctx.strokeStyle=isDark?'#fff':'#000';ctx.lineWidth=2;ctx.stroke();
-            ctx.fillStyle=isDark?'#666':'#999';ctx.font='16px monospace';ctx.textAlign='center';
+            ctx.beginPath();ctx.arc(lx,ly,6,0,Math.PI*2);ctx.fillStyle=cL;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+            // Time labels
+            ctx.fillStyle='#484f58';ctx.font='16px monospace';ctx.textAlign='center';
             var nL=Math.min(6,pontos.length);
             for(var l=0;l<nL;l++){var idx=Math.floor(l*(pontos.length-1)/(nL-1));var lxx=tX(pontos[idx].t);
-                var dt=new Date(pontos[idx].t);ctx.fillText(dt.getHours().toString().padStart(2,'0')+':'+dt.getMinutes().toString().padStart(2,'0'),lxx,h-5)}
+                var dt=new Date(pontos[idx].t);ctx.fillText(dt.getHours().toString().padStart(2,'0')+':'+dt.getMinutes().toString().padStart(2,'0'),lxx,h-8)}
         }
 
-        // ===== CONNECTION =====
-        function updateConnectionStatus(connected){
-            var el=document.getElementById('conn-status');
-            if(connected){el.textContent='● Conectado';el.className='connection'}
-            else{el.textContent='● Offline';el.className='connection offline'}
+        // ===== HELPERS =====
+        function getVal(data,key){
+            if(!data||!data[key])return null;
+            if(typeof data[key]==='object'&&'v' in data[key])return data[key].v;
+            if(typeof data[key]==='number')return data[key];return null;
+        }
+        function getAlarmInfo(tagId,valor){
+            var cfg=tagConfig[tagId];if(!cfg)return{tipo:'none',cor:null};
+            if(cfg.limiteAlto!=null&&valor>cfg.limiteAlto)return{tipo:'alto',cor:cfg.corAlto||'red'};
+            if(cfg.limiteBaixo!=null&&valor<cfg.limiteBaixo)return{tipo:'baixo',cor:cfg.corBaixo||'blue'};
+            return{tipo:'none',cor:null};
         }
 
+        // ===== HISTORICO =====
+        function atualizarHistorico(data){
+            var keys=Object.keys(data);
+            for(var i=0;i<keys.length;i++){
+                if(keys[i].startsWith('_'))continue;
+                var val=data[keys[i]],valor=null;
+                if(val&&typeof val==='object'&&'v' in val)valor=val.v;else if(typeof val==='number')valor=val;
+                if(valor===null)continue;
+                if(!historico[keys[i]])historico[keys[i]]=[];
+                historico[keys[i]].push(valor);
+                if(historico[keys[i]].length>MAX_HIST)historico[keys[i]].shift();
+            }
+        }
+
+        // ===== LEITOR STATUS =====
+        function atualizarStatusLeitor(status){
+            var dot=document.getElementById('leitor-dot');var label=document.getElementById('leitor-label');
+            if(!status){dot.className='leitor-dot offline';label.textContent='Leitor: desconectado';return}
+            var agora=Date.now();var diff=agora-(status.lastHeartbeat||0);
+            if(diff<30000&&status.ativo){dot.className='leitor-dot';label.textContent='Leitor: ativo'}
+            else{dot.className='leitor-dot offline';label.textContent='Leitor: offline ('+Math.floor(diff/1000)+'s)'}
+            document.getElementById('leitor-leituras').textContent=status.leituras||0;
+            if(status.uptime){var m=Math.floor(status.uptime/60);var h=Math.floor(m/60);document.getElementById('leitor-uptime').textContent=h.toString().padStart(2,'0')+':'+String(m%60).padStart(2,'0')}
+            var ovUp=document.getElementById('ov-uptime');if(ovUp&&status.uptime){var m2=Math.floor(status.uptime/60);var h2=Math.floor(m2/60);ovUp.textContent=h2+'h'+String(m2%60).padStart(2,'0')}
+        }
+
+        // ===== INDICADOR TEMPO =====
+        function atualizarIndicadorTempo(){
+            var el=document.getElementById('last-update');
+            if(ultimosDados&&ultimosDados._readAt)el.textContent='Última atualização: '+ultimosDados._readAt;
+            else el.textContent='Aguardando dados...';
+        }
+
+        // ===== NOTIFICAÇÕES =====
+        var alarmesAtivosNotif={};
+        function verificarAlarmesNotif(data){
+            if(!notificacoesAtivas)return;
+            var keys=Object.keys(tagConfig);
+            for(var i=0;i<keys.length;i++){
+                var val=getVal(data,keys[i]);if(val===null)continue;
+                var alarm=getAlarmInfo(keys[i],val);
+                if(alarm.tipo!=='none'&&!alarmesAtivosNotif[keys[i]]){
+                    alarmesAtivosNotif[keys[i]]=true;
+                    if(Notification.permission==='granted'){
+                        new Notification('🚨 '+tagConfig[keys[i]].nome,{body:'Valor: '+val.toFixed(1)+' '+tagConfig[keys[i]].u+' ('+alarm.tipo+')',icon:'icon-192.png'});
+                    }
+                }else if(alarm.tipo==='none'){delete alarmesAtivosNotif[keys[i]]}
+            }
+        }
+        window.toggleNotificacoes=function(){
+            if(!notificacoesAtivas){
+                Notification.requestPermission().then(function(p){
+                    if(p==='granted'){notificacoesAtivas=true;document.getElementById('btn-notif').style.background='var(--accent)';document.getElementById('btn-notif').style.color='#fff'}
+                });
+            }else{notificacoesAtivas=false;document.getElementById('btn-notif').style.background='';document.getElementById('btn-notif').style.color=''}
+        };
+
+        // ===== THEME =====
+        window.toggleTheme=function(){
+            var r=document.documentElement;var btn=document.getElementById('btn-theme');
+            if(r.style.getPropertyValue('--bg1')==='#f5f5f5'){
+                r.style.setProperty('--bg1','#0d1117');r.style.setProperty('--bg2','#161b22');r.style.setProperty('--t1','#ffffff');r.style.setProperty('--t2','#8b949e');r.style.setProperty('--t3','#484f58');r.style.setProperty('--bg-card','rgba(255,255,255,0.05)');r.style.setProperty('--bg-card-hover','rgba(255,255,255,0.08)');r.style.setProperty('--glass-border','rgba(255,255,255,0.08)');btn.textContent='☀️';
+            }else{
+                r.style.setProperty('--bg1','#f5f5f5');r.style.setProperty('--bg2','#ffffff');r.style.setProperty('--t1','#1a1a1a');r.style.setProperty('--t2','#666666');r.style.setProperty('--t3','#999999');r.style.setProperty('--bg-card','rgba(0,0,0,0.03)');r.style.setProperty('--bg-card-hover','rgba(0,0,0,0.06)');r.style.setProperty('--glass-border','rgba(0,0,0,0.08)');btn.textContent='🌙';
+            }
+        };
+
+        // ===== CSV =====
+        window.exportarCSV=function(){
+            if(!ultimosDados)return;var csv='Tag,Valor,Unidade,Timestamp\n';
+            var keys=Object.keys(ultimosDados);
+            for(var i=0;i<keys.length;i++){if(keys[i].startsWith('_'))continue;
+                var v=ultimosDados[keys[i]];var val=(typeof v==='object'&&'v' in v)?v.v:v;var u=(typeof v==='object'&&'u' in v)?v.u:'';
+                csv+=keys[i]+','+val+','+u+','+(ultimosDados._readAt||'')+'\n'}
+            var blob=new Blob([csv],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='utilidades_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+        };
+
+        // ===== LOGOUT =====
         window.logout=function(){
             localStorage.removeItem('modo_acesso');localStorage.removeItem('login_timestamp');
             firebase.auth().signOut().then(function(){window.location.href='index.html'});
         };
 
-        // Registrar Service Worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js');
-    }
+        // ===== SERVICE WORKER =====
+        if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js')}
 
+        // ===== REDESENHAR SPARKLINES PERIODICAMENTE =====
+        setInterval(function(){if(tabAtual!=='overview'&&tabAtual!=='alarmes'&&tabAtual!=='energia')redesenharSparklines()},5000);
     })();
     </script>
-    
-<!-- ===== BANNER DE INSTALAÇÃO PWA ===== -->
-<!-- Cole no HTML, antes do </body> -->
+</body>
+</html>
 
-<div id="pwa-banner" style="display:none; position:fixed; bottom:0; left:0; right:0; background:linear-gradient(135deg,#1a1f3a,#0d1117); border-top:1px solid #4fc3f7; padding:14px 16px; z-index:9999; animation:slideUp 0.3s ease;">
-    <div style="display:flex; align-items:center; gap:12px;">
-        <div style="font-size:2em;">🏭</div>
-        <div style="flex:1;">
-            <div style="color:#e0e0e0; font-size:0.85em; font-weight:600;">Instalar Utilidades</div>
-            <div style="color:#888; font-size:0.7em; margin-top:2px;">Acesse direto da tela inicial, sem navegador</div>
-        </div>
-        <button id="pwa-install-btn" onclick="instalarPWA()" style="background:#4fc3f7; color:#000; border:none; padding:8px 16px; border-radius:8px; font-weight:700; font-size:0.8em; cursor:pointer;">Instalar</button>
-        <button onclick="fecharBannerPWA()" style="background:none; border:none; color:#666; font-size:1.2em; cursor:pointer; padding:4px 8px;">✕</button>
-    </div>
-    <!-- Instruções iOS (aparece só no iPhone/iPad) -->
-    <div id="pwa-ios-instrucoes" style="display:none; margin-top:10px; padding-top:10px; border-top:1px solid #2a2f45;">
-        <div style="color:#e0e0e0; font-size:0.75em; text-align:center;">
-            Toque em <span style="font-size:1.2em;">⬆️</span> <strong>Compartilhar</strong> e depois <strong>"Adicionar à Tela de Início"</strong>
-        </div>
-    </div>
-</div>
 
-<style>
-    @keyframes slideUp {
-        from { transform: translateY(100%); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
-    }
-</style>
-
-<script>
-// ===== PWA INSTALL PROMPT =====
-(function() {
-    var deferredPrompt = null;
-    var banner = document.getElementById('pwa-banner');
-    var installBtn = document.getElementById('pwa-install-btn');
-    var iosInstrucoes = document.getElementById('pwa-ios-instrucoes');
-
-    // Não mostrar se já instalou ou já fechou recentemente
-    if (localStorage.getItem('pwa-instalado') || localStorage.getItem('pwa-banner-fechado')) {
-        // Verificar se o "fechado" expirou (mostrar de novo após 7 dias)
-        var fechadoEm = parseInt(localStorage.getItem('pwa-banner-fechado') || '0');
-        if (Date.now() - fechadoEm < 7 * 24 * 60 * 60 * 1000) return;
-        else localStorage.removeItem('pwa-banner-fechado');
-    }
-
-    // Não mostrar se já está em modo standalone (já instalou)
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-        localStorage.setItem('pwa-instalado', '1');
-        return;
-    }
-
-    // === ANDROID/CHROME: Interceptar evento nativo ===
-    window.addEventListener('beforeinstallprompt', function(e) {
-        e.preventDefault();
-        deferredPrompt = e;
-        mostrarBanner('android');
-    });
-
-    // === iOS: Detectar e mostrar instruções manuais ===
-    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    if (isIOS && isSafari) {
-        // Mostrar após 3 segundos (não atrapalhar o carregamento)
-        setTimeout(function() { mostrarBanner('ios'); }, 3000);
-    }
-
-    function mostrarBanner(tipo) {
-        banner.style.display = 'block';
-        if (tipo === 'ios') {
-            installBtn.style.display = 'none';
-            iosInstrucoes.style.display = 'block';
-        } else {
-            installBtn.style.display = 'inline-block';
-            iosInstrucoes.style.display = 'none';
-        }
-    }
-
-    // Instalar (Android/Chrome)
-    window.instalarPWA = function() {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(function(result) {
-            if (result.outcome === 'accepted') {
-                localStorage.setItem('pwa-instalado', '1');
-            }
-            deferredPrompt = null;
-            banner.style.display = 'none';
-        });
-    };
-
-    // Fechar banner (não mostrar por 7 dias)
-    window.fecharBannerPWA = function() {
-        banner.style.display = 'none';
-        localStorage.setItem('pwa-banner-fechado', Date.now().toString());
-    };
-
-    // Detectar instalação concluída
-    window.addEventListener('appinstalled', function() {
-        banner.style.display = 'none';
-        localStorage.setItem('pwa-instalado', '1');
-    });
-})();
-</script>
 
 
 </body>
