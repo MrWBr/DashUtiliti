@@ -1,5 +1,5 @@
 
-var CACHE_NAME = 'utilidades-v1';
+var CACHE_NAME = 'utilidades-v2';
 var urlsToCache = [
     './index.html',
     './dashboard.html',
