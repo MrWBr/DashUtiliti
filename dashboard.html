@@ -435,7 +435,6 @@ desenharGauge('gauge-pressao-bg',          dadosRecebidos["Pressao_Cavalete_BG"]
 desenharGauge('gauge-ar-dm',               dadosRecebidos["Ar_Comp_DM"] || 0,          tagConfig.Ar_Comp_DM.escalaMax,          'normal');
 desenharGauge('gauge-ar-choco',            dadosRecebidos["Ar_Comp_Choco"] || 0,       tagConfig.Ar_Comp_Choco.escalaMax,       'normal');
 desenharGauge('gauge-vacuo-dm',            dadosRecebidos["Vacuo_Dry_Mix"] || 0,       tagConfig.Vacuo_Dry_Mix.escalaMax,       'normal');
-        },50);
 
             var alarmCards=document.getElementById('alarme-cards');alarmCards.innerHTML='';
             for(var j=0;j<keys.length;j++){
