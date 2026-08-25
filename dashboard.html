@@ -410,36 +410,32 @@
             }
             var pctOk=totalVars>0?Math.round((normal/totalVars)*100):0;
 
-            grid.innerHTML=
-                '<div class="overview-card"><div class="overview-label">Saúde Geral</div><div class="overview-value">'+pctOk+'%</div><div class="overview-sub">'+normal+'/'+totalVars+' OK</div><canvas id="gauge-saude" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
-                +'<div class="overview-card"><div class="overview-label">Em Alarme</div><div class="overview-value" style="background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent">'+emAlarme+'</div><div class="overview-sub">fora do limite</div><canvas id="gauge-alarme" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
-                +'<div class="overview-card"><div class="overview-label">🌡️ Temperaturas</div><div class="overview-value">'+(grupos.temp||0)+'</div><div class="overview-sub">'+(gruposAlarm.temp||0)+' alarme</div><canvas id="gauge-temp" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
-                +'<div class="overview-card"><div class="overview-label">💨 Ar Comprimido</div><div class="overview-value">'+(grupos.ar||0)+'</div><div class="overview-sub">'+(gruposAlarm.ar||0)+' alarme</div><canvas id="gauge-ar" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
-                +'<div class="overview-card"><div class="overview-label">🧊 Salas de Cura</div><div class="overview-value">'+(grupos.cura||0)+'</div><div class="overview-sub">'+(gruposAlarm.cura||0)+' alarme</div><canvas id="gauge-cura" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
-                +'<div class="overview-card"><div class="overview-label">⚡ Energia</div><div class="overview-value">'+(grupos.energia||0)+'</div><div class="overview-sub">'+(gruposAlarm.energia||0)+' alarme</div><canvas id="gauge-energia" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>';
+           // 1. Renderiza os cartões específicos no HTML do Grid
+grid.innerHTML =
+    // Saúde Geral e Alarme (Mantidos)
+    '<div class="overview-card"><div class="overview-label">Saúde Geral</div><div class="overview-value">'+pctOk+'%</div><div class="overview-sub">'+normal+'/'+totalVars+' OK</div><canvas id="gauge-saude" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
+    +'<div class="overview-card"><div class="overview-label">Em Alarme</div><div class="overview-value" style="background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent">'+emAlarme+'</div><div class="overview-sub">fora do limite</div><canvas id="gauge-alarme" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
+    
+    // Os 6 novos cartões individuais solicitados
+    +'<div class="overview-card"><div class="overview-label">🌡️ Água Gelada 6°C</div><div class="overview-value">'+(dadosRecebidos["Agua_6C"] || 0)+'</div><div class="overview-sub">°C</div><canvas id="gauge-agua-6c" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
+    +'<div class="overview-card"><div class="overview-label">💨 Pressão Vapor Choco</div><div class="overview-value">'+(dadosRecebidos["Pressao_Vapor_Choco"] || 0)+'</div><div class="overview-sub">bar</div><canvas id="gauge-pressao-vapor-choco" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
+    +'<div class="overview-card"><div class="overview-label">🍬 Pressão Cavalete B&G</div><div class="overview-value">'+(dadosRecebidos["Pressao_Cavalete_BG"] || 0)+'</div><div class="overview-sub">bar</div><canvas id="gauge-pressao-bg" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
+    +'<div class="overview-card"><div class="overview-label">⚙️ Ar Comp. Dry Mix</div><div class="overview-value">'+(dadosRecebidos["Ar_Comp_DM"] || 0)+'</div><div class="overview-sub">bar</div><canvas id="gauge-ar-dm" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
+    +'<div class="overview-card"><div class="overview-label">🍫 Ar Comp. Chocolate</div><div class="overview-value">'+(dadosRecebidos["Ar_Comp_Choco"] || 0)+'</div><div class="overview-sub">bar</div><canvas id="gauge-ar-choco" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
+    +'<div class="overview-card"><div class="overview-label">🌀 Vácuo Dry Mix</div><div class="overview-value">'+(dadosRecebidos["Vacuo_Dry_Mix"] || 0)+'</div><div class="overview-sub">Pol Hg</div><canvas id="gauge-vacuo-dm" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>';
 
-            // Gauges de Visão Geral (Mantidos)
-            desenharGauge('gauge-saude', pctOk, 100, 'normal');
-            desenharGauge('gauge-alarme', emAlarme, totalVars, 'normal');
-            
-            setTimeout(function(){
-               // 1. Temperatura da Água Gelada 6°C
-                desenharGauge('gauge-agua-6c', dados.Agua_6C || 0, 10, 'normal');
+// 2. Desenha os ponteiros dos Gauges vinculando os IDs aos limites máximos do seu tagConfig
+desenharGauge('gauge-saude', pctOk, 100, 'normal');
+desenharGauge('gauge-alarme', emAlarme, totalVars, 'normal');
 
-                // 2. Pressão de Vapor Chocolate
-                desenharGauge('gauge-pressao-vapor-choco', dados.Pressao_Vapor_Choco || 0, 10, 'normal');
-
-                // 3. Balas e Gomas (Pressão Cavalete B&G)
-                desenharGauge('gauge-pressao-bg', dados.Pressao_Cavalete_BG || 0, 15, 'normal');
-
-                // 4. Pressão do Ar Dry Mix (Ar Comp Dry Mix)
-                desenharGauge('gauge-ar-dm', dados.Ar_Comp_DM || 0, 8, 'normal');
-
-                // 5. Pressão do Ar Chocolate (Ar Comp Chocolate)
-                desenharGauge('gauge-ar-choco', dados.Ar_Comp_Choco || 0, 8, 'normal');
-
-                // 6. Vácuo Dry Mix
-                desenharGauge('gauge-vacuo-dm', dados.Vacuo_Dry_Mix || 0, 30, 'normal');},50);
+// Renderização dos gauges específicos com a escalaMax correta extraída do seu objeto tagConfig
+desenharGauge('gauge-agua-6c',             dadosRecebidos["Agua_6C"] || 0,             tagConfig.Agua_6C.escalaMax,             'normal');
+desenharGauge('gauge-pressao-vapor-choco', dadosRecebidos["Pressao_Vapor_Choco"] || 0, tagConfig.Pressao_Vapor_Choco.escalaMax, 'normal');
+desenharGauge('gauge-pressao-bg',          dadosRecebidos["Pressao_Cavalete_BG"] || 0,  tagConfig.Pressao_Cavalete_BG.escalaMax, 'normal');
+desenharGauge('gauge-ar-dm',               dadosRecebidos["Ar_Comp_DM"] || 0,          tagConfig.Ar_Comp_DM.escalaMax,          'normal');
+desenharGauge('gauge-ar-choco',            dadosRecebidos["Ar_Comp_Choco"] || 0,       tagConfig.Ar_Comp_Choco.escalaMax,       'normal');
+desenharGauge('gauge-vacuo-dm',            dadosRecebidos["Vacuo_Dry_Mix"] || 0,       tagConfig.Vacuo_Dry_Mix.escalaMax,       'normal');
+        },50);
 
             var alarmCards=document.getElementById('alarme-cards');alarmCards.innerHTML='';
             for(var j=0;j<keys.length;j++){
