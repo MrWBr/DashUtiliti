@@ -389,37 +389,147 @@
             else renderGrupo(tabAtual,data);
         }
 
-        // ===== OVERVIEW =====
-        function renderOverview(data){
-            var grid=document.getElementById('overview-grid');
-            var totalVars=0,emAlarme=0,normal=0;
-            var keys=Object.keys(data);
-            for(var i=0;i<keys.length;i++){
-                if(keys[i].startsWith('_'))continue;
-                var val=data[keys[i]],valor=null;
-                if(val&&typeof val==='object'&&'v' in val)valor=val.v;else if(typeof val==='number')valor=val;
-                if(valor===null)continue;totalVars++;
-                var alarm=getAlarmInfo(keys[i],valor);
-                if(alarm.tipo!=='none')emAlarme++;else normal++;
-            }
-            var pctOk=totalVars>0?Math.round((normal/totalVars)*100):0;
-            grid.innerHTML='<div class="overview-card"><div class="overview-label">Variáveis</div><div class="overview-value">'+totalVars+'</div><div class="overview-sub">monitoradas</div></div>'
-                +'<div class="overview-card"><div class="overview-label">Em Alarme</div><div class="overview-value" style="background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent">'+emAlarme+'</div><div class="overview-sub">atenção necessária</div></div>'
-                +'<div class="overview-card"><div class="overview-label">Saúde</div><div class="overview-value">'+pctOk+'%</div><div class="overview-sub">dentro dos limites</div></div>'
-                +'<div class="overview-card"><div class="overview-label">Uptime Leitor</div><div class="overview-value" id="ov-uptime">—</div><div class="overview-sub">tempo ativo</div></div>';
+        
+<!-- Substituir o renderOverview no JS por esta versão com gauges -->
+<script>
+// ===== RENDER OVERVIEW COM GAUGES =====
+function renderOverview(data){
+    var grid=document.getElementById('overview-grid');
+    var totalVars=0,emAlarme=0,normal=0;
+    var grupos={temp:0,ar:0,cura:0,vapor:0,energia:0};
+    var gruposAlarm={temp:0,ar:0,cura:0,vapor:0,energia:0};
+    var keys=Object.keys(data);
+    for(var i=0;i<keys.length;i++){
+        if(keys[i].startsWith('_'))continue;
+        var val=data[keys[i]],valor=null;
+        if(val&&typeof val==='object'&&'v' in val)valor=val.v;else if(typeof val==='number')valor=val;
+        if(valor===null)continue;totalVars++;
+        var cfg=tagConfig[keys[i]];
+        if(cfg){grupos[cfg.grupo]=(grupos[cfg.grupo]||0)+1}
+        var alarm=getAlarmInfo(keys[i],valor);
+        if(alarm.tipo!=='none'){emAlarme++;if(cfg)gruposAlarm[cfg.grupo]=(gruposAlarm[cfg.grupo]||0)+1}
+        else normal++;
+    }
+    var pctOk=totalVars>0?Math.round((normal/totalVars)*100):0;
 
-            // Cards em alarme
-            var alarmCards=document.getElementById('alarme-cards');alarmCards.innerHTML='';
-            for(var j=0;j<keys.length;j++){
-                if(keys[j].startsWith('_'))continue;
-                var v2=data[keys[j]],val2=null;
-                if(v2&&typeof v2==='object'&&'v' in v2)val2=v2.v;else if(typeof v2==='number')val2=v2;
-                if(val2===null)continue;
-                var a2=getAlarmInfo(keys[j],val2);
-                if(a2.tipo!=='none')alarmCards.appendChild(criarDataCard(keys[j],val2,tagConfig[keys[j]]));
-            }
-            if(!alarmCards.innerHTML)alarmCards.innerHTML='<div style="text-align:center;color:var(--t3);padding:20px;font-size:.8em">✅ Tudo normal — nenhum alarme ativo</div>';
-        }
+    grid.innerHTML=
+        '<div class="overview-card">'
+            +'<div class="overview-label">Saúde Geral</div>'
+            +'<div class="overview-value">'+pctOk+'%</div>'
+            +'<div class="overview-sub">'+normal+'/'+totalVars+' dentro dos limites</div>'
+            +'<canvas id="gauge-saude" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas>'
+        +'</div>'
+        +'<div class="overview-card">'
+            +'<div class="overview-label">Em Alarme</div>'
+            +'<div class="overview-value" style="background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent">'+emAlarme+'</div>'
+            +'<div class="overview-sub">variáveis fora do limite</div>'
+            +'<canvas id="gauge-alarme" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas>'
+        +'</div>'
+        +'<div class="overview-card">'
+            +'<div class="overview-label">🌡️ Temperaturas</div>'
+            +'<div class="overview-value">'+(grupos.temp||0)+'</div>'
+            +'<div class="overview-sub">'+(gruposAlarm.temp||0)+' em alarme</div>'
+            +'<canvas id="gauge-temp" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas>'
+        +'</div>'
+        +'<div class="overview-card">'
+            +'<div class="overview-label">💨 Ar Comprimido</div>'
+            +'<div class="overview-value">'+(grupos.ar||0)+'</div>'
+            +'<div class="overview-sub">'+(gruposAlarm.ar||0)+' em alarme</div>'
+            +'<canvas id="gauge-ar" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas>'
+        +'</div>'
+        +'<div class="overview-card">'
+            +'<div class="overview-label">🧊 Salas de Cura</div>'
+            +'<div class="overview-value">'+(grupos.cura||0)+'</div>'
+            +'<div class="overview-sub">'+(gruposAlarm.cura||0)+' em alarme</div>'
+            +'<canvas id="gauge-cura" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas>'
+        +'</div>'
+        +'<div class="overview-card">'
+            +'<div class="overview-label">⚡ Energia</div>'
+            +'<div class="overview-value">'+(grupos.energia||0)+'</div>'
+            +'<div class="overview-sub">'+(gruposAlarm.energia||0)+' em alarme</div>'
+            +'<canvas id="gauge-energia" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas>'
+        +'</div>';
+
+    // Desenhar gauges
+    setTimeout(function(){
+        desenharGauge('gauge-saude', pctOk, 100, 'normal');
+        desenharGauge('gauge-alarme', emAlarme, totalVars, 'alarme');
+        desenharGauge('gauge-temp', (grupos.temp||0)-(gruposAlarm.temp||0), grupos.temp||1, 'normal');
+        desenharGauge('gauge-ar', (grupos.ar||0)-(gruposAlarm.ar||0), grupos.ar||1, 'normal');
+        desenharGauge('gauge-cura', (grupos.cura||0)-(gruposAlarm.cura||0), grupos.cura||1, 'normal');
+        desenharGauge('gauge-energia', (grupos.energia||0)-(gruposAlarm.energia||0), grupos.energia||1, 'normal');
+    },50);
+
+    // Cards em alarme
+    var alarmCards=document.getElementById('alarme-cards');alarmCards.innerHTML='';
+    for(var j=0;j<keys.length;j++){
+        if(keys[j].startsWith('_'))continue;
+        var v2=data[keys[j]],val2=null;
+        if(v2&&typeof v2==='object'&&'v' in v2)val2=v2.v;else if(typeof v2==='number')val2=v2;
+        if(val2===null)continue;
+        var a2=getAlarmInfo(keys[j],val2);
+        if(a2.tipo!=='none')alarmCards.appendChild(criarDataCard(keys[j],val2,tagConfig[keys[j]]));
+    }
+    if(!alarmCards.innerHTML)alarmCards.innerHTML='<div style="text-align:center;color:var(--t3);padding:20px;font-size:.8em">✅ Tudo normal — nenhum alarme ativo</div>';
+}
+
+// ===== GAUGE (estilo corta-giro) =====
+function desenharGauge(canvasId, valor, maximo, tipo){
+    var canvas=document.getElementById(canvasId);if(!canvas)return;
+    var ctx=canvas.getContext('2d');var w=canvas.width,h=canvas.height;
+    var cx=w/2,cy=h*0.55,r=w*0.38,lw=w*0.12;
+    ctx.clearRect(0,0,w,h);
+
+    // Ângulos: 220° a 320° (arco de 240°)
+    var startAngle=0.75*Math.PI; // 135°
+    var endAngle=2.25*Math.PI;   // 405° (= 45°)
+    var totalAngle=1.5*Math.PI;  // 270°
+
+    // Background arc
+    ctx.beginPath();
+    ctx.arc(cx,cy,r,startAngle,endAngle);
+    ctx.strokeStyle='rgba(255,255,255,0.06)';
+    ctx.lineWidth=lw;
+    ctx.lineCap='round';
+    ctx.stroke();
+
+    // Value arc
+    var pct=maximo>0?(valor/maximo):0;
+    pct=Math.max(0,Math.min(1,pct));
+    var valueAngle=startAngle+(pct*totalAngle);
+
+    var grad=ctx.createLinearGradient(0,0,w,h);
+    if(tipo==='alarme'){
+        // Invertido: mais alarmes = mais vermelho
+        var pctAlarme=maximo>0?((maximo-valor)/maximo):0;
+        valueAngle=startAngle+(pctAlarme*totalAngle);
+        grad.addColorStop(0,'#22c55e');
+        grad.addColorStop(0.5,'#eab308');
+        grad.addColorStop(1,'#ef4444');
+    }else{
+        grad.addColorStop(0,'#ef4444');
+        grad.addColorStop(0.5,'#eab308');
+        grad.addColorStop(1,'#22c55e');
+    }
+
+    if(pct>0||tipo==='alarme'){
+        ctx.beginPath();
+        ctx.arc(cx,cy,r,startAngle,valueAngle);
+        ctx.strokeStyle=grad;
+        ctx.lineWidth=lw;
+        ctx.lineCap='round';
+        ctx.stroke();
+    }
+
+    // Needle dot
+    var needleAngle=tipo==='alarme'?valueAngle:valueAngle;
+    var nx=cx+Math.cos(needleAngle)*r;
+    var ny=cy+Math.sin(needleAngle)*r;
+    ctx.beginPath();ctx.arc(nx,ny,lw*0.4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+
+    // Center dot
+    ctx.beginPath();ctx.arc(cx,cy,lw*0.3,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.3)';ctx.fill();
+}
 
         // ===== RENDER GRUPO =====
         function renderGrupo(grupo,data){
