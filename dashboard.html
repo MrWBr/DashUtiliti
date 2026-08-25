@@ -340,8 +340,8 @@
             trafos:[
                 {id:"TRAFO_01",nome:"Trafo 01 - Sub. Principal",potencia:1500,u:"kVA"},
                 {id:"TRAFO_02",nome:"Trafo 02 - Chocolate",potencia:1000,u:"kVA"},
-                {id:"TRAFO_03",nome:"Trafo 03 - Dry Mix / B&G",potencia:750,u:"kVA"},
-                {id:"TRAFO_04",nome:"Trafo 04 - Utilidades",potencia:1000,u:"kVA"},
+                {id:"TRAFO_03",nome:"Trafo 03 - Dry Mix",potencia:750,u:"kVA"},
+                {id:"TRAFO_04",nome:"Trafo 04 - B&G",potencia:1000,u:"kVA"},
                 {id:"TRAFO_05",nome:"Trafo 05 - Utilidades",potencia:1000,u:"kVA"}
             ],
             medicoes:[
@@ -419,13 +419,23 @@
                 +'<div class="overview-card"><div class="overview-label">⚡ Energia</div><div class="overview-value">'+(grupos.energia||0)+'</div><div class="overview-sub">'+(gruposAlarm.energia||0)+' alarme</div><canvas id="gauge-energia" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>';
 
             setTimeout(function(){
-                desenharGauge('gauge-saude',pctOk,100,'normal');
-                desenharGauge('gauge-alarme',emAlarme,totalVars,'alarme');
-                desenharGauge('gauge-temp',(grupos.temp||0)-(gruposAlarm.temp||0),grupos.temp||1,'normal');
-                desenharGauge('gauge-ar',(grupos.ar||0)-(gruposAlarm.ar||0),grupos.ar||1,'normal');
-                desenharGauge('gauge-cura',(grupos.cura||0)-(gruposAlarm.cura||0),grupos.cura||1,'normal');
-                desenharGauge('gauge-energia',(grupos.energia||0)-(gruposAlarm.energia||0),grupos.energia||1,'normal');
-            },50);
+               // 1. Temperatura da Água Gelada 6°C
+                desenharGauge('gauge-agua-6c', dados.Agua_6C || 0, 10, 'normal');
+
+                // 2. Pressão de Vapor Chocolate
+                desenharGauge('gauge-pressao-vapor-choco', dados.Pressao_Vapor_Choco || 0, 10, 'normal');
+
+                // 3. Balas e Gomas (Pressão Cavalete B&G)
+                desenharGauge('gauge-pressao-bg', dados.Pressao_Cavalete_BG || 0, 15, 'normal');
+
+                // 4. Pressão do Ar Dry Mix (Ar Comp Dry Mix)
+                desenharGauge('gauge-ar-dm', dados.Ar_Comp_DM || 0, 8, 'normal');
+
+                // 5. Pressão do Ar Chocolate (Ar Comp Chocolate)
+                desenharGauge('gauge-ar-choco', dados.Ar_Comp_Choco || 0, 8, 'normal');
+
+                // 6. Vácuo Dry Mix
+                desenharGauge('gauge-vacuo-dm', dados.Vacuo_Dry_Mix || 0, 30, 'normal');},50);
 
             var alarmCards=document.getElementById('alarme-cards');alarmCards.innerHTML='';
             for(var j=0;j<keys.length;j++){
