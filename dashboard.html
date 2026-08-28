@@ -167,22 +167,22 @@
         ::-webkit-scrollbar-track { background: var(--bg1); }
         ::-webkit-scrollbar-thumb { background: var(--accent); border-radius:4px; }
 
-        /* === WIDGET / PIP === */
+        /* === WIDGET / PIP — faixa tipo "ticker" de bolsa, rolando na horizontal === */
         .btn-icon.widget-on { background: var(--gradient); color:#fff; border-color:transparent; }
-        .widget-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; padding:10px; }
-        .widget-grid .overview-card { padding:10px; }
-        .widget-grid .overview-label { font-size:.6em; margin-bottom:4px; }
-        .widget-grid .overview-value { font-size:1.25em; }
-        .widget-grid .overview-sub { font-size:.62em; }
-        .widget-header { display:flex; align-items:center; justify-content:space-between; padding:8px 10px; background: var(--bg2); border-bottom:1px solid var(--glass-border); }
-        .widget-header span { font-size:.72em; font-weight:600; color: var(--t1); }
-        .widget-header button { background: var(--bg-card); border:1px solid var(--glass-border); color: var(--t2); border-radius:8px; width:22px; height:22px; font-size:.7em; cursor:pointer; }
-        .widget-updated { text-align:center; font-size:.6em; color: var(--t3); padding:2px 0 8px; }
+        .widget-ticker-bar { position:relative; display:flex; align-items:center; height:40px; background: var(--bg2); overflow:hidden; }
+        .widget-ticker-viewport { flex:1; overflow:hidden; height:100%; display:flex; align-items:center; }
+        .widget-ticker-track { display:inline-flex; align-items:center; white-space:nowrap; animation: ticker-scroll 26s linear infinite; will-change: transform; }
+        .widget-ticker-track:hover { animation-play-state: paused; }
+        @keyframes ticker-scroll { from{ transform: translateX(0); } to{ transform: translateX(-50%); } }
+        .ticker-item { display:inline-flex; align-items:baseline; gap:5px; padding:0 16px; font-size:.72em; font-weight:700; color: var(--t1); white-space:nowrap; }
+        .ticker-item .tlabel { color: var(--t2); font-weight:500; }
+        .ticker-item.alarm { color: var(--red); }
+        .ticker-sep { color: var(--t3); opacity:.5; font-size:.7em; }
+        .widget-close { flex-shrink:0; background: var(--bg-card); border:1px solid var(--glass-border); color: var(--t2); border-radius:50%; width:20px; height:20px; font-size:.6em; line-height:1; cursor:pointer; margin:0 8px; }
 
-        /* Fallback floating widget (when Document PiP API isn't available) */
-        #widget-fallback { display:none; position:fixed; bottom:16px; right:16px; width:270px; background: var(--bg2); border:1px solid var(--glass-border); border-radius: var(--radius); box-shadow: var(--shadow); z-index:500; overflow:hidden; }
+        /* Fallback flutuante (quando o navegador não suporta Document Picture-in-Picture) */
+        #widget-fallback { display:none; position:fixed; bottom:16px; right:16px; width:320px; background: var(--bg2); border:1px solid var(--glass-border); border-radius: var(--radius); box-shadow: var(--shadow); z-index:500; overflow:hidden; }
         #widget-fallback.show { display:block; }
-        #widget-fallback .widget-grid { grid-template-columns: repeat(2, 1fr); }
     </style>
 </head>
 <body>
@@ -194,11 +194,11 @@
         </div>
         <div class="header-right">
             <span class="status-badge" id="conn-status">● Online</span>
-            <button class="btn-icon" onclick="toggleTheme()" id="btn-theme">☀️</button>
-            <button class="btn-icon" onclick="toggleWidget()" id="btn-widget" title="Modo Widget (PIP)">🧩</button>
-            <button class="btn-icon" onclick="exportarCSV()">📥</button>
-            <button class="btn-icon" onclick="toggleNotificacoes()" id="btn-notif">🔔</button>
-            <button class="btn-icon" onclick="logout()">⏻</button>
+            <button class="btn-icon" onclick="toggleTheme()" id="btn-theme" title="Alternar tema" aria-label="Alternar tema">☀️</button>
+            <button class="btn-icon" onclick="toggleWidget()" id="btn-widget" title="Modo Widget (PIP)" aria-label="Modo Widget (PIP)">🧩</button>
+            <button class="btn-icon" onclick="exportarCSV()" title="Exportar CSV" aria-label="Exportar CSV">📥</button>
+            <button class="btn-icon" onclick="toggleNotificacoes()" id="btn-notif" title="Ativar notificações" aria-label="Ativar notificações">🔔</button>
+            <button class="btn-icon" onclick="logout()" title="Sair" aria-label="Sair">⏻</button>
         </div>
     </div>
 
@@ -314,14 +314,7 @@
     </div>
 
     <!-- WIDGET FLUTUANTE (fallback quando o navegador não suporta Document Picture-in-Picture) -->
-    <div id="widget-fallback">
-        <div class="widget-header">
-            <span>🧩 Utilidades</span>
-            <button onclick="toggleWidget()">✕</button>
-        </div>
-        <div class="widget-grid" id="widget-grid-fallback"></div>
-        <div class="widget-updated" id="widget-updated-fallback">—</div>
-    </div>
+    <div id="widget-fallback"></div>
 
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -394,12 +387,26 @@
         };
 
         // ===== INIT =====
+        // Renderizar a cada valor recebido do Firebase pode gerar trabalho de DOM/canvas à toa se o
+        // leitor publicar com muita frequência. O histórico (sparklines) é atualizado a cada tick —
+        // é barato e mantém a densidade dos dados — mas o render pesado (grid, gauges, cards, widget)
+        // é limitado a no máximo ~1x a cada RENDER_MIN_INTERVAL ms (primeira atualização é imediata).
+        var RENDER_MIN_INTERVAL=800,renderTimer=null,ultimaRenderizacao=0;
+        function agendarRender(){
+            if(renderTimer)return;
+            var espera=Math.max(0,RENDER_MIN_INTERVAL-(Date.now()-ultimaRenderizacao));
+            renderTimer=setTimeout(function(){
+                renderTimer=null;ultimaRenderizacao=Date.now();
+                renderAll(ultimosDados);atualizarIndicadorTempo();
+                verificarAlarmesNotif(ultimosDados);atualizarWidget(ultimosDados);
+            },espera);
+        }
+
         function initDashboard(){
             db.ref('current').on('value',function(snap){
                 var data=snap.val();if(!data)return;
                 ultimosDados=data;ultimoTimestamp=data._timestamp||Date.now();
-                atualizarHistorico(data);renderAll(data);atualizarIndicadorTempo();
-                verificarAlarmesNotif(data);atualizarWidget(data);
+                atualizarHistorico(data);agendarRender();
             });
             db.ref('leitor_status').on('value',function(snap){atualizarStatusLeitor(snap.val())});
             db.ref('.info/connected').on('value',function(snap){
@@ -418,80 +425,82 @@
         }
 
         // ===== OVERVIEW COM GAUGES =====
+        // Tags físicas mostradas na Visão Geral, cada uma com sua própria faixa (min/max do gauge)
+        // e direção de perigo (perigoAlto=true quando valor alto é ruim, ex: água quente).
+        var fisicoConfig={
+            agua:{tag:'Agua_6C',min:3,max:10,perigoAlto:true},
+            arDM:{tag:'Ar_Comp_DM',min:4,max:8,perigoAlto:false},
+            arChoco:{tag:'Ar_Comp_Choco',min:4,max:8,perigoAlto:false},
+            vaporBG:{tag:'Pressao_Cavalete_BG',min:8,max:15,perigoAlto:false},
+            vaporChoco:{tag:'Pressao_Vapor_Choco',min:3,max:10,perigoAlto:false},
+            vacuo:{tag:'Vacuo_Dry_Mix',min:10,max:30,perigoAlto:false}
+        };
+
+        function clamp01(n){return Math.max(0,Math.min(1,n))}
+
         function calcOverviewStats(data){
             var totalVars=0,emAlarme=0,normal=0;
             var keys=Object.keys(data);
             for(var i=0;i<keys.length;i++){
                 if(keys[i].startsWith('_'))continue;
-                var val=data[keys[i]],valor=null;
-                if(val&&typeof val==='object'&&'v' in val)valor=val.v;else if(typeof val==='number')valor=val;
+                var valor=getVal(data,keys[i]);
                 if(valor===null)continue;totalVars++;
                 var alarm=getAlarmInfo(keys[i],valor);
                 if(alarm.tipo!=='none')emAlarme++;else normal++;
             }
             var pctOk=totalVars>0?Math.round((normal/totalVars)*100):0;
 
-            // Água gelada 6°C
-            var agua=getVal(data,'Agua_6C');
-            var aguaAlarm=agua!==null&&getAlarmInfo('Agua_6C',agua).tipo!=='none';
-            var aguaPct=agua!==null?clamp01((agua-3)/(10-3)):0;
+            var fisico={};
+            Object.keys(fisicoConfig).forEach(function(chave){
+                var f=fisicoConfig[chave],val=getVal(data,f.tag);
+                fisico[chave]={
+                    val:val,
+                    alarm:val!==null&&getAlarmInfo(f.tag,val).tipo!=='none',
+                    pct:val!==null?clamp01((val-f.min)/(f.max-f.min)):0,
+                    perigoAlto:f.perigoAlto
+                };
+            });
 
-            // Ar comprimido (média das 3 linhas)
-            var arTags=['Ar_Comp_DM','Ar_Comp_DM_Boge','Ar_Comp_Choco'];
-            var arVals=[],arPcts=[],arAlarm=false;
-            for(var a=0;a<arTags.length;a++){var v=getVal(data,arTags[a]);if(v!==null){arVals.push(v);arPcts.push(clamp01((v-4)/(8-4)));if(getAlarmInfo(arTags[a],v).tipo!=='none')arAlarm=true}}
-            var arAvg=arVals.length?media(arVals):null,arPct=arPcts.length?media(arPcts):0;
-
-            // Pressão de vapor (média normalizada das 2 linhas, cada uma na sua faixa)
-            var vaporTags=[{id:'Pressao_Cavalete_BG',min:8,max:15},{id:'Pressao_Vapor_Choco',min:3,max:10}];
-            var vaporVals=[],vaporPcts=[],vaporAlarm=false;
-            for(var vv=0;vv<vaporTags.length;vv++){var vt=vaporTags[vv],v2=getVal(data,vt.id);if(v2!==null){vaporVals.push(v2);vaporPcts.push(clamp01((v2-vt.min)/(vt.max-vt.min)));if(getAlarmInfo(vt.id,v2).tipo!=='none')vaporAlarm=true}}
-            var vaporAvg=vaporVals.length?media(vaporVals):null,vaporPct=vaporPcts.length?media(vaporPcts):0;
-
-            // Vácuo Dry Mix
-            var vacuo=getVal(data,'Vacuo_Dry_Mix');
-            var vacuoAlarm=vacuo!==null&&getAlarmInfo('Vacuo_Dry_Mix',vacuo).tipo!=='none';
-            var vacuoPct=vacuo!==null?clamp01((vacuo-10)/(30-10)):0;
-
-            return{
-                totalVars:totalVars,emAlarme:emAlarme,normal:normal,pctOk:pctOk,
-                agua:{val:agua,alarm:aguaAlarm,pct:aguaPct},
-                ar:{val:arAvg,alarm:arAlarm,pct:arPct},
-                vapor:{val:vaporAvg,alarm:vaporAlarm,pct:vaporPct},
-                vacuo:{val:vacuo,alarm:vacuoAlarm,pct:vacuoPct}
-            };
+            return{totalVars:totalVars,emAlarme:emAlarme,normal:normal,pctOk:pctOk,fisico:fisico};
         }
-
-        function clamp01(n){return Math.max(0,Math.min(1,n))}
-        function media(arr){return arr.reduce(function(a,b){return a+b},0)/arr.length}
 
         function overviewCardHTML(id,label,valorTxt,subTxt,alarm){
             var corTxt=alarm?'background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent':'';
             return '<div class="overview-card"><div class="overview-label">'+label+'</div><div class="overview-value" style="'+corTxt+'">'+valorTxt+'</div><div class="overview-sub">'+subTxt+'</div><canvas id="'+id+'" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>';
         }
 
-        // Renderiza os 6 gauges do painel (usado tanto na Visão Geral quanto no widget PIP)
+        // Rótulos e unidades dos cards físicos, na ordem em que aparecem na Visão Geral
+        var fisicoCards=[
+            {chave:'agua',label:'🌡️ Água 6°C',sub:'°C · gelada'},
+            {chave:'arDM',label:'💨 Ar Comp. DM',sub:'bar'},
+            {chave:'arChoco',label:'💨 Ar Comp. Choco',sub:'bar'},
+            {chave:'vaporBG',label:'♨️ Vapor B&G',sub:'bar'},
+            {chave:'vaporChoco',label:'♨️ Vapor Choco',sub:'bar'},
+            {chave:'vacuo',label:'🌀 Vácuo',sub:'Pol Hg'}
+        ];
+
+        // Renderiza os gauges do painel (usado na Visão Geral)
         function renderOverviewInto(gridEl,data,doc,prefix){
             if(!gridEl)return;
             var s=calcOverviewStats(data);
             var pS=prefix||'';
-            var idSaude=pS+'gauge-saude',idAlarme=pS+'gauge-alarme',idAgua=pS+'gauge-agua',idAr=pS+'gauge-ar',idVapor=pS+'gauge-vapor',idVacuo=pS+'gauge-vacuo';
+            var idSaude=pS+'gauge-saude',idAlarme=pS+'gauge-alarme';
 
-            gridEl.innerHTML=
-                overviewCardHTML(idSaude,'Saúde Utilidades',s.pctOk+'%',s.normal+'/'+s.totalVars+' OK',false)
-                +overviewCardHTML(idAlarme,'Em Alarme',s.emAlarme,'fora do limite',s.emAlarme>0)
-                +overviewCardHTML(idAgua,'🌡️ Água 6°C',s.agua.val!==null?s.agua.val.toFixed(1):'—','°C · gelada',s.agua.alarm)
-                +overviewCardHTML(idAr,'💨 Ar Comprimido',s.ar.val!==null?s.ar.val.toFixed(1):'—','bar',s.ar.alarm)
-                +overviewCardHTML(idVapor,'♨️ Pressão Vapor',s.vapor.val!==null?s.vapor.val.toFixed(1):'—','bar',s.vapor.alarm)
-                +overviewCardHTML(idVacuo,'🌀 Vácuo',s.vacuo.val!==null?s.vacuo.val.toFixed(1):'—','Pol Hg',s.vacuo.alarm);
+            var html=overviewCardHTML(idSaude,'Saúde Utilidades',s.pctOk+'%',s.normal+'/'+s.totalVars+' OK',false)
+                +overviewCardHTML(idAlarme,'Em Alarme',s.emAlarme,'fora do limite',s.emAlarme>0);
+            fisicoCards.forEach(function(c){
+                var f=s.fisico[c.chave];
+                html+=overviewCardHTML(pS+'gauge-'+c.chave,c.label,f.val!==null?f.val.toFixed(1):'—',c.sub,f.alarm);
+            });
+            gridEl.innerHTML=html;
 
             setTimeout(function(){
                 desenharGauge(idSaude,s.pctOk,100,'normal',doc);
                 desenharGauge(idAlarme,s.emAlarme,s.totalVars||1,'alarme',doc);
-                desenharGaugeFisico(idAgua,s.agua.pct,true,doc);
-                desenharGaugeFisico(idAr,s.ar.pct,false,doc);
-                desenharGaugeFisico(idVapor,s.vapor.pct,false,doc);
-                desenharGaugeFisico(idVacuo,s.vacuo.pct,false,doc);
+                fisicoCards.forEach(function(c){
+                    var f=s.fisico[c.chave];
+                    desenharGaugeFisico(pS+'gauge-'+c.chave,f.pct,f.perigoAlto,doc);
+                });
             },50);
         }
 
@@ -502,11 +511,10 @@
             var alarmCards=document.getElementById('alarme-cards');alarmCards.innerHTML='';
             for(var j=0;j<keys.length;j++){
                 if(keys[j].startsWith('_'))continue;
-                var v2=data[keys[j]],val2=null;
-                if(v2&&typeof v2==='object'&&'v' in v2)val2=v2.v;else if(typeof v2==='number')val2=v2;
+                var val2=getVal(data,keys[j]);
                 if(val2===null)continue;
                 var a2=getAlarmInfo(keys[j],val2);
-                if(a2.tipo!=='none')alarmCards.appendChild(criarDataCard(keys[j],val2,tagConfig[keys[j]]));
+                if(a2.tipo!=='none')alarmCards.appendChild(criarDataCard(keys[j],val2,getCfg(keys[j])));
             }
             if(!alarmCards.innerHTML)alarmCards.innerHTML='<div style="text-align:center;color:var(--t3);padding:20px;font-size:.8em">✅ Tudo normal</div>';
         }
@@ -562,8 +570,7 @@
             var keys=Object.keys(tagConfig);
             for(var i=0;i<keys.length;i++){
                 var cfg=tagConfig[keys[i]];if(cfg.grupo!==grupo)continue;
-                var val=data[keys[i]],valor=null;
-                if(val&&typeof val==='object'&&'v' in val)valor=val.v;else if(typeof val==='number')valor=val;
+                var valor=getVal(data,keys[i]);
                 if(valor===null)valor=0;
                 container.appendChild(criarDataCard(keys[i],valor,cfg));
             }
@@ -650,7 +657,7 @@
         function redesenharSparklines(){
             document.querySelectorAll('.card-spark canvas').forEach(function(canvas){
                 var tagId=canvas.getAttribute('data-tag'),alarmCor=canvas.getAttribute('data-alarm');
-                var hist=historico[tagId]||[],cfg=tagConfig[tagId]||{};
+                var hist=historico[tagId]||[],cfg=getCfg(tagId)||{};
                 var rect=canvas.parentElement.getBoundingClientRect();
                 canvas.width=Math.floor(rect.width*2);canvas.height=Math.floor(rect.height*2);
                 if(hist.length>=2)desenharSparkline(canvas,hist,alarmCor,cfg);
@@ -682,7 +689,7 @@
 
         // ===== MODAL =====
         function abrirModal(tagId){
-            modalTagAtual=tagId;var cfg=tagConfig[tagId]||{};
+            modalTagAtual=tagId;var cfg=getCfg(tagId)||{};
             document.getElementById('modal-titulo').textContent=cfg.nome||tagId;
             var valorAtual='—';if(ultimosDados&&ultimosDados[tagId]){var v=ultimosDados[tagId];
                 valorAtual=(typeof v==='object'&&'v' in v)?v.v.toFixed(1)+' '+(v.u||''):(typeof v==='number'?v.toFixed(1):v)}
@@ -699,7 +706,10 @@
         function carregarHistoricoModal(tagId,periodo){
             var ms={'1h':3600000,'6h':21600000,'24h':86400000,'7d':604800000};
             var desde=Date.now()-(ms[periodo]||3600000);
-            db.ref('history').orderByChild('_timestamp').startAt(desde).once('value').then(function(snap){
+            // limitToLast evita baixar o nó 'history' inteiro em períodos longos (24h/7d) — pega os
+            // registros mais recentes dentro da janela. Se a leitura for muito frequente, o ideal a
+            // médio prazo é o leitor gravar um nó de histórico já agregado (ex: médias por hora).
+            db.ref('history').orderByChild('_timestamp').startAt(desde).limitToLast(3000).once('value').then(function(snap){
                 var dados=snap.val(),pontos=[];
                 if(dados){Object.keys(dados).forEach(function(k){var e=dados[k];
                     if(e&&e[tagId]!==undefined){var val=(typeof e[tagId]==='object'&&'v' in e[tagId])?e[tagId].v:(typeof e[tagId]==='number'?e[tagId]:null);
@@ -715,7 +725,7 @@
             ctx.clearRect(0,0,w,h);ctx.fillStyle='rgba(255,255,255,0.02)';ctx.fillRect(0,0,w,h);
             if(pontos.length<2){ctx.fillStyle='#484f58';ctx.font='24px sans-serif';ctx.textAlign='center';ctx.fillText('Sem dados para este período',w/2,h/2);
                 document.getElementById('stat-min').textContent='—';document.getElementById('stat-med').textContent='—';document.getElementById('stat-max').textContent='—';document.getElementById('stat-pts').textContent='0';return}
-            var cfg=tagConfig[tagId]||{},valores=pontos.map(function(p){return p.v});
+            var cfg=getCfg(tagId)||{},valores=pontos.map(function(p){return p.v});
             var min,max;if(cfg.escalaMin!=null&&cfg.escalaMax!=null){min=cfg.escalaMin;max=cfg.escalaMax}
             else{min=Math.min.apply(null,valores);max=Math.max.apply(null,valores);var mg=(max-min)*0.15||1;min-=mg;max+=mg}
             var range=max-min||1;
@@ -787,8 +797,18 @@
             if(typeof data[key]==='object'&&'v' in data[key])return data[key].v;
             if(typeof data[key]==='number')return data[key];return null;
         }
+        // Une tagConfig (temperaturas/ar/cura/vapor) e energiaConfig.medicoes (energia) numa única
+        // busca, para que alarmes, nomes e limites funcionem igual pros dois grupos de tags.
+        function getCfg(tagId){
+            if(tagConfig[tagId])return tagConfig[tagId];
+            for(var i=0;i<energiaConfig.medicoes.length;i++){
+                var m=energiaConfig.medicoes[i];
+                if(m.id===tagId)return{nome:m.nome,grupo:'energia',u:m.u,limiteAlto:m.limiteAlto||null,limiteBaixo:m.limiteBaixo||null,escalaMin:m.escalaMin||null,escalaMax:m.escalaMax||null,corAlto:'red',corBaixo:'orange'};
+            }
+            return null;
+        }
         function getAlarmInfo(tagId,valor){
-            var cfg=tagConfig[tagId];if(!cfg)return{tipo:'none',cor:null};
+            var cfg=getCfg(tagId);if(!cfg)return{tipo:'none',cor:null};
             if(cfg.limiteAlto!=null&&valor>cfg.limiteAlto)return{tipo:'alto',cor:cfg.corAlto||'red'};
             if(cfg.limiteBaixo!=null&&valor<cfg.limiteBaixo)return{tipo:'baixo',cor:cfg.corBaixo||'blue'};
             return{tipo:'none',cor:null};
@@ -796,8 +816,7 @@
         function atualizarHistorico(data){
             var keys=Object.keys(data);
             for(var i=0;i<keys.length;i++){if(keys[i].startsWith('_'))continue;
-                var val=data[keys[i]],valor=null;
-                if(val&&typeof val==='object'&&'v' in val)valor=val.v;else if(typeof val==='number')valor=val;
+                var valor=getVal(data,keys[i]);
                 if(valor===null)continue;
                 if(!historico[keys[i]])historico[keys[i]]=[];
                 historico[keys[i]].push(valor);
@@ -833,10 +852,27 @@
                 }else if(alarm.tipo==='none'){delete alarmesAtivosNotif[keys[i]]}
             }
         }
+        function aplicarEstadoNotif(ativo){
+            notificacoesAtivas=ativo;
+            var btn=document.getElementById('btn-notif');if(!btn)return;
+            btn.style.background=ativo?'var(--accent)':'';btn.style.color=ativo?'#fff':'';
+        }
         window.toggleNotificacoes=function(){
-            if(!notificacoesAtivas){Notification.requestPermission().then(function(p){if(p==='granted'){notificacoesAtivas=true;document.getElementById('btn-notif').style.background='var(--accent)';document.getElementById('btn-notif').style.color='#fff'}})}
-            else{notificacoesAtivas=false;document.getElementById('btn-notif').style.background='';document.getElementById('btn-notif').style.color=''}
+            if(!notificacoesAtivas){
+                Notification.requestPermission().then(function(p){
+                    if(p==='granted'){aplicarEstadoNotif(true);try{localStorage.setItem('notificacoesAtivas','1')}catch(e){}}
+                });
+            }else{
+                aplicarEstadoNotif(false);try{localStorage.setItem('notificacoesAtivas','0')}catch(e){}
+            }
         };
+        // Restaura a preferência salva — só reativa automaticamente se a permissão do navegador
+        // ainda estiver concedida (ela pode ter sido revogada fora do app desde a última visita).
+        (function restaurarPreferenciaNotif(){
+            try{
+                if(localStorage.getItem('notificacoesAtivas')==='1'&&typeof Notification!=='undefined'&&Notification.permission==='granted')aplicarEstadoNotif(true);
+            }catch(e){}
+        })();
 
         // ===== THEME =====
         window.toggleTheme=function(){
@@ -847,8 +883,9 @@
 
         // ===== WIDGET / PICTURE-IN-PICTURE =====
         // Ao clicar, tenta abrir uma janela real "sempre no topo" via Document Picture-in-Picture
-        // (Chrome/Edge desktop). Se o navegador não suportar, cai para um painel flutuante fixo
-        // no canto da própria página.
+        // (Chrome/Edge desktop). Se o navegador não suportar, cai para uma faixa flutuante fixa no
+        // canto da própria página. Em ambos os casos o conteúdo é um "ticker" de texto rolando —
+        // sem canvas/gauge — pra ocupar o mínimo de espaço possível.
         var pipWindow=null,widgetFallbackAtivo=false;
 
         window.toggleWidget=function(){
@@ -859,10 +896,10 @@
 
         function abrirWidgetPip(){
             // Alguns navegadores expõem a API mas nunca resolvem/rejeitam a promise (sem suporte real
-            // ou sem gesto do usuário reconhecido) — depois de 1.5s sem resposta, cai para o painel flutuante.
+            // ou sem gesto do usuário reconhecido) — depois de 1.5s sem resposta, cai pra faixa flutuante.
             var settled=false;
             var timeoutId=setTimeout(function(){if(!settled){settled=true;abrirWidgetFallback()}},1500);
-            documentPictureInPicture.requestWindow({width:300,height:340}).then(function(pip){
+            documentPictureInPicture.requestWindow({width:340,height:46}).then(function(pip){
                 if(settled){try{pip.close()}catch(e){}return}
                 settled=true;clearTimeout(timeoutId);
                 pipWindow=pip;
@@ -874,7 +911,6 @@
                         var style=pip.document.createElement('style');style.textContent=css;pip.document.head.appendChild(style);
                     }catch(e){}
                 });
-                pip.document.body.innerHTML='<div class="widget-header"><span>🧩 Utilidades</span><span id="widget-updated" style="font-size:.6em;color:var(--t3)"></span></div><div class="widget-grid" id="widget-grid"></div>';
                 pip.addEventListener('pagehide',function(){pipWindow=null;atualizarBotaoWidget(false)},{once:true});
                 atualizarBotaoWidget(true);
                 if(ultimosDados)atualizarWidget(ultimosDados);
@@ -904,17 +940,42 @@
             if(ativo)btn.classList.add('widget-on');else btn.classList.remove('widget-on');
         }
 
+        function fmtOuTraco(v,casas){return v!==null?v.toFixed(casas==null?1:casas):'—'}
+
+        // Monta a lista de itens do ticker a partir das mesmas stats usadas na Visão Geral
+        function itensTicker(data){
+            var s=calcOverviewStats(data),f=s.fisico;
+            return[
+                {label:'Saúde',val:s.pctOk+'%',alarm:false},
+                {label:'Alarmes',val:s.emAlarme,alarm:s.emAlarme>0},
+                {label:'🌡️ Água 6°C',val:fmtOuTraco(f.agua.val)+'°C',alarm:f.agua.alarm},
+                {label:'💨 Ar DM',val:fmtOuTraco(f.arDM.val)+' bar',alarm:f.arDM.alarm},
+                {label:'💨 Ar Choco',val:fmtOuTraco(f.arChoco.val)+' bar',alarm:f.arChoco.alarm},
+                {label:'♨️ Vapor B&G',val:fmtOuTraco(f.vaporBG.val)+' bar',alarm:f.vaporBG.alarm},
+                {label:'♨️ Vapor Choco',val:fmtOuTraco(f.vaporChoco.val)+' bar',alarm:f.vaporChoco.alarm},
+                {label:'🌀 Vácuo',val:fmtOuTraco(f.vacuo.val)+' PolHg',alarm:f.vacuo.alarm},
+                {label:'🕐',val:data._readAt||'—',alarm:false}
+            ];
+        }
+
+        function tickerItemsHTML(itens){
+            return itens.map(function(it){
+                return '<span class="ticker-item'+(it.alarm?' alarm':'')+'"><span class="tlabel">'+it.label+'</span>'+it.val+'</span><span class="ticker-sep">•</span>';
+            }).join('');
+        }
+
+        // Renderiza a faixa "ticker" dentro do container informado (documento principal ou da janela PIP).
+        // O conteúdo é duplicado uma vez pra permitir o loop de rolagem contínuo, sem salto no final.
+        function renderTicker(container,data,mostrarFechar){
+            if(!container)return;
+            var itemsHTML=tickerItemsHTML(itensTicker(data));
+            var fecharBtn=mostrarFechar?'<button class="widget-close" onclick="toggleWidget()" title="Fechar widget">✕</button>':'';
+            container.innerHTML='<div class="widget-ticker-bar"><div class="widget-ticker-viewport"><div class="widget-ticker-track">'+itemsHTML+itemsHTML+'</div></div>'+fecharBtn+'</div>';
+        }
+
         function atualizarWidget(data){
-            if(pipWindow){
-                renderOverviewInto(pipWindow.document.getElementById('widget-grid'),data,pipWindow.document,'w-');
-                var upd=pipWindow.document.getElementById('widget-updated');
-                if(upd)upd.textContent=data._readAt||'';
-            }
-            if(widgetFallbackAtivo){
-                renderOverviewInto(document.getElementById('widget-grid-fallback'),data,document,'wf-');
-                var upd2=document.getElementById('widget-updated-fallback');
-                if(upd2)upd2.textContent=data._readAt||'';
-            }
+            if(pipWindow)renderTicker(pipWindow.document.body,data,false);
+            if(widgetFallbackAtivo)renderTicker(document.getElementById('widget-fallback'),data,true);
         }
 
         // ===== CSV =====
