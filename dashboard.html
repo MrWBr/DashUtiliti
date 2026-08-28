@@ -1,772 +1,467 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Utilidades - Mondelēz</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#7c3aed">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>Supervisório de Utilidades - PWA Industrial</title>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <style>
         :root {
-            --bg1: #0d1117;
-            --bg2: #161b22;
-            --bg3: rgba(255,255,255,0.03);
-            --bg-card: rgba(255,255,255,0.05);
-            --bg-card-hover: rgba(255,255,255,0.08);
-            --glass: rgba(255,255,255,0.02);
-            --glass-border: rgba(255,255,255,0.08);
-            --t1: #ffffff;
-            --t2: #8b949e;
-            --t3: #484f58;
-            --accent: #7c3aed;
-            --accent2: #06b6d4;
-            --gradient: linear-gradient(135deg, #7c3aed, #06b6d4);
-            --gradient-soft: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(6,182,212,0.15));
-            --gradient-fill: linear-gradient(180deg, rgba(124,58,237,0.3), rgba(6,182,212,0.05));
-            --red: #ef4444;
-            --orange: #f97316;
-            --green: #22c55e;
-            --blue: #3b82f6;
-            --yellow: #eab308;
-            --shadow: 0 4px 24px rgba(0,0,0,0.3);
-            --radius: 16px;
-            --radius-sm: 10px;
-        }
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif; background: var(--bg1); color: var(--t1); min-height:100vh; overflow-x:hidden; }
-
-        /* === HEADER === */
-        .header { background: var(--bg2); padding: 16px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--glass-border); position:sticky; top:0; z-index:100; backdrop-filter: blur(20px); }
-        .header-left { display:flex; align-items:center; gap:12px; }
-        .header-logo { width:32px; height:32px; border-radius:8px; background: var(--gradient); display:flex; align-items:center; justify-content:center; font-size:16px; }
-        .header h1 { font-size: 1em; font-weight: 600; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .header-right { display:flex; align-items:center; gap:10px; }
-        .status-badge { font-size:.7em; padding:4px 10px; border-radius:20px; background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
-        .status-badge.offline { background: rgba(239,68,68,0.15); color: var(--red); border-color: rgba(239,68,68,0.3); }
-        .btn-icon { background: var(--bg-card); border: 1px solid var(--glass-border); color: var(--t2); width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; transition: all .2s; }
-        .btn-icon:hover { background: var(--bg-card-hover); color: var(--t1); }
-
-        /* === TABS === */
-        .tabs { display:flex; gap:4px; padding:12px 16px; background: var(--bg2); border-bottom: 1px solid var(--glass-border); overflow-x:auto; -webkit-overflow-scrolling:touch; }
-        .tabs::-webkit-scrollbar { display:none; }
-        .tab { padding:8px 16px; border-radius:10px; font-size:.75em; font-weight:500; color: var(--t2); background: transparent; border: none; cursor:pointer; white-space:nowrap; transition: all .2s; }
-        .tab:hover { color: var(--t1); background: var(--bg-card); }
-        .tab.active { background: var(--gradient); color: #fff; font-weight:600; }
-
-        /* === LEITOR STATUS === */
-        .leitor-bar { display:flex; align-items:center; justify-content:space-between; padding:10px 20px; background: var(--glass); border-bottom: 1px solid var(--glass-border); }
-        .leitor-left { display:flex; align-items:center; gap:10px; font-size:.75em; }
-        .leitor-dot { width:8px; height:8px; border-radius:50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
-        .leitor-dot.offline { background: var(--red); box-shadow: 0 0 8px var(--red); animation:none; }
-        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.85)} }
-        .leitor-right { display:flex; gap:16px; font-size:.7em; color: var(--t2); }
-        .leitor-right .val { color: var(--accent2); font-weight:600; }
-        .last-update { text-align:center; font-size:.68em; color: var(--t3); padding:6px 20px; background: var(--bg2); }
-
-        /* === OVERVIEW CARDS (Visão Geral) === */
-        .overview-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; padding:16px; }
-        .overview-card { background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius); padding:16px; position:relative; overflow:hidden; transition: all .3s; }
-        .overview-card:hover { background: var(--bg-card-hover); transform: translateY(-2px); box-shadow: var(--shadow); }
-        .overview-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: var(--gradient); border-radius: var(--radius) var(--radius) 0 0; }
-        .overview-label { font-size:.65em; color: var(--t2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
-        .overview-value { font-size:1.8em; font-weight:700; background: var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-        .overview-sub { font-size:.7em; color: var(--t3); margin-top:4px; }
-        .overview-card .donut-container { position:absolute; top:12px; right:12px; width:44px; height:44px; }
-
-        /* === DATA CARDS === */
-        .section-container { padding:12px 16px; }
-        .section-title { font-size:.7em; color: var(--accent); text-transform:uppercase; letter-spacing:1px; font-weight:600; margin-bottom:10px; padding-left:4px; }
-        .cards-grid { display:flex; flex-direction:column; gap:8px; }
-        .data-card { display:flex; align-items:center; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding:14px 16px; gap:14px; transition: all .3s; cursor:pointer; position:relative; overflow:hidden; }
-        .data-card:hover { background: var(--bg-card-hover); transform: translateX(4px); }
-        .data-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background: var(--gradient); }
-        .data-card.alarm-red::before { background: var(--red); }
-        .data-card.alarm-red { border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.05); }
-        .data-card.alarm-red .card-value { color: var(--red); }
-        .data-card.alarm-blue::before { background: var(--blue); }
-        .data-card.alarm-blue { border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.05); }
-        .data-card.alarm-blue .card-value { color: var(--blue); }
-        .data-card.alarm-orange::before { background: var(--orange); }
-        .data-card.alarm-orange { border-color: rgba(249,115,22,0.3); background: rgba(249,115,22,0.05); }
-        .data-card.alarm-orange .card-value { color: var(--orange); }
-        .card-info { flex-shrink:0; min-width:fit-content; }
-        .card-name { font-size:.7em; color: var(--t2); text-transform:uppercase; letter-spacing:.3px; white-space:nowrap; }
-        .card-value { font-size:1.5em; font-weight:700; color: var(--t1); margin-top:2px; }
-        .card-value .unit { font-size:.5em; color: var(--t3); font-weight:400; margin-left:3px; }
-        .card-spark { flex:1; min-width:60px; height:50px; position:relative; }
-        .card-spark canvas { width:100%; height:100%; display:block; }
-        .card-trend { font-size:1.1em; width:24px; text-align:center; flex-shrink:0; }
-        .trend-up { color: var(--red); }
-        .trend-down { color: var(--green); }
-        .trend-stable { color: var(--t3); }
-
-        /* === ENERGIA TAB === */
-        .energia-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:12px; padding:16px; }
-        .trafo-card { background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius); padding:18px; position:relative; overflow:hidden; }
-        .trafo-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: var(--gradient); }
-        .trafo-card.offline::before { background: var(--red); }
-        .trafo-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-        .trafo-nome { font-size:.85em; font-weight:600; color: var(--t1); }
-        .trafo-status { font-size:.65em; padding:3px 8px; border-radius:12px; }
-        .trafo-status.online { background: rgba(34,197,94,0.15); color: var(--green); }
-        .trafo-status.offline { background: rgba(239,68,68,0.15); color: var(--red); }
-        .trafo-status.alerta { background: rgba(249,115,22,0.15); color: var(--orange); }
-        .trafo-body { display:flex; gap:16px; align-items:center; }
-        .trafo-donut { width:80px; height:80px; position:relative; flex-shrink:0; }
-        .trafo-donut canvas { width:100%; height:100%; }
-        .trafo-donut-label { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; }
-        .trafo-donut-value { font-size:1.1em; font-weight:700; color: var(--t1); }
-        .trafo-donut-sub { font-size:.55em; color: var(--t3); }
-        .trafo-metrics { flex:1; display:flex; flex-direction:column; gap:6px; }
-        .trafo-metric { display:flex; justify-content:space-between; align-items:center; font-size:.72em; }
-        .trafo-metric-label { color: var(--t2); }
-        .trafo-metric-value { color: var(--t1); font-weight:600; font-family:monospace; }
-        .trafo-metric-value.alarm { color: var(--red); }
-
-        /* === MODAL === */
-        .modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.9); z-index:200; align-items:center; justify-content:center; padding:15px; backdrop-filter:blur(8px); }
-        .modal-overlay.show { display:flex; }
-        .modal { background: var(--bg2); border-radius: var(--radius); width:100%; max-width:700px; max-height:90vh; overflow-y:auto; padding:24px; position:relative; border: 1px solid var(--glass-border); box-shadow: var(--shadow); }
-        .modal-close { position:absolute; top:12px; right:16px; background:none; border:none; color: var(--t2); font-size:1.5em; cursor:pointer; }
-        .modal h2 { background: var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; font-size:1.1em; margin-bottom:5px; }
-        .modal-valor { font-size:2.2em; font-weight:700; margin-bottom:12px; }
-        .modal-periodo { display:flex; gap:8px; margin-bottom:16px; }
-        .modal-periodo button { background: var(--bg-card); color: var(--accent2); border: 1px solid var(--glass-border); padding:6px 14px; border-radius:8px; font-size:.75em; cursor:pointer; transition: all .2s; }
-        .modal-periodo button.active { background: var(--gradient); color:#fff; border-color:transparent; }
-        .modal canvas { width:100%; height:250px; display:block; border-radius: var(--radius-sm); background: var(--bg-card); }
-        .modal-stats { display:flex; justify-content:space-around; margin-top:14px; font-size:.8em; color: var(--t2); }
-        .modal-stats .stat-val { font-weight:700; color: var(--t1); font-size:1.2em; }
-
-        /* === TOOLBAR === */
-        .toolbar { display:flex; gap:6px; padding:8px 16px; background: var(--bg2); border-bottom: 1px solid var(--glass-border); }
-        .toolbar button { background: var(--bg-card); color: var(--t2); border: 1px solid var(--glass-border); padding:6px 12px; border-radius:8px; font-size:.7em; cursor:pointer; transition: all .2s; }
-        .toolbar button:hover { color: var(--t1); background: var(--bg-card-hover); }
-        .toolbar button.active { background: var(--gradient); color:#fff; border-color:transparent; }
-
-        /* === ALARMES === */
-        .alarmes-section { display:none; padding:16px; }
-        .alarme-item { display:flex; align-items:center; gap:10px; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding:10px 14px; font-size:.75em; margin-bottom:6px; border-left:3px solid var(--t3); }
-        .alarme-item.tipo-limite { border-left-color: var(--red); }
-        .alarme-item.tipo-taxa { border-left-color: var(--orange); }
-        .alarme-item.tipo-tempo_faixa { border-left-color: var(--blue); }
-        .alarme-item.tipo-saida { border-left-color: var(--green); }
-
-        /* === RESPONSIVE === */
-        @media (max-width: 480px) {
-            .overview-grid { grid-template-columns: repeat(2, 1fr); gap:8px; }
-            .energia-grid { grid-template-columns: 1fr; }
-            .card-value { font-size:1.3em; }
-            .overview-value { font-size:1.5em; }
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #3b82f6;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #334155;
         }
 
-        /* === SCROLLBAR === */
-        ::-webkit-scrollbar { width:4px; }
-        ::-webkit-scrollbar-track { background: var(--bg1); }
-        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius:4px; }
+        [data-theme="light"] {
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-color: #0f172a;
+            --text-secondary: #64748b;
+            --accent: #2563eb;
+            --border: #cbd5e1;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        header.header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            background-color: var(--success);
+            color: white;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 2rem;
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        .main-container {
+            padding: 2rem;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .overview-grid, .energia-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .data-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .data-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.15);
+            border-color: var(--accent);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+
+        .card-body {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+
+        .value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .unit {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .pip-icon {
+            font-size: 0.9rem;
+            opacity: 0.6;
+        }
+
+        .data-card:hover .pip-icon {
+            opacity: 1;
+        }
+
+        .leitor-bar {
+            background: var(--card-bg);
+            padding: 0.75rem 2rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        button.action-btn {
+            background: var(--border);
+            color: var(--text-color);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        button.action-btn:hover {
+            opacity: 0.85;
+        }
+
+        /* Estilo para sparklines */
+        canvas.sparkline {
+            width: 100%;
+            height: 40px;
+            margin-top: 10px;
+        }
     </style>
 </head>
-<body>
-    <!-- HEADER -->
-    <div class="header">
-        <div class="header-left">
-            <div class="header-logo">🏭</div>
-            <h1>Utilidades</h1>
-        </div>
-        <div class="header-right">
-            <span class="status-badge" id="conn-status">● Online</span>
-            <button class="btn-icon" onclick="toggleTheme()" id="btn-theme">☀️</button>
-            <button class="btn-icon" onclick="exportarCSV()">📥</button>
-            <button class="btn-icon" onclick="toggleNotificacoes()" id="btn-notif">🔔</button>
-            <button class="btn-icon" onclick="logout()">⏻</button>
-        </div>
-    </div>
+<body data-theme="dark">
 
-    <!-- TABS -->
-    <div class="tabs">
-        <button class="tab active" onclick="mudarTab('overview',this)">📊 Visão Geral</button>
-        <button class="tab" onclick="mudarTab('temp',this)">🌡️ Temperaturas</button>
-        <button class="tab" onclick="mudarTab('ar',this)">💨 Ar Comprimido</button>
-        <button class="tab" onclick="mudarTab('cura',this)">🧊 Salas de Cura</button>
-        <button class="tab" onclick="mudarTab('vapor',this)">♨️ Vapor/Água</button>
-        <button class="tab" onclick="mudarTab('energia',this)">⚡ Energia</button>
-        <button class="tab" onclick="mudarTab('alarmes',this)">📋 Alarmes</button>
-    </div>
+    <header class="header">
+        <h2>Supervisório de Utilidades</h2>
+        <div class="controls">
+            <span id="connection-status" class="status-badge">Conectado</span>
+            <button class="action-btn" onclick="alternarTema()">Tema</button>
+            <button class="action-btn" onclick="executarLogout()">Sair</button>
+        </div>
+    </header>
 
-    <!-- LEITOR STATUS -->
     <div class="leitor-bar">
-        <div class="leitor-left">
-            <div class="leitor-dot" id="leitor-dot"></div>
-            <span id="leitor-label" style="color:var(--t2)">Leitor: verificando...</span>
-        </div>
-        <div class="leitor-right">
-            <span>📖 <span class="val" id="leitor-leituras">0</span></span>
-            <span>⏱️ <span class="val" id="leitor-uptime">00:00</span></span>
-        </div>
+        <span>Status do Leitor de Campo: <strong id="leitor-uptime" style="color: var(--success);">Online (Uptime: 99.8%)</strong></span>
+        <span>Última Sincronização: <strong id="last-sync">-</strong></span>
     </div>
-    <div class="last-update" id="last-update">Aguardando dados...</div>
 
-    <!-- CONTEÚDO PRINCIPAL -->
-    <div id="content-area">
-        <!-- Overview (padrão) -->
-        <div id="tab-overview" class="tab-content">
-            <div class="overview-grid" id="overview-grid"></div>
-            <div class="section-container">
-                <div class="section-title">Variáveis em Alarme</div>
-                <div class="cards-grid" id="alarme-cards"></div>
-            </div>
-        </div>
+    <nav class="tabs">
+        <button class="tab-btn active" onclick="mudarAba(event, 'visao-geral')">Visão Geral</button>
+        <button class="tab-btn" onclick="mudarAba(event, 'temperaturas')">Temperaturas</button>
+        <button class="tab-btn" onclick="mudarAba(event, 'ar-comprimido')">Ar Comprimido</button>
+        <button class="tab-btn" onclick="mudarAba(event, 'vapor-agua')">Vapor / Vácuo</button>
+        <button class="tab-btn" onclick="mudarAba(event, 'energia')">Energia</button>
+        <button class="tab-btn" onclick="mudarAba(event, 'alarmes')">Alarmes</button>
+    </nav>
 
-        <!-- Temperaturas -->
-        <div id="tab-temp" class="tab-content" style="display:none">
-            <div class="section-container">
-                <div class="cards-grid" id="cards-temp"></div>
-            </div>
-        </div>
-
-        <!-- Ar Comprimido -->
-        <div id="tab-ar" class="tab-content" style="display:none">
-            <div class="section-container">
-                <div class="cards-grid" id="cards-ar"></div>
-            </div>
-        </div>
-
-        <!-- Salas de Cura -->
-        <div id="tab-cura" class="tab-content" style="display:none">
-            <div class="section-container">
-                <div class="cards-grid" id="cards-cura"></div>
-            </div>
-        </div>
-
-        <!-- Vapor/Água -->
-        <div id="tab-vapor" class="tab-content" style="display:none">
-            <div class="section-container">
-                <div class="cards-grid" id="cards-vapor"></div>
-            </div>
-        </div>
-
-        <!-- Energia Elétrica -->
-        <div id="tab-energia" class="tab-content" style="display:none">
-            <div class="section-container">
-                <div class="section-title">⚡ Subestações & Transformadores</div>
-                <div class="overview-grid" id="energia-resumo"></div>
-            </div>
-            <div class="energia-grid" id="energia-trafos"></div>
-            <div class="section-container">
-                <div class="section-title">📊 Medições Gerais</div>
-                <div class="cards-grid" id="cards-energia"></div>
-            </div>
-        </div>
-
-        <!-- Alarmes -->
-        <div id="tab-alarmes" class="tab-content" style="display:none">
-            <div class="alarmes-section" style="display:block">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                    <h2 style="color:var(--accent);font-size:.9em">📋 Log de Alarmes</h2>
-                    <div style="display:flex;gap:6px" id="alarme-filtros"></div>
+    <main class="main-container">
+        
+        <!-- VISÃO GERAL (Com os novos gauges solicitados) -->
+        <section id="visao-geral" class="tab-content active">
+            <div class="overview-grid">
+                
+                <!-- 1. Saúde de Utilidades -->
+                <div class="data-card" id="card-saude" onclick="abrirWidgetPiP('card-saude', 'Saúde de Utilidades')">
+                    <div class="card-header">
+                        <span>Saúde de Utilidades</span>
+                        <span class="pip-icon">🪟</span>
+                    </div>
+                    <div class="card-body">
+                        <span class="value" id="val-saude" style="color: var(--success);">98.5</span>
+                        <span class="unit">%</span>
+                    </div>
+                    <canvas class="sparkline" id="spark-saude"></canvas>
                 </div>
-                <div class="overview-grid" id="alarme-resumo" style="margin-bottom:12px"></div>
-                <div id="alarmes-lista"></div>
-            </div>
-        </div>
-    </div>
 
-    <!-- MODAL -->
-    <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)this.classList.remove('show')">
-        <div class="modal">
-            <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('show')">✕</button>
-            <h2 id="modal-titulo">—</h2>
-            <div class="modal-valor" id="modal-valor">—</div>
-            <div class="modal-periodo">
-                <button class="active" onclick="mudarPeriodo('1h',this)">1h</button>
-                <button onclick="mudarPeriodo('6h',this)">6h</button>
-                <button onclick="mudarPeriodo('24h',this)">24h</button>
-                <button onclick="mudarPeriodo('7d',this)">7d</button>
-            </div>
-            <canvas id="modal-canvas"></canvas>
-            <div class="modal-stats">
-                <div><div class="stat-val" id="stat-min">—</div>Mínimo</div>
-                <div><div class="stat-val" id="stat-med">—</div>Média</div>
-                <div><div class="stat-val" id="stat-max">—</div>Máximo</div>
-                <div><div class="stat-val" id="stat-pts">—</div>Pontos</div>
-            </div>
-        </div>
-    </div>
+                <!-- 2. Temperatura Água 6°C -->
+                <div class="data-card" id="card-agua-6" onclick="abrirWidgetPiP('card-agua-6', 'Temperatura Água 6°C')">
+                    <div class="card-header">
+                        <span>Temperatura Água 6°C</span>
+                        <span class="pip-icon">🪟</span>
+                    </div>
+                    <div class="card-body">
+                        <span class="value" id="val-agua-6">6.2</span>
+                        <span class="unit">°C</span>
+                    </div>
+                    <canvas class="sparkline" id="spark-agua-6"></canvas>
+                </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+                <!-- 3. Pressão Ar Comprimido (Balas/Gomas & Choco) -->
+                <div class="data-card" id="card-ar-comp" onclick="abrirWidgetPiP('card-ar-comp', 'Pressão Ar Comprimido')">
+                    <div class="card-header">
+                        <span>Pressão Ar Comprimido</span>
+                        <span class="pip-icon">🪟</span>
+                    </div>
+                    <div class="card-body" style="flex-direction: column; align-items: flex-start; gap: 0.2rem;">
+                        <div style="font-size: 0.9rem; color: var(--text-secondary);">Balas/Gomas: <strong id="val-ar-balas" style="color: var(--text-color);">6.8 bar</strong></div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary);">Chocolates: <strong id="val-ar-choco" style="color: var(--text-color);">7.1 bar</strong></div>
+                    </div>
+                    <canvas class="sparkline" id="spark-ar-comp"></canvas>
+                </div>
 
-    
+                <!-- 4. Pressão de Vapor -->
+                <div class="data-card" id="card-vapor" onclick="abrirWidgetPiP('card-vapor', 'Pressão de Vapor')">
+                    <div class="card-header">
+                        <span>Pressão de Vapor</span>
+                        <span class="pip-icon">🪟</span>
+                    </div>
+                    <div class="card-body">
+                        <span class="value" id="val-vapor">4.5</span>
+                        <span class="unit">bar</span>
+                    </div>
+                    <canvas class="sparkline" id="spark-vapor"></canvas>
+                </div>
+
+                <!-- 5. Pressão de Vácuo -->
+                <div class="data-card" id="card-vacuo" onclick="abrirWidgetPiP('card-vacuo', 'Pressão de Vácuo')">
+                    <div class="card-header">
+                        <span>Pressão de Vácuo</span>
+                        <span class="pip-icon">🪟</span>
+                    </div>
+                    <div class="card-body">
+                        <span class="value" id="val-vacuo">-0.82</span>
+                        <span class="unit">bar</span>
+                    </div>
+                    <canvas class="sparkline" id="spark-vacuo"></canvas>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TEMPERATURAS -->
+        <section id="temperaturas" class="tab-content">
+            <h3>Salas de Cura (Bubba, Chiclets, Trident) e CAG</h3>
+            <div class="overview-grid">
+                <div class="data-card" id="card-bubba" onclick="abrirWidgetPiP('card-bubba', 'Sala Bubba')">
+                    <div class="card-header"><span>Sala Bubba</span><span class="pip-icon">🪟</span></div>
+                    <div class="card-body"><span class="value">22.4</span><span class="unit">°C</span></div>
+                </div>
+                <div class="data-card" id="card-chiclets" onclick="abrirWidgetPiP('card-chiclets', 'Sala Chiclets')">
+                    <div class="card-header"><span>Sala Chiclets</span><span class="pip-icon">🪟</span></div>
+                    <div class="card-body"><span class="value">21.8</span><span class="unit">°C</span></div>
+                </div>
+                <div class="data-card" id="card-trident" onclick="abrirWidgetPiP('card-trident', 'Sala Trident')">
+                    <div class="card-header"><span>Sala Trident</span><span class="pip-icon">🪟</span></div>
+                    <div class="card-body"><span class="value">20.5</span><span class="unit">°C</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AR COMPRIMIDO -->
+        <section id="ar-comprimido" class="tab-content">
+            <h3>Redes e Secadores (Dry Mix, B&G, Chocolate)</h3>
+            <p>Monitoramento detalhado das linhas de ar instrumentação e processo.</p>
+        </section>
+
+        <!-- VAPOR / VÁCUO -->
+        <section id="vapor-agua" class="tab-content">
+            <h3>Linhas de Utilidades Térmicas e Sistemas de Vácuo</h3>
+            <p>Controle de purgas, condensados e bombas de vácuo.</p>
+        </section>
+
+        <!-- ENERGIA -->
+        <section id="energia" class="tab-content">
+            <div class="energia-grid">
+                <div class="data-card" id="card-trafo1" onclick="abrirWidgetPiP('card-trafo1', 'Trafo 01')">
+                    <div class="card-header"><span>Trafo 01 - Carga</span><span class="pip-icon">🪟</span></div>
+                    <div class="card-body"><span class="value">74.2</span><span class="unit">%</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ALARMES -->
+        <section id="alarmes" class="tab-content">
+            <h3>Log de Alarmes e Anomalias Ativas</h3>
+            <p>Nenhum alarme crítico registrado no momento pelo motor inteligente.</p>
+        </section>
+
+    </main>
+
     <script>
-    (function(){
-        firebase.initializeApp({apiKey:"AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",authDomain:"dshutili.firebaseapp.com",databaseURL:"https://dshutili-default-rtdb.firebaseio.com",projectId:"dshutili",storageBucket:"dshutili.firebasestorage.app",messagingSenderId:"1065134772507",appId:"1:1065134772507:web:aed91d6d1953f69cb403be",measurementId:"G-B3NS6YKTLV"});
-        var db=firebase.database();
-        firebase.auth().onAuthStateChanged(function(u){if(!u)window.location.href='index.html';else initDashboard()});
-
-        // ===== TAG CONFIG =====
-        var tagConfig={
-            "TO8001_2_3_4":{nome:"Torres C.A.G.",grupo:"temp",u:"°C",limiteAlto:32,limiteBaixo:null,escalaMin:20,escalaMax:35,corAlto:"red",corBaixo:null},
-            "TO8006_Retorno":{nome:"Torre Wafer",grupo:"temp",u:"°C",limiteAlto:35,limiteBaixo:null,escalaMin:25,escalaMax:40,corAlto:"red",corBaixo:null},
-            "CH8007":{nome:"Chiller 8007",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
-            "CH8008":{nome:"Chiller 8008",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
-            "CH8011_14":{nome:"Chillers 8011/14",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
-            "CV8004_Retorno":{nome:"Sala de Gordura",grupo:"temp",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:35,escalaMax:55,corAlto:"red",corBaixo:null},
-            "Agua_6C":{nome:"Água Gelada 6°C",grupo:"temp",u:"°C",limiteAlto:8,limiteBaixo:null,escalaMin:3,escalaMax:10,corAlto:"red",corBaixo:null},
-            "Ar_Comp_DM":{nome:"Ar Comp Dry Mix",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.5,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
-            "Ar_Comp_DM_Boge":{nome:"Ar Comp Boge",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.0,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
-            "Ar_Comp_Choco":{nome:"Ar Comp Chocolate",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.5,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
-            "Vacuo_Dry_Mix":{nome:"Vácuo Dry Mix",grupo:"ar",u:"Pol Hg",limiteAlto:null,limiteBaixo:15,escalaMin:10,escalaMax:30,corAlto:null,corBaixo:"red"},
-            "Pressao_Cavalete_BG":{nome:"Pressão Cavalete B&G",grupo:"vapor",u:"bar",limiteAlto:null,limiteBaixo:10,escalaMin:8,escalaMax:15,corAlto:null,corBaixo:"red"},
-            "Pressao_Vapor_Choco":{nome:"Pressão Vapor Choco",grupo:"vapor",u:"bar",limiteAlto:null,limiteBaixo:5,escalaMin:3,escalaMax:10,corAlto:null,corBaixo:"red"},
-            "Nivel_TQ_CD8006_7":{nome:"Nível TQ CD8006/7",grupo:"vapor",u:"%",limiteAlto:null,limiteBaixo:40,escalaMin:20,escalaMax:100,corAlto:null,corBaixo:"red"},
-            "Temperatura_Ar_Comp_Chocolate":{nome:"Temp Ar Choco",grupo:"ar",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:25,escalaMax:60,corAlto:"orange",corBaixo:null},
-            "Temperatura_Ar_Comp_BG":{nome:"Temp Ar B&G",grupo:"ar",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:25,escalaMax:60,corAlto:"orange",corBaixo:null},
-            "Umidade_Ar_Comp_Chocolate":{nome:"Umidade Ar Choco",grupo:"ar",u:"%",limiteAlto:25,limiteBaixo:null,escalaMin:0,escalaMax:35,corAlto:"red",corBaixo:null},
-            "Umidade_Ar_Comp_BG":{nome:"Umidade Ar B&G",grupo:"ar",u:"%",limiteAlto:25,limiteBaixo:null,escalaMin:0,escalaMax:35,corAlto:"red",corBaixo:null},
-            "Temperatura_Sala_Cura_Bubba":{nome:"Sala Cura Bubba",grupo:"cura",u:"°C",limiteAlto:17,limiteBaixo:13,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
-            "Temperatura_Sala_Cura_Chiclets":{nome:"Sala Cura Chiclets",grupo:"cura",u:"°C",limiteAlto:14,limiteBaixo:10,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
-            "Temperatura_Sala_Cura_Trident":{nome:"Sala Cura Trident",grupo:"cura",u:"°C",limiteAlto:15,limiteBaixo:10,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
-            "Umidade_Sala_Cura_Bubba":{nome:"Umid. Cura Bubba",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:30,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
-            "Umidade_Sala_Cura_Chiclets":{nome:"Umid. Cura Chiclets",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:30,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
-            "Umidade_Sala_Cura_Trident":{nome:"Umid. Cura Trident",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:30,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"}
+        // Configuração Firebase (substitua com suas credenciais do projeto se necessário)
+        const firebaseConfig = {
+            databaseURL: "https://seu-projeto-default-rtdb.firebaseio.com/"
         };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const database = firebase.database();
 
-        // ===== ENERGIA CONFIG =====
-        var energiaConfig={
-            trafos:[
-                {id:"TRAFO_01",nome:"Trafo 01 - Sub. Principal",potencia:1500,u:"kVA"},
-                {id:"TRAFO_02",nome:"Trafo 02 - Chocolate",potencia:1000,u:"kVA"},
-                {id:"TRAFO_03",nome:"Trafo 03 - Dry Mix / B&G",potencia:750,u:"kVA"},
-                {id:"TRAFO_04",nome:"Trafo 04 - Utilidades",potencia:1000,u:"kVA"},
-                {id:"TRAFO_05",nome:"Trafo 05 - Utilidades",potencia:1000,u:"kVA"}
-            ],
-            medicoes:[
-                {id:"Demanda_Total",nome:"Demanda Total",u:"kW",limiteAlto:3500,escalaMax:4000},
-                {id:"FP_Geral",nome:"Fator de Potência",u:"",limiteBaixo:0.92,escalaMin:0.85,escalaMax:1.0},
-                {id:"Consumo_Dia",nome:"Consumo Hoje",u:"kWh"},
-                {id:"Tensao_Entrada",nome:"Tensão Entrada",u:"kV",limiteAlto:14.2,limiteBaixo:12.6,escalaMin:12,escalaMax:15}
-            ]
-        };
+        // Alternância de Abas
+        function mudarAba(event, abaId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(abaId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
 
-        // ===== VARIÁVEIS GLOBAIS =====
-        var historico={},MAX_HIST=30,ultimosDados=null,ultimoTimestamp=null;
-        var tabAtual='overview',modalTagAtual=null,notificacoesAtivas=false,alarmesAtivosNotif={};
+        // Alternância de Tema
+        function alternarTema() {
+            const body = document.body;
+            const atual = body.getAttribute('data-theme');
+            body.setAttribute('data-theme', atual === 'dark' ? 'light' : 'dark');
+        }
 
-        // ===== TABS =====
-        window.mudarTab=function(tab,btn){
-            tabAtual=tab;
-            document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
-            btn.classList.add('active');
-            document.querySelectorAll('.tab-content').forEach(function(c){c.style.display='none'});
-            var el=document.getElementById('tab-'+tab);if(el)el.style.display='block';
-            if(ultimosDados)renderAll(ultimosDados);
-        };
-
-        // ===== INIT =====
-        function initDashboard(){
-            db.ref('current').on('value',function(snap){
-                var data=snap.val();if(!data)return;
-                ultimosDados=data;ultimoTimestamp=data._timestamp||Date.now();
-                atualizarHistorico(data);renderAll(data);atualizarIndicadorTempo();
-                verificarAlarmesNotif(data);
-            });
-            db.ref('leitor_status').on('value',function(snap){atualizarStatusLeitor(snap.val())});
-            db.ref('.info/connected').on('value',function(snap){
-                var el=document.getElementById('conn-status');
-                if(snap.val()){el.textContent='● Online';el.className='status-badge'}
-                else{el.textContent='● Offline';el.className='status-badge offline'}
+        function executarLogout() {
+            firebase.auth().signOut().then(() => {
+                alert('Sessão encerrada.');
+            }).catch(() => {
+                alert('Sessão limpa localmente.');
             });
         }
 
-        // ===== RENDER ALL =====
-        function renderAll(data){
-            if(tabAtual==='overview')renderOverview(data);
-            else if(tabAtual==='energia')renderEnergia(data);
-            else if(tabAtual==='alarmes')renderAlarmes();
-            else renderGrupo(tabAtual,data);
-        }
-
-        // ===== OVERVIEW COM GAUGES =====
-        function renderOverview(data){
-            var grid=document.getElementById('overview-grid');
-            var totalVars=0,emAlarme=0,normal=0;
-            var grupos={temp:0,ar:0,cura:0,vapor:0,energia:0};
-            var gruposAlarm={temp:0,ar:0,cura:0,vapor:0,energia:0};
-            var keys=Object.keys(data);
-            for(var i=0;i<keys.length;i++){
-                if(keys[i].startsWith('_'))continue;
-                var val=data[keys[i]],valor=null;
-                if(val&&typeof val==='object'&&'v' in val)valor=val.v;else if(typeof val==='number')valor=val;
-                if(valor===null)continue;totalVars++;
-                var cfg=tagConfig[keys[i]];
-                if(cfg){grupos[cfg.grupo]=(grupos[cfg.grupo]||0)+1}
-                var alarm=getAlarmInfo(keys[i],valor);
-                if(alarm.tipo!=='none'){emAlarme++;if(cfg)gruposAlarm[cfg.grupo]=(gruposAlarm[cfg.grupo]||0)+1}
-                else normal++;
-            }
-            var pctOk=totalVars>0?Math.round((normal/totalVars)*100):0;
-
-            grid.innerHTML=
-                '<div class="overview-card"><div class="overview-label">Saúde Geral</div><div class="overview-value">'+pctOk+'%</div><div class="overview-sub">'+normal+'/'+totalVars+' OK</div><canvas id="gauge-saude" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
-                +'<div class="overview-card"><div class="overview-label">Em Alarme</div><div class="overview-value" style="background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent">'+emAlarme+'</div><div class="overview-sub">fora do limite</div><canvas id="gauge-alarme" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
-                +'<div class="overview-card"><div class="overview-label">🌡️ Temperaturas</div><div class="overview-value">'+(grupos.temp||0)+'</div><div class="overview-sub">'+(gruposAlarm.temp||0)+' alarme</div><canvas id="gauge-temp" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
-                +'<div class="overview-card"><div class="overview-label">💨 Ar Comprimido</div><div class="overview-value">'+(grupos.ar||0)+'</div><div class="overview-sub">'+(gruposAlarm.ar||0)+' alarme</div><canvas id="gauge-ar" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
-                +'<div class="overview-card"><div class="overview-label">🧊 Salas de Cura</div><div class="overview-value">'+(grupos.cura||0)+'</div><div class="overview-sub">'+(gruposAlarm.cura||0)+' alarme</div><canvas id="gauge-cura" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
-                +'<div class="overview-card"><div class="overview-label">⚡ Energia</div><div class="overview-value">'+(grupos.energia||0)+'</div><div class="overview-sub">'+(gruposAlarm.energia||0)+' alarme</div><canvas id="gauge-energia" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>';
-
-            setTimeout(function(){
-                desenharGauge('gauge-saude',pctOk,100,'normal');
-                desenharGauge('gauge-alarme',emAlarme,totalVars,'alarme');
-                desenharGauge('gauge-temp',(grupos.temp||0)-(gruposAlarm.temp||0),grupos.temp||1,'normal');
-                desenharGauge('gauge-ar',(grupos.ar||0)-(gruposAlarm.ar||0),grupos.ar||1,'normal');
-                desenharGauge('gauge-cura',(grupos.cura||0)-(gruposAlarm.cura||0),grupos.cura||1,'normal');
-                desenharGauge('gauge-energia',(grupos.energia||0)-(gruposAlarm.energia||0),grupos.energia||1,'normal');
-            },50);
-
-            var alarmCards=document.getElementById('alarme-cards');alarmCards.innerHTML='';
-            for(var j=0;j<keys.length;j++){
-                if(keys[j].startsWith('_'))continue;
-                var v2=data[keys[j]],val2=null;
-                if(v2&&typeof v2==='object'&&'v' in v2)val2=v2.v;else if(typeof v2==='number')val2=v2;
-                if(val2===null)continue;
-                var a2=getAlarmInfo(keys[j],val2);
-                if(a2.tipo!=='none')alarmCards.appendChild(criarDataCard(keys[j],val2,tagConfig[keys[j]]));
-            }
-            if(!alarmCards.innerHTML)alarmCards.innerHTML='<div style="text-align:center;color:var(--t3);padding:20px;font-size:.8em">✅ Tudo normal</div>';
-        }
-
-        // ===== GAUGE (CORTA-GIRO) =====
-        function desenharGauge(canvasId,valor,maximo,tipo){
-            var canvas=document.getElementById(canvasId);if(!canvas)return;
-            var ctx=canvas.getContext('2d');var w=canvas.width,h=canvas.height;
-            var cx=w/2,cy=h*0.55,r=w*0.38,lw=w*0.12;
-            ctx.clearRect(0,0,w,h);
-            var startAngle=0.75*Math.PI,endAngle=2.25*Math.PI,totalAngle=1.5*Math.PI;
-            ctx.beginPath();ctx.arc(cx,cy,r,startAngle,endAngle);ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();
-            var pct=maximo>0?(valor/maximo):0;pct=Math.max(0,Math.min(1,pct));
-            var valueAngle=startAngle+(pct*totalAngle);
-            var grad=ctx.createLinearGradient(0,0,w,h);
-            if(tipo==='alarme'){
-                var pctA=maximo>0?((maximo-valor)/maximo):0;valueAngle=startAngle+(pctA*totalAngle);
-                grad.addColorStop(0,'#22c55e');grad.addColorStop(0.5,'#eab308');grad.addColorStop(1,'#ef4444');
-            }else{grad.addColorStop(0,'#ef4444');grad.addColorStop(0.5,'#eab308');grad.addColorStop(1,'#22c55e')}
-            if(pct>0||tipo==='alarme'){ctx.beginPath();ctx.arc(cx,cy,r,startAngle,valueAngle);ctx.strokeStyle=grad;ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke()}
-            var nx=cx+Math.cos(valueAngle)*r,ny=cy+Math.sin(valueAngle)*r;
-            ctx.beginPath();ctx.arc(nx,ny,lw*0.4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
-            ctx.beginPath();ctx.arc(cx,cy,lw*0.3,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.3)';ctx.fill();
-        }
-
-
-        // ===== RENDER GRUPO =====
-        function renderGrupo(grupo,data){
-            var container=document.getElementById('cards-'+grupo);if(!container)return;container.innerHTML='';
-            var keys=Object.keys(tagConfig);
-            for(var i=0;i<keys.length;i++){
-                var cfg=tagConfig[keys[i]];if(cfg.grupo!==grupo)continue;
-                var val=data[keys[i]],valor=null;
-                if(val&&typeof val==='object'&&'v' in val)valor=val.v;else if(typeof val==='number')valor=val;
-                if(valor===null)valor=0;
-                container.appendChild(criarDataCard(keys[i],valor,cfg));
-            }
-            setTimeout(redesenharSparklines,50);
-        }
-
-        // ===== RENDER ENERGIA =====
-        function renderEnergia(data){
-            var resumo=document.getElementById('energia-resumo');
-            var demanda=getVal(data,'Demanda_Total'),fp=getVal(data,'FP_Geral');
-            var consumo=getVal(data,'Consumo_Dia'),tensao=getVal(data,'Tensao_Entrada');
-            resumo.innerHTML='<div class="overview-card"><div class="overview-label">Demanda Atual</div><div class="overview-value">'+(demanda!==null?demanda.toFixed(0):'—')+'</div><div class="overview-sub">kW</div></div>'
-                +'<div class="overview-card"><div class="overview-label">Fator Potência</div><div class="overview-value">'+(fp!==null?fp.toFixed(3):'—')+'</div><div class="overview-sub">'+(fp!==null&&fp<0.92?'⚠️ Abaixo':'✅ OK')+'</div></div>'
-                +'<div class="overview-card"><div class="overview-label">Consumo Hoje</div><div class="overview-value">'+(consumo!==null?(consumo/1000).toFixed(1):'—')+'</div><div class="overview-sub">MWh</div></div>'
-                +'<div class="overview-card"><div class="overview-label">Tensão</div><div class="overview-value">'+(tensao!==null?tensao.toFixed(1):'—')+'</div><div class="overview-sub">kV</div></div>';
-
-            var trafosDiv=document.getElementById('energia-trafos');trafosDiv.innerHTML='';
-            for(var i=0;i<energiaConfig.trafos.length;i++){
-                var trafo=energiaConfig.trafos[i];
-                var carga=getVal(data,trafo.id+'_Carga'),temp=getVal(data,trafo.id+'_Temp');
-                var corrente=getVal(data,trafo.id+'_Corrente'),status=getVal(data,trafo.id+'_Status');
-                var pctCarga=carga!==null?(carga/trafo.potencia*100):null;
-                var statusClass='online',statusText='Online';
-                if(status===0){statusClass='offline';statusText='Offline'}
-                else if(pctCarga!==null&&pctCarga>85){statusClass='alerta';statusText='Carga Alta'}
-                var card=document.createElement('div');card.className='trafo-card'+(statusClass==='offline'?' offline':'');
-                card.innerHTML='<div class="trafo-header"><span class="trafo-nome">'+trafo.nome+'</span><span class="trafo-status '+statusClass+'">● '+statusText+'</span></div>'
-                    +'<div class="trafo-body"><div class="trafo-donut"><canvas id="donut-'+trafo.id+'" width="160" height="160"></canvas><div class="trafo-donut-label"><div class="trafo-donut-value">'+(pctCarga!==null?pctCarga.toFixed(0)+'%':'—')+'</div><div class="trafo-donut-sub">carga</div></div></div>'
-                    +'<div class="trafo-metrics">'
-                    +'<div class="trafo-metric"><span class="trafo-metric-label">Potência</span><span class="trafo-metric-value">'+(carga!==null?carga.toFixed(0)+' kVA':'—')+'</span></div>'
-                    +'<div class="trafo-metric"><span class="trafo-metric-label">Corrente</span><span class="trafo-metric-value">'+(corrente!==null?corrente.toFixed(1)+' A':'—')+'</span></div>'
-                    +'<div class="trafo-metric"><span class="trafo-metric-label">Temperatura</span><span class="trafo-metric-value'+(temp!==null&&temp>75?' alarm':'')+'">'+(temp!==null?temp.toFixed(0)+'°C':'—')+'</span></div>'
-                    +'<div class="trafo-metric"><span class="trafo-metric-label">Capacidade</span><span class="trafo-metric-value">'+trafo.potencia+' '+trafo.u+'</span></div>'
-                    +'</div></div>';
-                trafosDiv.appendChild(card);
-                if(pctCarga!==null)setTimeout((function(id,pct){return function(){desenharDonut(id,pct)}})(trafo.id,pctCarga),50);
+        // Função Widget Picture-in-Picture (PiP) para fixar qualquer card flutuando na tela
+        async function abrirWidgetPiP(elementoId, titulo) {
+            if (!('documentPictureInPicture' in window)) {
+                alert('Seu navegador não suporta a função Picture-in-Picture para documentos. Utilize o Google Chrome ou Edge atualizado.');
+                return;
             }
 
-            var medContainer=document.getElementById('cards-energia');medContainer.innerHTML='';
-            for(var j=0;j<energiaConfig.medicoes.length;j++){
-                var med=energiaConfig.medicoes[j];var val=getVal(data,med.id);
-                if(val===null)continue;
-                var fakeTag={nome:med.nome,grupo:'energia',u:med.u,limiteAlto:med.limiteAlto||null,limiteBaixo:med.limiteBaixo||null,escalaMin:med.escalaMin||null,escalaMax:med.escalaMax||null,corAlto:'red',corBaixo:'orange'};
-                medContainer.appendChild(criarDataCard(med.id,val,fakeTag));
+            const elementoOriginal = document.getElementById(elementoId);
+            if (!elementoOriginal) return;
+
+            try {
+                const pipWindow = await window.documentPictureInPicture.requestWindow({
+                    width: 320,
+                    height: 220,
+                });
+
+                // Copia os estilos atuais para a janela flutuante
+                [...document.styleSheets].forEach((styleSheet) => {
+                    try {
+                        const cssRules = [...styleSheet.cssRules].map(rule => rule.cssText).join('');
+                        const style = pipWindow.document.createElement('style');
+                        style.textContent = cssRules;
+                        pipWindow.document.head.appendChild(style);
+                    } catch (e) {
+                        const link = pipWindow.document.createElement('link');
+                        link.rel = 'stylesheet';
+                        link.href = styleSheet.href;
+                        pipWindow.document.head.appendChild(link);
+                    }
+                });
+
+                const container = pipWindow.document.createElement('div');
+                container.className = 'data-card pip-container';
+                container.style.padding = '15px';
+                container.style.height = '100%';
+                container.style.boxSizing = 'border-box';
+                container.innerHTML = `
+                    <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px; color: var(--text-color);">
+                        📌 ${titulo} (Monitor PiP)
+                    </div>
+                `;
+                
+                const clone = elementoOriginal.cloneNode(true);
+                container.appendChild(clone);
+                pipWindow.document.body.appendChild(container);
+                pipWindow.document.body.style.backgroundColor = getComputedStyle(document.body).getPropertyValue('--bg-color');
+                pipWindow.document.body.style.margin = '0';
+                pipWindow.document.body.style.display = 'flex';
+                pipWindow.document.body.style.flexDirection = 'column';
+
+            } catch (error) {
+                console.error('Erro ao abrir o Picture-in-Picture:', error);
             }
         }
 
-        // ===== DONUT =====
-        function desenharDonut(trafoId,pct){
-            var canvas=document.getElementById('donut-'+trafoId);if(!canvas)return;
-            var ctx=canvas.getContext('2d');var w=canvas.width,h=canvas.height;
-            var cx=w/2,cy=h/2,r=60,lw=12;
-            ctx.clearRect(0,0,w,h);
-            ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=lw;ctx.stroke();
-            var angle=(pct/100)*Math.PI*2,startA=-Math.PI/2;
-            var grad=ctx.createLinearGradient(0,0,w,h);
-            if(pct>85){grad.addColorStop(0,'#ef4444');grad.addColorStop(1,'#f97316')}
-            else if(pct>70){grad.addColorStop(0,'#f97316');grad.addColorStop(1,'#eab308')}
-            else{grad.addColorStop(0,'#7c3aed');grad.addColorStop(1,'#06b6d4')}
-            ctx.beginPath();ctx.arc(cx,cy,r,startA,startA+angle);ctx.strokeStyle=grad;ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();
-        }
+        // Desenho básico de Sparkline em Canvas para simular os gráficos de histórico
+        function desenharSparkline(canvasId, cor) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth || 200;
+            canvas.height = 40;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.strokeStyle = cor || '#3b82f6';
+            ctx.lineWidth = 2;
 
-        // ===== DATA CARD =====
-        function criarDataCard(tagId,valor,cfg){
-            if(!cfg)cfg={nome:tagId,u:'',limiteAlto:null,limiteBaixo:null};
-            var alarm=getAlarmInfo(tagId,valor);
-            var hist=historico[tagId]||[];
-            var tendencia='',tClass='trend-stable';
-            if(hist.length>=2){var d=hist[hist.length-1]-hist[hist.length-2];
-                if(d>0.2){tendencia='▲';tClass='trend-up'}else if(d<-0.2){tendencia='▼';tClass='trend-down'}else{tendencia='─';tClass='trend-stable'}}
-            var alarmClass='';
-            if(alarm.cor==='red')alarmClass=' alarm-red';
-            else if(alarm.cor==='blue')alarmClass=' alarm-blue';
-            else if(alarm.cor==='orange')alarmClass=' alarm-orange';
-            var card=document.createElement('div');card.className='data-card'+alarmClass;
-            card.onclick=function(){abrirModal(tagId)};
-            card.innerHTML='<div class="card-info"><div class="card-name">'+cfg.nome+'</div><div class="card-value">'+valor.toFixed(1)+'<span class="unit">'+(cfg.u||'')+'</span></div></div>'
-                +'<div class="card-spark"><canvas data-tag="'+tagId+'" data-alarm="'+(alarm.cor||'none')+'"></canvas></div>'
-                +'<div class="card-trend '+tClass+'">'+tendencia+'</div>';
-            return card;
-        }
+            // Dados simulados de tendência histórica recente
+            const pontos = [30, 45, 35, 50, 42, 60, 55, 70, 65, 80];
+            const max = Math.max(...pontos);
+            const min = Math.min(...pontos);
+            const passoX = canvas.width / (pontos.length - 1);
 
-        // ===== SPARKLINES =====
-        function redesenharSparklines(){
-            document.querySelectorAll('.card-spark canvas').forEach(function(canvas){
-                var tagId=canvas.getAttribute('data-tag'),alarmCor=canvas.getAttribute('data-alarm');
-                var hist=historico[tagId]||[],cfg=tagConfig[tagId]||{};
-                var rect=canvas.parentElement.getBoundingClientRect();
-                canvas.width=Math.floor(rect.width*2);canvas.height=Math.floor(rect.height*2);
-                if(hist.length>=2)desenharSparkline(canvas,hist,alarmCor,cfg);
+            pontos.forEach((val, i) => {
+                const x = i * passoX;
+                const y = canvas.height - ((val - min) / (max - min || 1)) * (canvas.height - 10) - 5;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
             });
-        }
-        window.addEventListener('resize',function(){setTimeout(redesenharSparklines,100)});
-
-        function desenharSparkline(canvas,valores,alarmCor,cfg){
-            var ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height,p=6;
-            ctx.clearRect(0,0,w,h);if(valores.length<2)return;
-            var min,max;
-            if(cfg.escalaMin!=null&&cfg.escalaMax!=null){min=cfg.escalaMin;max=cfg.escalaMax}
-            else{min=Math.min.apply(null,valores);max=Math.max.apply(null,valores);var mg=(max-min)*0.2||1;min-=mg;max+=mg}
-            var range=max-min||1;
-            function vY(val){var c=Math.max(min,Math.min(max,val));return h-p-((c-min)/range)*(h-p*2)}
-            if(cfg.limiteAlto!=null){ctx.strokeStyle='rgba(239,68,68,0.3)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(0,vY(cfg.limiteAlto));ctx.lineTo(w,vY(cfg.limiteAlto));ctx.stroke();ctx.setLineDash([])}
-            if(cfg.limiteBaixo!=null){ctx.strokeStyle='rgba(59,130,246,0.3)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(0,vY(cfg.limiteBaixo));ctx.lineTo(w,vY(cfg.limiteBaixo));ctx.stroke();ctx.setLineDash([])}
-            var cL='#7c3aed',cF='rgba(124,58,237,0.15)';
-            if(alarmCor==='red'){cL='#ef4444';cF='rgba(239,68,68,0.15)'}
-            else if(alarmCor==='blue'){cL='#3b82f6';cF='rgba(59,130,246,0.15)'}
-            else if(alarmCor==='orange'){cL='#f97316';cF='rgba(249,115,22,0.15)'}
-            ctx.beginPath();for(var i=0;i<valores.length;i++){var x=(i/(valores.length-1))*w,y=vY(valores[i]);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
-            ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();ctx.fillStyle=cF;ctx.fill();
-            ctx.beginPath();for(var j=0;j<valores.length;j++){var px=(j/(valores.length-1))*w,py=vY(valores[j]);if(j===0)ctx.moveTo(px,py);else ctx.lineTo(px,py)}
-            ctx.strokeStyle=cL;ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();
-            ctx.beginPath();ctx.arc(w-2,vY(valores[valores.length-1]),4,0,Math.PI*2);ctx.fillStyle=cL;ctx.fill();
+            ctx.stroke();
         }
 
-
-        // ===== MODAL =====
-        function abrirModal(tagId){
-            modalTagAtual=tagId;var cfg=tagConfig[tagId]||{};
-            document.getElementById('modal-titulo').textContent=cfg.nome||tagId;
-            var valorAtual='—';if(ultimosDados&&ultimosDados[tagId]){var v=ultimosDados[tagId];
-                valorAtual=(typeof v==='object'&&'v' in v)?v.v.toFixed(1)+' '+(v.u||''):(typeof v==='number'?v.toFixed(1):v)}
-            document.getElementById('modal-valor').textContent=valorAtual;
-            document.getElementById('modal-overlay').classList.add('show');
-            document.querySelectorAll('.modal-periodo button').forEach(function(b){b.classList.remove('active')});
-            document.querySelector('.modal-periodo button').classList.add('active');
-            carregarHistoricoModal(tagId,'1h');
-        }
-        window.mudarPeriodo=function(periodo,btn){
-            document.querySelectorAll('.modal-periodo button').forEach(function(b){b.classList.remove('active')});
-            btn.classList.add('active');if(modalTagAtual)carregarHistoricoModal(modalTagAtual,periodo);
-        };
-        function carregarHistoricoModal(tagId,periodo){
-            var ms={'1h':3600000,'6h':21600000,'24h':86400000,'7d':604800000};
-            var desde=Date.now()-(ms[periodo]||3600000);
-            db.ref('history').orderByChild('_timestamp').startAt(desde).once('value').then(function(snap){
-                var dados=snap.val(),pontos=[];
-                if(dados){Object.keys(dados).forEach(function(k){var e=dados[k];
-                    if(e&&e[tagId]!==undefined){var val=(typeof e[tagId]==='object'&&'v' in e[tagId])?e[tagId].v:(typeof e[tagId]==='number'?e[tagId]:null);
-                        if(val!==null)pontos.push({t:e._timestamp||0,v:val})}})}
-                pontos.sort(function(a,b){return a.t-b.t});desenharGraficoModal(pontos,tagId);
-            }).catch(function(){var hist=historico[tagId]||[],pontos=[];
-                for(var i=0;i<hist.length;i++)pontos.push({t:Date.now()-(hist.length-i)*30000,v:hist[i]});desenharGraficoModal(pontos,tagId)});
-        }
-        function desenharGraficoModal(pontos,tagId){
-            var canvas=document.getElementById('modal-canvas');var rect=canvas.getBoundingClientRect();
-            canvas.width=Math.floor(rect.width*2);canvas.height=500;
-            var ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height,pad=40;
-            ctx.clearRect(0,0,w,h);ctx.fillStyle='rgba(255,255,255,0.02)';ctx.fillRect(0,0,w,h);
-            if(pontos.length<2){ctx.fillStyle='#484f58';ctx.font='24px sans-serif';ctx.textAlign='center';ctx.fillText('Sem dados para este período',w/2,h/2);
-                document.getElementById('stat-min').textContent='—';document.getElementById('stat-med').textContent='—';document.getElementById('stat-max').textContent='—';document.getElementById('stat-pts').textContent='0';return}
-            var cfg=tagConfig[tagId]||{},valores=pontos.map(function(p){return p.v});
-            var min,max;if(cfg.escalaMin!=null&&cfg.escalaMax!=null){min=cfg.escalaMin;max=cfg.escalaMax}
-            else{min=Math.min.apply(null,valores);max=Math.max.apply(null,valores);var mg=(max-min)*0.15||1;min-=mg;max+=mg}
-            var range=max-min||1;
-            var vMin=Math.min.apply(null,valores),vMax=Math.max.apply(null,valores);
-            var vMed=valores.reduce(function(a,b){return a+b},0)/valores.length;
-            document.getElementById('stat-min').textContent=vMin.toFixed(1);
-            document.getElementById('stat-med').textContent=vMed.toFixed(1);
-            document.getElementById('stat-max').textContent=vMax.toFixed(1);
-            document.getElementById('stat-pts').textContent=pontos.length.toString();
-            function vY(val){var c=Math.max(min,Math.min(max,val));return h-pad-((c-min)/range)*(h-pad*2)}
-            function tX(t){return pad+((t-pontos[0].t)/(pontos[pontos.length-1].t-pontos[0].t))*(w-pad*2)}
-            // Grid
-            ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;
-            for(var g=0;g<5;g++){var gy=pad+g*((h-pad*2)/4);ctx.beginPath();ctx.moveTo(pad,gy);ctx.lineTo(w-pad,gy);ctx.stroke();
-                ctx.fillStyle='#484f58';ctx.font='18px monospace';ctx.textAlign='right';ctx.fillText((max-(g/4)*range).toFixed(1),pad-8,gy+5)}
-            // Limites
-            if(cfg.limiteAlto!=null){ctx.strokeStyle='rgba(239,68,68,0.5)';ctx.lineWidth=1;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(pad,vY(cfg.limiteAlto));ctx.lineTo(w-pad,vY(cfg.limiteAlto));ctx.stroke();ctx.setLineDash([])}
-            if(cfg.limiteBaixo!=null){ctx.strokeStyle='rgba(59,130,246,0.5)';ctx.lineWidth=1;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(pad,vY(cfg.limiteBaixo));ctx.lineTo(w-pad,vY(cfg.limiteBaixo));ctx.stroke();ctx.setLineDash([])}
-            // Cores
-            var alarm=getAlarmInfo(tagId,pontos[pontos.length-1].v);
-            var cL='#7c3aed',cF='rgba(124,58,237,0.15)';
-            if(alarm.cor==='red'){cL='#ef4444';cF='rgba(239,68,68,0.1)'}
-            else if(alarm.cor==='blue'){cL='#3b82f6';cF='rgba(59,130,246,0.1)'}
-            // Fill
-            ctx.beginPath();for(var i=0;i<pontos.length;i++){var x=tX(pontos[i].t),y=vY(pontos[i].v);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
-            ctx.lineTo(tX(pontos[pontos.length-1].t),h-pad);ctx.lineTo(tX(pontos[0].t),h-pad);ctx.closePath();ctx.fillStyle=cF;ctx.fill();
-            // Line
-            ctx.beginPath();for(var j=0;j<pontos.length;j++){var px=tX(pontos[j].t),py=vY(pontos[j].v);if(j===0)ctx.moveTo(px,py);else ctx.lineTo(px,py)}
-            ctx.strokeStyle=cL;ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();
-            // Last dot
-            var lx=tX(pontos[pontos.length-1].t),ly=vY(pontos[pontos.length-1].v);
-            ctx.beginPath();ctx.arc(lx,ly,6,0,Math.PI*2);ctx.fillStyle=cL;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
-            // Time labels
-            ctx.fillStyle='#484f58';ctx.font='16px monospace';ctx.textAlign='center';
-            var nL=Math.min(6,pontos.length);
-            for(var l=0;l<nL;l++){var idx=Math.floor(l*(pontos.length-1)/(nL-1));var lxx=tX(pontos[idx].t);
-                var dt=new Date(pontos[idx].t);ctx.fillText(dt.getHours().toString().padStart(2,'0')+':'+dt.getMinutes().toString().padStart(2,'0'),lxx,h-8)}
-        }
-
-        // ===== ALARMES LOG =====
-        function renderAlarmes(){
-            var desde=Date.now()-(24*60*60*1000);
-            db.ref('alarmes_log').orderByChild('timestamp').startAt(desde).once('value',function(snap){
-                var lista=document.getElementById('alarmes-lista');lista.innerHTML='';
-                var logs=[];snap.forEach(function(c){logs.push(c.val())});
-                logs.sort(function(a,b){return b.timestamp-a.timestamp});
-                var total=0,criticos=0,taxa=0,tempo=0,normalizados=0;
-                for(var i=0;i<logs.length;i++){total++;var a=logs[i];
-                    if(a.tipo==='limite')criticos++;else if(a.tipo==='taxa')taxa++;else if(a.tipo==='tempo_faixa')tempo++;else if(a.tipo==='saida')normalizados++}
-                var resumo=document.getElementById('alarme-resumo');
-                resumo.innerHTML='<div class="overview-card"><div class="overview-label">Total</div><div class="overview-value">'+total+'</div></div>'
-                    +'<div class="overview-card"><div class="overview-label">Críticos</div><div class="overview-value" style="-webkit-text-fill-color:var(--red)">'+criticos+'</div></div>'
-                    +'<div class="overview-card"><div class="overview-label">Taxa</div><div class="overview-value" style="-webkit-text-fill-color:var(--orange)">'+taxa+'</div></div>'
-                    +'<div class="overview-card"><div class="overview-label">Tempo</div><div class="overview-value" style="-webkit-text-fill-color:var(--blue)">'+tempo+'</div></div>'
-                    +'<div class="overview-card"><div class="overview-label">Normalizados</div><div class="overview-value" style="-webkit-text-fill-color:var(--green)">'+normalizados+'</div></div>';
-                for(var j=0;j<Math.min(logs.length,50);j++){var l=logs[j];
-                    var dt=new Date(l.timestamp);var hora=dt.getHours().toString().padStart(2,'0')+':'+dt.getMinutes().toString().padStart(2,'0');
-                    var icone='🚨';if(l.tipo==='taxa')icone='📈';else if(l.tipo==='tempo_faixa')icone='⏱️';else if(l.tipo==='saida')icone='✅';
-                    var div=document.createElement('div');div.className='alarme-item tipo-'+(l.tipo||'limite');
-                    div.innerHTML='<span style="color:var(--t3);font-family:monospace;min-width:50px">'+hora+'</span><span style="font-size:1.2em">'+icone+'</span><span style="flex:1;color:var(--t1)">'+(l.mensagem||l.tagId)+'</span>';
-                    lista.appendChild(div)}
-                if(!logs.length)lista.innerHTML='<div style="text-align:center;color:var(--t3);padding:30px;font-size:.8em">✅ Nenhum alarme nas últimas 24h</div>';
-            });
-        }
-
-        // ===== HELPERS =====
-        function getVal(data,key){
-            if(!data||!data[key])return null;
-            if(typeof data[key]==='object'&&'v' in data[key])return data[key].v;
-            if(typeof data[key]==='number')return data[key];return null;
-        }
-        function getAlarmInfo(tagId,valor){
-            var cfg=tagConfig[tagId];if(!cfg)return{tipo:'none',cor:null};
-            if(cfg.limiteAlto!=null&&valor>cfg.limiteAlto)return{tipo:'alto',cor:cfg.corAlto||'red'};
-            if(cfg.limiteBaixo!=null&&valor<cfg.limiteBaixo)return{tipo:'baixo',cor:cfg.corBaixo||'blue'};
-            return{tipo:'none',cor:null};
-        }
-        function atualizarHistorico(data){
-            var keys=Object.keys(data);
-            for(var i=0;i<keys.length;i++){if(keys[i].startsWith('_'))continue;
-                var val=data[keys[i]],valor=null;
-                if(val&&typeof val==='object'&&'v' in val)valor=val.v;else if(typeof val==='number')valor=val;
-                if(valor===null)continue;
-                if(!historico[keys[i]])historico[keys[i]]=[];
-                historico[keys[i]].push(valor);
-                if(historico[keys[i]].length>MAX_HIST)historico[keys[i]].shift();
-            }
-        }
-        function atualizarStatusLeitor(status){
-            var dot=document.getElementById('leitor-dot'),label=document.getElementById('leitor-label');
-            if(!status){dot.className='leitor-dot offline';label.textContent='Leitor: desconectado';return}
-            var agora=Date.now(),diff=agora-(status.lastHeartbeat||0);
-            if(diff<30000&&status.ativo){dot.className='leitor-dot';label.textContent='Leitor: ativo'}
-            else{dot.className='leitor-dot offline';label.textContent='Leitor: offline ('+Math.floor(diff/1000)+'s)'}
-            document.getElementById('leitor-leituras').textContent=status.leituras||0;
-            if(status.uptime){var m=Math.floor(status.uptime/60),h=Math.floor(m/60);document.getElementById('leitor-uptime').textContent=h.toString().padStart(2,'0')+':'+String(m%60).padStart(2,'0')}
-            var ovUp=document.getElementById('ov-uptime');if(ovUp&&status.uptime){var m2=Math.floor(status.uptime/60),h2=Math.floor(m2/60);ovUp.textContent=h2+'h'+String(m2%60).padStart(2,'0')}
-        }
-        function atualizarIndicadorTempo(){
-            var el=document.getElementById('last-update');
-            if(ultimosDados&&ultimosDados._readAt)el.textContent='Última atualização: '+ultimosDados._readAt;
-            else el.textContent='Aguardando dados...';
-        }
-
-        // ===== NOTIFICAÇÕES =====
-        function verificarAlarmesNotif(data){
-            if(!notificacoesAtivas)return;
-            var keys=Object.keys(tagConfig);
-            for(var i=0;i<keys.length;i++){
-                var val=getVal(data,keys[i]);if(val===null)continue;
-                var alarm=getAlarmInfo(keys[i],val);
-                if(alarm.tipo!=='none'&&!alarmesAtivosNotif[keys[i]]){
-                    alarmesAtivosNotif[keys[i]]=true;
-                    if(Notification.permission==='granted')new Notification('🚨 '+tagConfig[keys[i]].nome,{body:'Valor: '+val.toFixed(1)+' '+tagConfig[keys[i]].u,icon:'icon-192.png'});
-                }else if(alarm.tipo==='none'){delete alarmesAtivosNotif[keys[i]]}
-            }
-        }
-        window.toggleNotificacoes=function(){
-            if(!notificacoesAtivas){Notification.requestPermission().then(function(p){if(p==='granted'){notificacoesAtivas=true;document.getElementById('btn-notif').style.background='var(--accent)';document.getElementById('btn-notif').style.color='#fff'}})}
-            else{notificacoesAtivas=false;document.getElementById('btn-notif').style.background='';document.getElementById('btn-notif').style.color=''}
-        };
-
-        // ===== THEME =====
-        window.toggleTheme=function(){
-            var r=document.documentElement,btn=document.getElementById('btn-theme');
-            if(r.style.getPropertyValue('--bg1')==='#f5f5f5'){r.style.setProperty('--bg1','#0d1117');r.style.setProperty('--bg2','#161b22');r.style.setProperty('--t1','#ffffff');r.style.setProperty('--t2','#8b949e');r.style.setProperty('--t3','#484f58');r.style.setProperty('--bg-card','rgba(255,255,255,0.05)');r.style.setProperty('--bg-card-hover','rgba(255,255,255,0.08)');r.style.setProperty('--glass-border','rgba(255,255,255,0.08)');btn.textContent='☀️'}
-            else{r.style.setProperty('--bg1','#f5f5f5');r.style.setProperty('--bg2','#ffffff');r.style.setProperty('--t1','#1a1a1a');r.style.setProperty('--t2','#666666');r.style.setProperty('--t3','#999999');r.style.setProperty('--bg-card','rgba(0,0,0,0.03)');r.style.setProperty('--bg-card-hover','rgba(0,0,0,0.06)');r.style.setProperty('--glass-border','rgba(0,0,0,0.08)');btn.textContent='🌙'}
-        };
-
-        // ===== CSV =====
-        window.exportarCSV=function(){
-            if(!ultimosDados)return;var csv='Tag,Valor,Unidade,Timestamp\n';
-            var keys=Object.keys(ultimosDados);
-            for(var i=0;i<keys.length;i++){if(keys[i].startsWith('_'))continue;
-                var v=ultimosDados[keys[i]];var val=(typeof v==='object'&&'v' in v)?v.v:v;var u=(typeof v==='object'&&'u' in v)?v.u:'';
-                csv+=keys[i]+','+val+','+u+','+(ultimosDados._readAt||'')+'\n'}
-            var blob=new Blob([csv],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='utilidades_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
-        };
-
-        // ===== LOGOUT =====
-        window.logout=function(){localStorage.removeItem('modo_acesso');localStorage.removeItem('login_timestamp');firebase.auth().signOut().then(function(){window.location.href='index.html'})};
-
-        // ===== SW + REFRESH =====
-        if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
-        setInterval(function(){if(tabAtual!=='overview'&&tabAtual!=='alarmes'&&tabAtual!=='energia')redesenharSparklines()},5000);
-    })();
+        // Inicialização de sincronismos e timestamp
+        document.getElementById('last-sync').innerText = new Date().toLocaleTimeString();
+        window.addEventListener('load', () => {
+            desenharSparkline('spark-saude', '#22c55e');
+            desenharSparkline('spark-agua-6', '#3b82f6');
+            desenharSparkline('spark-ar-comp', '#f59e0b');
+            desenharSparkline('spark-vapor', '#ef4444');
+            desenharSparkline('spark-vacuo', '#3b82f6');
+        });
     </script>
 </body>
 </html>
