@@ -183,10 +183,23 @@
         .ticker-item .tlabel { color: var(--t2); font-weight:500; }
         .ticker-item.alarm { color: var(--red); }
         .ticker-sep { color: var(--t3); opacity:.5; font-size:.7em; }
-        .widget-close { flex-shrink:0; background: var(--bg-card); border:1px solid var(--glass-border); color: var(--t2); border-radius:50%; width:20px; height:20px; font-size:.6em; line-height:1; cursor:pointer; margin:0 8px; }
+        .widget-close, .widget-modo { flex-shrink:0; background: var(--bg-card); border:1px solid var(--glass-border); color: var(--t2); border-radius:50%; width:20px; height:20px; font-size:.6em; line-height:1; cursor:pointer; margin:0 4px; }
+
+        /* Modo tabela — lista simples com todas as tags de todas as abas, rolável */
+        .widget-tabela-bar { display:flex; flex-direction:column; background: var(--bg2); }
+        .widget-tabela-header { display:flex; align-items:center; justify-content:space-between; padding:6px 8px 6px 12px; border-bottom:1px solid var(--glass-border); flex-shrink:0; }
+        .widget-tabela-header span { font-size:.68em; font-weight:700; color: var(--t1); text-transform:uppercase; letter-spacing:.5px; }
+        .widget-tabela-actions { display:flex; align-items:center; }
+        .widget-tabela-scroll { max-height:320px; overflow-y:auto; padding:2px 0 6px; }
+        .wt-secao { font-size:.6em; color: var(--accent); text-transform:uppercase; letter-spacing:.6px; font-weight:700; padding:8px 12px 3px; }
+        .wt-linha { display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:3px 12px; font-size:.7em; color: var(--t1); }
+        .wt-nome { color: var(--t2); }
+        .wt-valor { font-weight:700; font-family:monospace; white-space:nowrap; }
+        .wt-linha.alarm .wt-valor { color: var(--red); }
+        .wt-linha.alarm .wt-nome { color: var(--red); opacity:.85; }
 
         /* Fallback flutuante (quando o navegador não suporta Document Picture-in-Picture) */
-        #widget-fallback { display:none; position:fixed; bottom:16px; right:16px; width:320px; background: var(--bg2); border:1px solid var(--glass-border); border-radius: var(--radius); box-shadow: var(--shadow); z-index:500; overflow:hidden; }
+        #widget-fallback { display:none; position:fixed; bottom:16px; right:16px; width:320px; max-height:80vh; background: var(--bg2); border:1px solid var(--glass-border); border-radius: var(--radius); box-shadow: var(--shadow); z-index:500; overflow:hidden; }
         #widget-fallback.show { display:block; }
     </style>
 </head>
@@ -889,9 +902,13 @@
         // ===== WIDGET / PICTURE-IN-PICTURE =====
         // Ao clicar, tenta abrir uma janela real "sempre no topo" via Document Picture-in-Picture
         // (Chrome/Edge desktop). Se o navegador não suportar, cai para uma faixa flutuante fixa no
-        // canto da própria página. Em ambos os casos o conteúdo é um "ticker" de texto rolando —
-        // sem canvas/gauge — pra ocupar o mínimo de espaço possível.
+        // canto da própria página. Tem dois modos de conteúdo, alternáveis pelo botão ▦/↺ dentro do
+        // próprio widget — a preferência fica salva pro próximo uso:
+        //   'ticker' — faixa fina rolando (texto + seta de tendência), ocupa o mínimo de espaço
+        //   'tabela' — lista simples e rolável com todas as tags de todas as abas
         var pipWindow=null,widgetFallbackAtivo=false;
+        var widgetModo='ticker';
+        try{widgetModo=localStorage.getItem('widgetModo')==='tabela'?'tabela':'ticker'}catch(e){}
 
         window.toggleWidget=function(){
             if(pipWindow||widgetFallbackAtivo){fecharWidget();return}
@@ -899,12 +916,26 @@
             else abrirWidgetFallback();
         };
 
+        // Troca entre os dois modos. Como o tamanho ideal da janela PIP muda de modo pra modo (faixa
+        // fina x lista mais alta), reabrimos o widget no tamanho certo em vez de tentar redimensionar
+        // uma janela PIP já aberta (não é uma operação suportada de forma confiável).
+        window.alternarModoWidget=function(){
+            widgetModo=widgetModo==='ticker'?'tabela':'ticker';
+            try{localStorage.setItem('widgetModo',widgetModo)}catch(e){}
+            if(pipWindow){fecharWidget();abrirWidgetPip()}
+            else if(widgetFallbackAtivo){fecharWidget();abrirWidgetFallback()}
+        };
+
+        function tamanhoJanelaWidget(){
+            return widgetModo==='tabela'?{width:300,height:380}:{width:340,height:46};
+        }
+
         function abrirWidgetPip(){
             // Alguns navegadores expõem a API mas nunca resolvem/rejeitam a promise (sem suporte real
             // ou sem gesto do usuário reconhecido) — depois de 1.5s sem resposta, cai pra faixa flutuante.
             var settled=false;
             var timeoutId=setTimeout(function(){if(!settled){settled=true;abrirWidgetFallback()}},1500);
-            documentPictureInPicture.requestWindow({width:340,height:46}).then(function(pip){
+            documentPictureInPicture.requestWindow(tamanhoJanelaWidget()).then(function(pip){
                 if(settled){try{pip.close()}catch(e){}return}
                 settled=true;clearTimeout(timeoutId);
                 pipWindow=pip;
@@ -936,7 +967,8 @@
         function fecharWidget(){
             if(pipWindow){try{pipWindow.close()}catch(e){}pipWindow=null}
             widgetFallbackAtivo=false;
-            document.getElementById('widget-fallback').classList.remove('show');
+            var fb=document.getElementById('widget-fallback');
+            fb.classList.remove('show');fb.innerHTML=''; // limpa pra reconstruir do zero no próximo modo
             atualizarBotaoWidget(false);
         }
 
@@ -988,6 +1020,32 @@
             }).join('');
         }
 
+        // Monta os botões de ação (▦/↺ trocar modo, ✕ fechar) como elementos DOM de verdade, com
+        // addEventListener em vez de atributo onclick="...". Isso importa especificamente pra janela
+        // PIP real: ela é um documento/contexto JS separado da página principal, então um onclick="..."
+        // inline tentaria resolver a função dentro do escopo global da PRÓPRIA janela PIP (onde ela não
+        // existe) e falharia silenciosamente. addEventListener aqui usa o closure do script principal
+        // (onde essas funções realmente vivem), então funciona nos dois documentos.
+        function montarAcoesWidget(doc,mostrarFechar){
+            var wrap=doc.createElement('div');
+            wrap.className='widget-tabela-actions';
+            var modoBtn=doc.createElement('button');
+            modoBtn.className='widget-modo';
+            modoBtn.title=widgetModo==='tabela'?'Modo ticker':'Modo tabela';
+            modoBtn.textContent=widgetModo==='tabela'?'↺':'▦';
+            modoBtn.addEventListener('click',function(){alternarModoWidget()});
+            wrap.appendChild(modoBtn);
+            if(mostrarFechar){
+                var fecharBtn=doc.createElement('button');
+                fecharBtn.className='widget-close';
+                fecharBtn.title='Fechar widget';
+                fecharBtn.textContent='✕';
+                fecharBtn.addEventListener('click',function(){toggleWidget()});
+                wrap.appendChild(fecharBtn);
+            }
+            return wrap;
+        }
+
         // Renderiza a faixa "ticker" dentro do container informado (documento principal ou da janela PIP).
         // Importante: o elemento animado (.widget-ticker-track) é criado UMA VEZ e reaproveitado nas
         // atualizações seguintes — só o innerHTML dele é trocado. Se recriássemos o elemento a cada
@@ -997,17 +1055,78 @@
             if(!container)return;
             var track=container.querySelector('.widget-ticker-track');
             if(!track){
-                var fecharBtn=mostrarFechar?'<button class="widget-close" onclick="toggleWidget()" title="Fechar widget">✕</button>':'';
-                container.innerHTML='<div class="widget-ticker-bar"><div class="widget-ticker-viewport"><div class="widget-ticker-track"></div></div>'+fecharBtn+'</div>';
-                track=container.querySelector('.widget-ticker-track');
+                var doc=container.ownerDocument;
+                var bar=doc.createElement('div');bar.className='widget-ticker-bar';
+                var viewport=doc.createElement('div');viewport.className='widget-ticker-viewport';
+                track=doc.createElement('div');track.className='widget-ticker-track';
+                viewport.appendChild(track);
+                bar.appendChild(viewport);
+                bar.appendChild(montarAcoesWidget(doc,mostrarFechar));
+                container.innerHTML='';
+                container.appendChild(bar);
             }
             var itemsHTML=tickerItemsHTML(itensTicker(data));
             track.innerHTML=itemsHTML+itemsHTML;
         }
 
+        // Monta as linhas da tabela agrupadas por aba: Temperaturas, Ar Comprimido, Salas de Cura,
+        // Vapor/Água (todas vindas de tagConfig) e Energia (vindas de energiaConfig.medicoes).
+        var GRUPOS_TABELA_WIDGET=[['temp','Temperaturas'],['ar','Ar Comprimido'],['cura','Salas de Cura'],['vapor','Vapor/Água']];
+        function linhaTabelaHTML(nome,val,unidade,alarme,casas){
+            return '<div class="wt-linha'+(alarme?' alarm':'')+'"><span class="wt-nome">'+nome+'</span><span class="wt-valor">'+(val!==null?val.toFixed(casas||1):'—')+(unidade?' '+unidade:'')+'</span></div>';
+        }
+        function linhasTabelaWidget(data){
+            var html='';
+            GRUPOS_TABELA_WIDGET.forEach(function(g){
+                var chave=g[0],titulo=g[1];
+                var tags=Object.keys(tagConfig).filter(function(t){return tagConfig[t].grupo===chave});
+                if(!tags.length)return;
+                html+='<div class="wt-secao">'+titulo+'</div>';
+                tags.forEach(function(t){
+                    var cfg=tagConfig[t],val=getVal(data,t);
+                    var alarm=val!==null&&getAlarmInfo(t,val).tipo!=='none';
+                    html+=linhaTabelaHTML(cfg.nome,val,cfg.u,alarm);
+                });
+            });
+            html+='<div class="wt-secao">Energia</div>';
+            energiaConfig.medicoes.forEach(function(m){
+                var val=getVal(data,m.id);
+                var alarm=val!==null&&getAlarmInfo(m.id,val).tipo!=='none';
+                html+=linhaTabelaHTML(m.nome,val,m.u,alarm,m.id==='FP_Geral'?3:1);
+            });
+            return html;
+        }
+
+        // Preserva a posição de rolagem entre atualizações — sem isso, a lista voltaria pro topo a
+        // cada tick de dados (mesmo problema de fundo do "reinício" do ticker, versão lista).
+        function renderTabelaMode(container,data,mostrarFechar){
+            if(!container)return;
+            var doc=container.ownerDocument;
+            var scrollAnterior=container.querySelector('.widget-tabela-scroll');
+            var scrollTop=scrollAnterior?scrollAnterior.scrollTop:0;
+
+            var bar=doc.createElement('div');bar.className='widget-tabela-bar';
+            var header=doc.createElement('div');header.className='widget-tabela-header';
+            var titulo=doc.createElement('span');titulo.textContent='Utilidades';
+            header.appendChild(titulo);
+            header.appendChild(montarAcoesWidget(doc,mostrarFechar));
+            var scroll=doc.createElement('div');scroll.className='widget-tabela-scroll';
+            scroll.innerHTML=linhasTabelaWidget(data);
+            bar.appendChild(header);bar.appendChild(scroll);
+
+            container.innerHTML='';
+            container.appendChild(bar);
+            scroll.scrollTop=scrollTop;
+        }
+
+        function renderWidgetConteudo(container,data,mostrarFechar){
+            if(widgetModo==='tabela')renderTabelaMode(container,data,mostrarFechar);
+            else renderTicker(container,data,mostrarFechar);
+        }
+
         function atualizarWidget(data){
-            if(pipWindow)renderTicker(pipWindow.document.body,data,false);
-            if(widgetFallbackAtivo)renderTicker(document.getElementById('widget-fallback'),data,true);
+            if(pipWindow)renderWidgetConteudo(pipWindow.document.body,data,false);
+            if(widgetFallbackAtivo)renderWidgetConteudo(document.getElementById('widget-fallback'),data,true);
         }
 
         // ===== CSV =====
