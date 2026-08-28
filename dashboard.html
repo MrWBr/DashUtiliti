@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -167,6 +166,23 @@
         ::-webkit-scrollbar { width:4px; }
         ::-webkit-scrollbar-track { background: var(--bg1); }
         ::-webkit-scrollbar-thumb { background: var(--accent); border-radius:4px; }
+
+        /* === WIDGET / PIP === */
+        .btn-icon.widget-on { background: var(--gradient); color:#fff; border-color:transparent; }
+        .widget-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; padding:10px; }
+        .widget-grid .overview-card { padding:10px; }
+        .widget-grid .overview-label { font-size:.6em; margin-bottom:4px; }
+        .widget-grid .overview-value { font-size:1.25em; }
+        .widget-grid .overview-sub { font-size:.62em; }
+        .widget-header { display:flex; align-items:center; justify-content:space-between; padding:8px 10px; background: var(--bg2); border-bottom:1px solid var(--glass-border); }
+        .widget-header span { font-size:.72em; font-weight:600; color: var(--t1); }
+        .widget-header button { background: var(--bg-card); border:1px solid var(--glass-border); color: var(--t2); border-radius:8px; width:22px; height:22px; font-size:.7em; cursor:pointer; }
+        .widget-updated { text-align:center; font-size:.6em; color: var(--t3); padding:2px 0 8px; }
+
+        /* Fallback floating widget (when Document PiP API isn't available) */
+        #widget-fallback { display:none; position:fixed; bottom:16px; right:16px; width:270px; background: var(--bg2); border:1px solid var(--glass-border); border-radius: var(--radius); box-shadow: var(--shadow); z-index:500; overflow:hidden; }
+        #widget-fallback.show { display:block; }
+        #widget-fallback .widget-grid { grid-template-columns: repeat(2, 1fr); }
     </style>
 </head>
 <body>
@@ -179,6 +195,7 @@
         <div class="header-right">
             <span class="status-badge" id="conn-status">● Online</span>
             <button class="btn-icon" onclick="toggleTheme()" id="btn-theme">☀️</button>
+            <button class="btn-icon" onclick="toggleWidget()" id="btn-widget" title="Modo Widget (PIP)">🧩</button>
             <button class="btn-icon" onclick="exportarCSV()">📥</button>
             <button class="btn-icon" onclick="toggleNotificacoes()" id="btn-notif">🔔</button>
             <button class="btn-icon" onclick="logout()">⏻</button>
@@ -296,6 +313,16 @@
         </div>
     </div>
 
+    <!-- WIDGET FLUTUANTE (fallback quando o navegador não suporta Document Picture-in-Picture) -->
+    <div id="widget-fallback">
+        <div class="widget-header">
+            <span>🧩 Utilidades</span>
+            <button onclick="toggleWidget()">✕</button>
+        </div>
+        <div class="widget-grid" id="widget-grid-fallback"></div>
+        <div class="widget-updated" id="widget-updated-fallback">—</div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -372,7 +399,7 @@
                 var data=snap.val();if(!data)return;
                 ultimosDados=data;ultimoTimestamp=data._timestamp||Date.now();
                 atualizarHistorico(data);renderAll(data);atualizarIndicadorTempo();
-                verificarAlarmesNotif(data);
+                verificarAlarmesNotif(data);atualizarWidget(data);
             });
             db.ref('leitor_status').on('value',function(snap){atualizarStatusLeitor(snap.val())});
             db.ref('.info/connected').on('value',function(snap){
@@ -391,42 +418,87 @@
         }
 
         // ===== OVERVIEW COM GAUGES =====
-        function renderOverview(data){
-            var grid=document.getElementById('overview-grid');
+        function calcOverviewStats(data){
             var totalVars=0,emAlarme=0,normal=0;
-            var grupos={temp:0,ar:0,cura:0,vapor:0,energia:0};
-            var gruposAlarm={temp:0,ar:0,cura:0,vapor:0,energia:0};
             var keys=Object.keys(data);
             for(var i=0;i<keys.length;i++){
                 if(keys[i].startsWith('_'))continue;
                 var val=data[keys[i]],valor=null;
                 if(val&&typeof val==='object'&&'v' in val)valor=val.v;else if(typeof val==='number')valor=val;
                 if(valor===null)continue;totalVars++;
-                var cfg=tagConfig[keys[i]];
-                if(cfg){grupos[cfg.grupo]=(grupos[cfg.grupo]||0)+1}
                 var alarm=getAlarmInfo(keys[i],valor);
-                if(alarm.tipo!=='none'){emAlarme++;if(cfg)gruposAlarm[cfg.grupo]=(gruposAlarm[cfg.grupo]||0)+1}
-                else normal++;
+                if(alarm.tipo!=='none')emAlarme++;else normal++;
             }
             var pctOk=totalVars>0?Math.round((normal/totalVars)*100):0;
 
-            grid.innerHTML=
-                '<div class="overview-card"><div class="overview-label">Saúde Geral</div><div class="overview-value">'+pctOk+'%</div><div class="overview-sub">'+normal+'/'+totalVars+' OK</div><canvas id="gauge-saude" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
-                +'<div class="overview-card"><div class="overview-label">Em Alarme</div><div class="overview-value" style="background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent">'+emAlarme+'</div><div class="overview-sub">fora do limite</div><canvas id="gauge-alarme" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
-                +'<div class="overview-card"><div class="overview-label">🌡️ Temperaturas</div><div class="overview-value">'+(grupos.temp||0)+'</div><div class="overview-sub">'+(gruposAlarm.temp||0)+' alarme</div><canvas id="gauge-temp" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
-                +'<div class="overview-card"><div class="overview-label">💨 Ar Comprimido</div><div class="overview-value">'+(grupos.ar||0)+'</div><div class="overview-sub">'+(gruposAlarm.ar||0)+' alarme</div><canvas id="gauge-ar" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
-                +'<div class="overview-card"><div class="overview-label">🧊 Salas de Cura</div><div class="overview-value">'+(grupos.cura||0)+'</div><div class="overview-sub">'+(gruposAlarm.cura||0)+' alarme</div><canvas id="gauge-cura" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>'
-                +'<div class="overview-card"><div class="overview-label">⚡ Energia</div><div class="overview-value">'+(grupos.energia||0)+'</div><div class="overview-sub">'+(gruposAlarm.energia||0)+' alarme</div><canvas id="gauge-energia" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>';
+            // Água gelada 6°C
+            var agua=getVal(data,'Agua_6C');
+            var aguaAlarm=agua!==null&&getAlarmInfo('Agua_6C',agua).tipo!=='none';
+            var aguaPct=agua!==null?clamp01((agua-3)/(10-3)):0;
+
+            // Ar comprimido (média das 3 linhas)
+            var arTags=['Ar_Comp_DM','Ar_Comp_DM_Boge','Ar_Comp_Choco'];
+            var arVals=[],arPcts=[],arAlarm=false;
+            for(var a=0;a<arTags.length;a++){var v=getVal(data,arTags[a]);if(v!==null){arVals.push(v);arPcts.push(clamp01((v-4)/(8-4)));if(getAlarmInfo(arTags[a],v).tipo!=='none')arAlarm=true}}
+            var arAvg=arVals.length?media(arVals):null,arPct=arPcts.length?media(arPcts):0;
+
+            // Pressão de vapor (média normalizada das 2 linhas, cada uma na sua faixa)
+            var vaporTags=[{id:'Pressao_Cavalete_BG',min:8,max:15},{id:'Pressao_Vapor_Choco',min:3,max:10}];
+            var vaporVals=[],vaporPcts=[],vaporAlarm=false;
+            for(var vv=0;vv<vaporTags.length;vv++){var vt=vaporTags[vv],v2=getVal(data,vt.id);if(v2!==null){vaporVals.push(v2);vaporPcts.push(clamp01((v2-vt.min)/(vt.max-vt.min)));if(getAlarmInfo(vt.id,v2).tipo!=='none')vaporAlarm=true}}
+            var vaporAvg=vaporVals.length?media(vaporVals):null,vaporPct=vaporPcts.length?media(vaporPcts):0;
+
+            // Vácuo Dry Mix
+            var vacuo=getVal(data,'Vacuo_Dry_Mix');
+            var vacuoAlarm=vacuo!==null&&getAlarmInfo('Vacuo_Dry_Mix',vacuo).tipo!=='none';
+            var vacuoPct=vacuo!==null?clamp01((vacuo-10)/(30-10)):0;
+
+            return{
+                totalVars:totalVars,emAlarme:emAlarme,normal:normal,pctOk:pctOk,
+                agua:{val:agua,alarm:aguaAlarm,pct:aguaPct},
+                ar:{val:arAvg,alarm:arAlarm,pct:arPct},
+                vapor:{val:vaporAvg,alarm:vaporAlarm,pct:vaporPct},
+                vacuo:{val:vacuo,alarm:vacuoAlarm,pct:vacuoPct}
+            };
+        }
+
+        function clamp01(n){return Math.max(0,Math.min(1,n))}
+        function media(arr){return arr.reduce(function(a,b){return a+b},0)/arr.length}
+
+        function overviewCardHTML(id,label,valorTxt,subTxt,alarm){
+            var corTxt=alarm?'background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent':'';
+            return '<div class="overview-card"><div class="overview-label">'+label+'</div><div class="overview-value" style="'+corTxt+'">'+valorTxt+'</div><div class="overview-sub">'+subTxt+'</div><canvas id="'+id+'" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>';
+        }
+
+        // Renderiza os 6 gauges do painel (usado tanto na Visão Geral quanto no widget PIP)
+        function renderOverviewInto(gridEl,data,doc,prefix){
+            if(!gridEl)return;
+            var s=calcOverviewStats(data);
+            var pS=prefix||'';
+            var idSaude=pS+'gauge-saude',idAlarme=pS+'gauge-alarme',idAgua=pS+'gauge-agua',idAr=pS+'gauge-ar',idVapor=pS+'gauge-vapor',idVacuo=pS+'gauge-vacuo';
+
+            gridEl.innerHTML=
+                overviewCardHTML(idSaude,'Saúde Utilidades',s.pctOk+'%',s.normal+'/'+s.totalVars+' OK',false)
+                +overviewCardHTML(idAlarme,'Em Alarme',s.emAlarme,'fora do limite',s.emAlarme>0)
+                +overviewCardHTML(idAgua,'🌡️ Água 6°C',s.agua.val!==null?s.agua.val.toFixed(1):'—','°C · gelada',s.agua.alarm)
+                +overviewCardHTML(idAr,'💨 Ar Comprimido',s.ar.val!==null?s.ar.val.toFixed(1):'—','bar',s.ar.alarm)
+                +overviewCardHTML(idVapor,'♨️ Pressão Vapor',s.vapor.val!==null?s.vapor.val.toFixed(1):'—','bar',s.vapor.alarm)
+                +overviewCardHTML(idVacuo,'🌀 Vácuo',s.vacuo.val!==null?s.vacuo.val.toFixed(1):'—','Pol Hg',s.vacuo.alarm);
 
             setTimeout(function(){
-                desenharGauge('gauge-saude',pctOk,100,'normal');
-                desenharGauge('gauge-alarme',emAlarme,totalVars,'alarme');
-                desenharGauge('gauge-temp',(grupos.temp||0)-(gruposAlarm.temp||0),grupos.temp||1,'normal');
-                desenharGauge('gauge-ar',(grupos.ar||0)-(gruposAlarm.ar||0),grupos.ar||1,'normal');
-                desenharGauge('gauge-cura',(grupos.cura||0)-(gruposAlarm.cura||0),grupos.cura||1,'normal');
-                desenharGauge('gauge-energia',(grupos.energia||0)-(gruposAlarm.energia||0),grupos.energia||1,'normal');
+                desenharGauge(idSaude,s.pctOk,100,'normal',doc);
+                desenharGauge(idAlarme,s.emAlarme,s.totalVars||1,'alarme',doc);
+                desenharGaugeFisico(idAgua,s.agua.pct,true,doc);
+                desenharGaugeFisico(idAr,s.ar.pct,false,doc);
+                desenharGaugeFisico(idVapor,s.vapor.pct,false,doc);
+                desenharGaugeFisico(idVacuo,s.vacuo.pct,false,doc);
             },50);
+        }
 
+        function renderOverview(data){
+            renderOverviewInto(document.getElementById('overview-grid'),data,document,'');
+
+            var keys=Object.keys(data);
             var alarmCards=document.getElementById('alarme-cards');alarmCards.innerHTML='';
             for(var j=0;j<keys.length;j++){
                 if(keys[j].startsWith('_'))continue;
@@ -439,9 +511,10 @@
             if(!alarmCards.innerHTML)alarmCards.innerHTML='<div style="text-align:center;color:var(--t3);padding:20px;font-size:.8em">✅ Tudo normal</div>';
         }
 
-        // ===== GAUGE (CORTA-GIRO) =====
-        function desenharGauge(canvasId,valor,maximo,tipo){
-            var canvas=document.getElementById(canvasId);if(!canvas)return;
+        // ===== GAUGE (CORTA-GIRO) — contagens (saúde geral / alarmes) =====
+        function desenharGauge(canvasId,valor,maximo,tipo,doc){
+            doc=doc||document;
+            var canvas=doc.getElementById(canvasId);if(!canvas)return;
             var ctx=canvas.getContext('2d');var w=canvas.width,h=canvas.height;
             var cx=w/2,cy=h*0.55,r=w*0.38,lw=w*0.12;
             ctx.clearRect(0,0,w,h);
@@ -455,6 +528,28 @@
                 grad.addColorStop(0,'#22c55e');grad.addColorStop(0.5,'#eab308');grad.addColorStop(1,'#ef4444');
             }else{grad.addColorStop(0,'#ef4444');grad.addColorStop(0.5,'#eab308');grad.addColorStop(1,'#22c55e')}
             if(pct>0||tipo==='alarme'){ctx.beginPath();ctx.arc(cx,cy,r,startAngle,valueAngle);ctx.strokeStyle=grad;ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke()}
+            var nx=cx+Math.cos(valueAngle)*r,ny=cy+Math.sin(valueAngle)*r;
+            ctx.beginPath();ctx.arc(nx,ny,lw*0.4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+            ctx.beginPath();ctx.arc(cx,cy,lw*0.3,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.3)';ctx.fill();
+        }
+
+        // ===== GAUGE FÍSICO (água / ar comprimido / vapor / vácuo) =====
+        // pct já vem normalizado 0..1 dentro da faixa da grandeza. perigoAlto=true quando valor alto é ruim
+        // (ex: água quente), perigoAlto=false quando valor baixo é ruim (ex: pressão/vácuo caindo).
+        function desenharGaugeFisico(canvasId,pct,perigoAlto,doc){
+            doc=doc||document;
+            var canvas=doc.getElementById(canvasId);if(!canvas)return;
+            var ctx=canvas.getContext('2d');var w=canvas.width,h=canvas.height;
+            var cx=w/2,cy=h*0.55,r=w*0.38,lw=w*0.12;
+            ctx.clearRect(0,0,w,h);
+            var startAngle=0.75*Math.PI,endAngle=2.25*Math.PI,totalAngle=1.5*Math.PI;
+            ctx.beginPath();ctx.arc(cx,cy,r,startAngle,endAngle);ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();
+            pct=Math.max(0,Math.min(1,pct||0));
+            var valueAngle=startAngle+(pct*totalAngle);
+            var grad=ctx.createLinearGradient(0,0,w,h);
+            if(perigoAlto){grad.addColorStop(0,'#22c55e');grad.addColorStop(0.5,'#eab308');grad.addColorStop(1,'#ef4444')}
+            else{grad.addColorStop(0,'#ef4444');grad.addColorStop(0.5,'#eab308');grad.addColorStop(1,'#22c55e')}
+            if(pct>0){ctx.beginPath();ctx.arc(cx,cy,r,startAngle,valueAngle);ctx.strokeStyle=grad;ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke()}
             var nx=cx+Math.cos(valueAngle)*r,ny=cy+Math.sin(valueAngle)*r;
             ctx.beginPath();ctx.arc(nx,ny,lw*0.4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
             ctx.beginPath();ctx.arc(cx,cy,lw*0.3,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.3)';ctx.fill();
@@ -749,6 +844,78 @@
             if(r.style.getPropertyValue('--bg1')==='#f5f5f5'){r.style.setProperty('--bg1','#0d1117');r.style.setProperty('--bg2','#161b22');r.style.setProperty('--t1','#ffffff');r.style.setProperty('--t2','#8b949e');r.style.setProperty('--t3','#484f58');r.style.setProperty('--bg-card','rgba(255,255,255,0.05)');r.style.setProperty('--bg-card-hover','rgba(255,255,255,0.08)');r.style.setProperty('--glass-border','rgba(255,255,255,0.08)');btn.textContent='☀️'}
             else{r.style.setProperty('--bg1','#f5f5f5');r.style.setProperty('--bg2','#ffffff');r.style.setProperty('--t1','#1a1a1a');r.style.setProperty('--t2','#666666');r.style.setProperty('--t3','#999999');r.style.setProperty('--bg-card','rgba(0,0,0,0.03)');r.style.setProperty('--bg-card-hover','rgba(0,0,0,0.06)');r.style.setProperty('--glass-border','rgba(0,0,0,0.08)');btn.textContent='🌙'}
         };
+
+        // ===== WIDGET / PICTURE-IN-PICTURE =====
+        // Ao clicar, tenta abrir uma janela real "sempre no topo" via Document Picture-in-Picture
+        // (Chrome/Edge desktop). Se o navegador não suportar, cai para um painel flutuante fixo
+        // no canto da própria página.
+        var pipWindow=null,widgetFallbackAtivo=false;
+
+        window.toggleWidget=function(){
+            if(pipWindow||widgetFallbackAtivo){fecharWidget();return}
+            if('documentPictureInPicture' in window)abrirWidgetPip();
+            else abrirWidgetFallback();
+        };
+
+        function abrirWidgetPip(){
+            // Alguns navegadores expõem a API mas nunca resolvem/rejeitam a promise (sem suporte real
+            // ou sem gesto do usuário reconhecido) — depois de 1.5s sem resposta, cai para o painel flutuante.
+            var settled=false;
+            var timeoutId=setTimeout(function(){if(!settled){settled=true;abrirWidgetFallback()}},1500);
+            documentPictureInPicture.requestWindow({width:300,height:340}).then(function(pip){
+                if(settled){try{pip.close()}catch(e){}return}
+                settled=true;clearTimeout(timeoutId);
+                pipWindow=pip;
+                pip.document.title='Utilidades - Widget';
+                pip.document.documentElement.style.cssText=document.documentElement.style.cssText;
+                Array.prototype.forEach.call(document.styleSheets,function(sheet){
+                    try{
+                        var css=Array.prototype.map.call(sheet.cssRules,function(r){return r.cssText}).join('');
+                        var style=pip.document.createElement('style');style.textContent=css;pip.document.head.appendChild(style);
+                    }catch(e){}
+                });
+                pip.document.body.innerHTML='<div class="widget-header"><span>🧩 Utilidades</span><span id="widget-updated" style="font-size:.6em;color:var(--t3)"></span></div><div class="widget-grid" id="widget-grid"></div>';
+                pip.addEventListener('pagehide',function(){pipWindow=null;atualizarBotaoWidget(false)},{once:true});
+                atualizarBotaoWidget(true);
+                if(ultimosDados)atualizarWidget(ultimosDados);
+            }).catch(function(){
+                if(settled)return;
+                settled=true;clearTimeout(timeoutId);
+                abrirWidgetFallback();
+            });
+        }
+
+        function abrirWidgetFallback(){
+            widgetFallbackAtivo=true;
+            document.getElementById('widget-fallback').classList.add('show');
+            atualizarBotaoWidget(true);
+            if(ultimosDados)atualizarWidget(ultimosDados);
+        }
+
+        function fecharWidget(){
+            if(pipWindow){try{pipWindow.close()}catch(e){}pipWindow=null}
+            widgetFallbackAtivo=false;
+            document.getElementById('widget-fallback').classList.remove('show');
+            atualizarBotaoWidget(false);
+        }
+
+        function atualizarBotaoWidget(ativo){
+            var btn=document.getElementById('btn-widget');if(!btn)return;
+            if(ativo)btn.classList.add('widget-on');else btn.classList.remove('widget-on');
+        }
+
+        function atualizarWidget(data){
+            if(pipWindow){
+                renderOverviewInto(pipWindow.document.getElementById('widget-grid'),data,pipWindow.document,'w-');
+                var upd=pipWindow.document.getElementById('widget-updated');
+                if(upd)upd.textContent=data._readAt||'';
+            }
+            if(widgetFallbackAtivo){
+                renderOverviewInto(document.getElementById('widget-grid-fallback'),data,document,'wf-');
+                var upd2=document.getElementById('widget-updated-fallback');
+                if(upd2)upd2.textContent=data._readAt||'';
+            }
+        }
 
         // ===== CSV =====
         window.exportarCSV=function(){
