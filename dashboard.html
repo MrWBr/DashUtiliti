@@ -75,6 +75,9 @@
         .overview-value { font-size:1.8em; font-weight:700; background: var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
         .overview-sub { font-size:.7em; color: var(--t3); margin-top:4px; }
         .overview-card .donut-container { position:absolute; top:12px; right:12px; width:44px; height:44px; }
+        /* Cards com gauge no canto reservam espaço à direita pro texto não passar por baixo do desenho */
+        .overview-card.has-gauge { padding-right:74px; }
+        .overview-gauge-canvas { position:absolute; top:10px; right:10px; width:54px; height:54px; }
 
         /* === DATA CARDS === */
         .section-container { padding:12px 16px; }
@@ -160,6 +163,8 @@
             .energia-grid { grid-template-columns: 1fr; }
             .card-value { font-size:1.3em; }
             .overview-value { font-size:1.5em; }
+            .overview-card.has-gauge { padding-right:58px; }
+            .overview-gauge-canvas { width:42px; height:42px; top:8px; right:8px; }
         }
 
         /* === SCROLLBAR === */
@@ -466,7 +471,7 @@
 
         function overviewCardHTML(id,label,valorTxt,subTxt,alarm){
             var corTxt=alarm?'background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent':'';
-            return '<div class="overview-card"><div class="overview-label">'+label+'</div><div class="overview-value" style="'+corTxt+'">'+valorTxt+'</div><div class="overview-sub">'+subTxt+'</div><canvas id="'+id+'" width="120" height="120" style="position:absolute;top:8px;right:8px;width:55px;height:55px"></canvas></div>';
+            return '<div class="overview-card has-gauge"><div class="overview-label">'+label+'</div><div class="overview-value" style="'+corTxt+'">'+valorTxt+'</div><div class="overview-sub">'+subTxt+'</div><canvas id="'+id+'" width="120" height="120" class="overview-gauge-canvas"></canvas></div>';
         }
 
         // Rótulos e unidades dos cards físicos, na ordem em que aparecem na Visão Geral
@@ -942,35 +947,62 @@
 
         function fmtOuTraco(v,casas){return v!==null?v.toFixed(casas==null?1:casas):'—'}
 
-        // Monta a lista de itens do ticker a partir das mesmas stats usadas na Visão Geral
+        // Histórico auxiliar só pra calcular tendência de Saúde/Alarmes no ticker (os demais itens já
+        // usam o array 'historico' que o resto do app mantém por tag).
+        var tickerAuxHist={saude:[],alarme:[]};
+        function pushAux(chave,valor){var h=tickerAuxHist[chave];h.push(valor);if(h.length>5)h.shift()}
+        function tendenciaDe(valores){
+            if(!valores||valores.length<2)return{seta:'',cls:'trend-stable'};
+            var d=valores[valores.length-1]-valores[valores.length-2];
+            if(d>0.2)return{seta:'▲',cls:'trend-up'};
+            if(d<-0.2)return{seta:'▼',cls:'trend-down'};
+            return{seta:'─',cls:'trend-stable'};
+        }
+
+        // Monta a lista de itens do ticker a partir das mesmas stats usadas na Visão Geral.
+        // Só texto + seta de tendência, sem emojis.
         function itensTicker(data){
             var s=calcOverviewStats(data),f=s.fisico;
+            pushAux('saude',s.pctOk);pushAux('alarme',s.emAlarme);
+            function item(label,valTxt,alarmFlag,hist){
+                var t=tendenciaDe(hist);
+                return{label:label,val:valTxt,alarm:alarmFlag,seta:t.seta,setaCls:t.cls};
+            }
             return[
-                {label:'Saúde',val:s.pctOk+'%',alarm:false},
-                {label:'Alarmes',val:s.emAlarme,alarm:s.emAlarme>0},
-                {label:'🌡️ Água 6°C',val:fmtOuTraco(f.agua.val)+'°C',alarm:f.agua.alarm},
-                {label:'💨 Ar DM',val:fmtOuTraco(f.arDM.val)+' bar',alarm:f.arDM.alarm},
-                {label:'💨 Ar Choco',val:fmtOuTraco(f.arChoco.val)+' bar',alarm:f.arChoco.alarm},
-                {label:'♨️ Vapor B&G',val:fmtOuTraco(f.vaporBG.val)+' bar',alarm:f.vaporBG.alarm},
-                {label:'♨️ Vapor Choco',val:fmtOuTraco(f.vaporChoco.val)+' bar',alarm:f.vaporChoco.alarm},
-                {label:'🌀 Vácuo',val:fmtOuTraco(f.vacuo.val)+' PolHg',alarm:f.vacuo.alarm},
-                {label:'🕐',val:data._readAt||'—',alarm:false}
+                item('Saúde',s.pctOk+'%',false,tickerAuxHist.saude),
+                item('Alarmes',String(s.emAlarme),s.emAlarme>0,tickerAuxHist.alarme),
+                item('Água 6°C',fmtOuTraco(f.agua.val)+'°C',f.agua.alarm,historico['Agua_6C']),
+                item('Ar DM',fmtOuTraco(f.arDM.val)+' bar',f.arDM.alarm,historico['Ar_Comp_DM']),
+                item('Ar Choco',fmtOuTraco(f.arChoco.val)+' bar',f.arChoco.alarm,historico['Ar_Comp_Choco']),
+                item('Vapor B&G',fmtOuTraco(f.vaporBG.val)+' bar',f.vaporBG.alarm,historico['Pressao_Cavalete_BG']),
+                item('Vapor Choco',fmtOuTraco(f.vaporChoco.val)+' bar',f.vaporChoco.alarm,historico['Pressao_Vapor_Choco']),
+                item('Vácuo',fmtOuTraco(f.vacuo.val)+' PolHg',f.vacuo.alarm,historico['Vacuo_Dry_Mix']),
+                item('Atualizado',data._readAt||'—',false,null)
             ];
         }
 
         function tickerItemsHTML(itens){
             return itens.map(function(it){
-                return '<span class="ticker-item'+(it.alarm?' alarm':'')+'"><span class="tlabel">'+it.label+'</span>'+it.val+'</span><span class="ticker-sep">•</span>';
+                var seta=it.seta?' <span class="'+it.setaCls+'">'+it.seta+'</span>':'';
+                return '<span class="ticker-item'+(it.alarm?' alarm':'')+'"><span class="tlabel">'+it.label+'</span>'+it.val+seta+'</span><span class="ticker-sep">•</span>';
             }).join('');
         }
 
         // Renderiza a faixa "ticker" dentro do container informado (documento principal ou da janela PIP).
-        // O conteúdo é duplicado uma vez pra permitir o loop de rolagem contínuo, sem salto no final.
+        // Importante: o elemento animado (.widget-ticker-track) é criado UMA VEZ e reaproveitado nas
+        // atualizações seguintes — só o innerHTML dele é trocado. Se recriássemos o elemento a cada
+        // atualização (como innerHTML do container inteiro fazia antes), a animação CSS reiniciava do
+        // zero a cada tick e a rolagem nunca chegava no fim.
         function renderTicker(container,data,mostrarFechar){
             if(!container)return;
+            var track=container.querySelector('.widget-ticker-track');
+            if(!track){
+                var fecharBtn=mostrarFechar?'<button class="widget-close" onclick="toggleWidget()" title="Fechar widget">✕</button>':'';
+                container.innerHTML='<div class="widget-ticker-bar"><div class="widget-ticker-viewport"><div class="widget-ticker-track"></div></div>'+fecharBtn+'</div>';
+                track=container.querySelector('.widget-ticker-track');
+            }
             var itemsHTML=tickerItemsHTML(itensTicker(data));
-            var fecharBtn=mostrarFechar?'<button class="widget-close" onclick="toggleWidget()" title="Fechar widget">✕</button>':'';
-            container.innerHTML='<div class="widget-ticker-bar"><div class="widget-ticker-viewport"><div class="widget-ticker-track">'+itemsHTML+itemsHTML+'</div></div>'+fecharBtn+'</div>';
+            track.innerHTML=itemsHTML+itemsHTML;
         }
 
         function atualizarWidget(data){
