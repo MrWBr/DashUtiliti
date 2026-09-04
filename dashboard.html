@@ -1013,11 +1013,35 @@
             ];
         }
 
-        function tickerItemsHTML(itens){
-            return itens.map(function(it){
-                var seta=it.seta?' <span class="'+it.setaCls+'">'+it.seta+'</span>':'';
-                return '<span class="ticker-item'+(it.alarm?' alarm':'')+'"><span class="tlabel">'+it.label+'</span>'+it.val+seta+'</span><span class="ticker-sep">•</span>';
-            }).join('');
+        function tickerItemsFragment(doc,itens){
+            var frag=doc.createDocumentFragment();
+            itens.forEach(function(it){
+                var itemEl=doc.createElement('span');
+                itemEl.className='ticker-item'+(it.alarm?' alarm':'');
+
+                var labelEl=doc.createElement('span');
+                labelEl.className='tlabel';
+                labelEl.textContent=it.label;
+                itemEl.appendChild(labelEl);
+
+                itemEl.appendChild(doc.createTextNode(String(it.val)));
+
+                if(it.seta){
+                    itemEl.appendChild(doc.createTextNode(' '));
+                    var setaEl=doc.createElement('span');
+                    setaEl.className=it.setaCls;
+                    setaEl.textContent=it.seta;
+                    itemEl.appendChild(setaEl);
+                }
+
+                frag.appendChild(itemEl);
+
+                var sepEl=doc.createElement('span');
+                sepEl.className='ticker-sep';
+                sepEl.textContent='•';
+                frag.appendChild(sepEl);
+            });
+            return frag;
         }
 
         // Monta os botões de ação (▦/↺ trocar modo, ✕ fechar) como elementos DOM de verdade, com
@@ -1065,8 +1089,11 @@
                 container.innerHTML='';
                 container.appendChild(bar);
             }
-            var itemsHTML=tickerItemsHTML(itensTicker(data));
-            track.innerHTML=itemsHTML+itemsHTML;
+            var doc=track.ownerDocument;
+            var itens=itensTicker(data);
+            while(track.firstChild)track.removeChild(track.firstChild);
+            track.appendChild(tickerItemsFragment(doc,itens));
+            track.appendChild(tickerItemsFragment(doc,itens));
         }
 
         // Monta as linhas da tabela agrupadas por aba: Temperaturas, Ar Comprimido, Salas de Cura,
