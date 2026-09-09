@@ -58,32 +58,32 @@
         var db = firebase.database();
 
         // ============ CONFIGURAÇÃO DE ALARMES ============
-        var Alarmconfig={
-            "TO8001_2_3_4":{nome:"Torres C.A.G.",grupo:"temp",u:"°C",limiteAlto:32,limiteBaixo:null,escalaMin:20,escalaMax:35,corAlto:"red",corBaixo:null},
-            "TO8006_Retorno":{nome:"Torre Wafer",grupo:"temp",u:"°C",limiteAlto:35,limiteBaixo:null,escalaMin:25,escalaMax:40,corAlto:"red",corBaixo:null},
-            "CH8007":{nome:"Chiller 8007",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
-            "CH8008":{nome:"Chiller 8008",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
-            "CH8011_14":{nome:"Chillers 8011/14",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
-            "CV8004_Retorno":{nome:"Sala de Gordura",grupo:"temp",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:35,escalaMax:55,corAlto:"red",corBaixo:null},
-            "Agua_6C":{nome:"Água Gelada 6°C",grupo:"temp",u:"°C",limiteAlto:8,limiteBaixo:null,escalaMin:3,escalaMax:10,corAlto:"red",corBaixo:null},
-            "Ar_Comp_DM":{nome:"Ar Comp Dry Mix",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.5,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
-            "Ar_Comp_DM_Boge":{nome:"Ar Comp Boge",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.0,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
-            "Ar_Comp_Choco":{nome:"Ar Comp Chocolate",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.5,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
-            "Vacuo_Dry_Mix":{nome:"Vácuo Dry Mix",grupo:"ar",u:"Pol Hg",limiteAlto:null,limiteBaixo:15,escalaMin:10,escalaMax:30,corAlto:null,corBaixo:"red"},
-            "Pressao_Cavalete_BG":{nome:"Pressão Cavalete B&G",grupo:"vapor",u:"bar",limiteAlto:null,limiteBaixo:10,escalaMin:8,escalaMax:15,corAlto:null,corBaixo:"red"},
-            "Pressao_Vapor_Choco":{nome:"Pressão Vapor Choco",grupo:"vapor",u:"bar",limiteAlto:null,limiteBaixo:5,escalaMin:3,escalaMax:10,corAlto:null,corBaixo:"red"},
-            "Nivel_TQ_CD8006_7":{nome:"Nível TQ CD8006/7",grupo:"vapor",u:"%",limiteAlto:null,limiteBaixo:40,escalaMin:20,escalaMax:100,corAlto:null,corBaixo:"red"},
-            "Temperatura_Ar_Comp_Chocolate":{nome:"Temp Ar Choco",grupo:"ar",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:25,escalaMax:60,corAlto:"orange",corBaixo:null},
-            "Temperatura_Ar_Comp_BG":{nome:"Temp Ar B&G",grupo:"ar",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:25,escalaMax:60,corAlto:"orange",corBaixo:null},
-            "Umidade_Ar_Comp_Chocolate":{nome:"Umidade Ar Choco",grupo:"ar",u:"%",limiteAlto:25,limiteBaixo:null,escalaMin:0,escalaMax:35,corAlto:"red",corBaixo:null},
-            "Umidade_Ar_Comp_BG":{nome:"Umidade Ar B&G",grupo:"ar",u:"%",limiteAlto:25,limiteBaixo:null,escalaMin:0,escalaMax:35,corAlto:"red",corBaixo:null},
-            "Temperatura_Sala_Cura_Bubba":{nome:"Sala Cura Bubba",grupo:"cura",u:"°C",limiteAlto:17,limiteBaixo:null,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
-            "Temperatura_Sala_Cura_Chiclets":{nome:"Sala Cura Chiclets",grupo:"cura",u:"°C",limiteAlto:14,limiteBaixo:null,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
-            "Temperatura_Sala_Cura_Trident":{nome:"Sala Cura Trident",grupo:"cura",u:"°C",limiteAlto:15,limiteBaixo:null,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
-            "Umidade_Sala_Cura_Bubba":{nome:"Umid. Cura Bubba",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
-            "Umidade_Sala_Cura_Chiclets":{nome:"Umid. Cura Chiclets",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
-            "Umidade_Sala_Cura_Trident":{nome:"Umid. Cura Trident",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"}
-        };
+        var alarmeConfig = {
+            "TO8001_2_3_4":   { limiteAlto: 32, limiteBaixo: null, taxaMax: 3, tempoFaixa: null, corAlto: "red", corBaixo: null },
+            "TO8006_Retorno": { limiteAlto: 35, limiteBaixo: null, taxaMax: 3, tempoFaixa: null, corAlto: "red", corBaixo: null },
+            "CH8007":         { limiteAlto: 2,  limiteBaixo: -5,   taxaMax: 2, tempoFaixa: 600, corAlto: "red", corBaixo: "blue" },
+            "CH8008":         { limiteAlto: 2,  limiteBaixo: -5,   taxaMax: 2, tempoFaixa: 600, corAlto: "red", corBaixo: "blue" },
+            "CH8011_14":      { limiteAlto: 2,  limiteBaixo: -5,   taxaMax: 2, tempoFaixa: 600, corAlto: "red", corBaixo: "blue" },
+            "CV8004_Retorno": { limiteAlto: 50, limiteBaixo: null, taxaMax: 5, tempoFaixa: null, corAlto: "red", corBaixo: null },
+            "Agua_6C":        { limiteAlto: 8,  limiteBaixo: null, taxaMax: 2, tempoFaixa: null, corAlto: "red", corBaixo: null },
+            "Temperatura_Sala_Cura_Bubba":    { limiteAlto: 17, limiteBaixo: 13, taxaMax: 2, tempoFaixa: 600, corAlto: "red", corBaixo: "blue" },
+            "Temperatura_Sala_Cura_Chiclets": { limiteAlto: 14, limiteBaixo: 10, taxaMax: 2, tempoFaixa: 600, corAlto: "red", corBaixo: "blue" },
+            "Temperatura_Sala_Cura_Trident":  { limiteAlto: 15, limiteBaixo: 10, taxaMax: 2, tempoFaixa: 600, corAlto: "red", corBaixo: "blue" },
+            "Umidade_Sala_Cura_Bubba":        { limiteAlto: 35, limiteBaixo: 30, taxaMax: 5, tempoFaixa: null, corAlto: "red", corBaixo: "blue" },
+            "Umidade_Sala_Cura_Chiclets":     { limiteAlto: 35, limiteBaixo: 30, taxaMax: 5, tempoFaixa: null, corAlto: "red", corBaixo: "blue" },
+            "Umidade_Sala_Cura_Trident":      { limiteAlto: 35, limiteBaixo: 30, taxaMax: 5, tempoFaixa: null, corAlto: "red", corBaixo: "blue" },
+            "Ar_Comp_DM":      { limiteAlto: null, limiteBaixo: 5.5, taxaMax: null, tempoFaixa: 300, corAlto: null, corBaixo: "red" },
+            "Ar_Comp_DM_Boge": { limiteAlto: null, limiteBaixo: 5.0, taxaMax: null, tempoFaixa: 300, corAlto: null, corBaixo: "red" },
+            "Ar_Comp_Choco":   { limiteAlto: null, limiteBaixo: 5.5, taxaMax: null, tempoFaixa: 300, corAlto: null, corBaixo: "red" },
+            "Vacuo_Dry_Mix":   { limiteAlto: null, limiteBaixo: 15,  taxaMax: null, tempoFaixa: 300, corAlto: null, corBaixo: "red" },
+            "Pressao_Cavalete_BG": { limiteAlto: null, limiteBaixo: 10, taxaMax: null, tempoFaixa: 300, corAlto: null, corBaixo: "red" },
+            "Pressao_Vapor_Choco": { limiteAlto: null, limiteBaixo: 5,  taxaMax: null, tempoFaixa: 300, corAlto: null, corBaixo: "red" },
+            "Nivel_TQ_CD8006_7":   { limiteAlto: null, limiteBaixo: 40, taxaMax: null, tempoFaixa: 600, corAlto: null, corBaixo: "red" },
+            "Temperatura_Ar_Comp_Chocolate": { limiteAlto: 50, limiteBaixo: null, taxaMax: 5, tempoFaixa: null, corAlto: "orange", corBaixo: null },
+            "Temperatura_Ar_Comp_BG":        { limiteAlto: 50, limiteBaixo: null, taxaMax: 5, tempoFaixa: null, corAlto: "orange", corBaixo: null },
+            "Umidade_Ar_Comp_Chocolate": { limiteAlto: 25, limiteBaixo: null, taxaMax: null, tempoFaixa: null, corAlto: "red", corBaixo: null },
+            "Umidade_Ar_Comp_BG":        { limiteAlto: 25, limiteBaixo: null, taxaMax: null, tempoFaixa: null, corAlto: "red", corBaixo: null }
+        }
         // taxaMax = variação máxima permitida em 5 minutos (°C, bar, etc.)
         // tempoFaixa = segundos máximos permitidos fora do limite antes de alarme de tempo
 
