@@ -644,9 +644,7 @@
             var tendencia='',tClass='trend-stable';
             if(hist.length>=2){var d=hist[hist.length-1]-hist[hist.length-2];
                 if(d>0.2){tendencia='▲';tClass='trend-up'}else if(d<-0.2){tendencia='▼';tClass='trend-down'}else{tendencia='─';tClass='trend-stable'}}
-            var alarmClass='';
-            if
-
+                       var alarmClass='';
             if(alarm.cor==='red')alarmClass=' alarm-red';
             else if(alarm.cor==='blue')alarmClass=' alarm-blue';
             else if(alarm.cor==='orange')alarmClass=' alarm-orange';
