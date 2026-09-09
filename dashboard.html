@@ -251,25 +251,31 @@
         // ============================================
         // CONFIGURAÇÃO DAS TAGS
         // ============================================
-        const tagConfig = {
-            'TO8001_4':     { nome:'TO8001/2/3/4', unidade:'°C', grupo:'temperaturas', limiteAlto:30, limiteBaixo:18, corAlto:'red', corBaixo:'blue' },
-            'TO8006':       { nome:'TO8006 Retorno', unidade:'°C', grupo:'temperaturas', limiteAlto:35, limiteBaixo:20, corAlto:'red', corBaixo:'blue' },
-            'CH8007':       { nome:'CH8007', unidade:'°C', grupo:'temperaturas', limiteAlto:2, limiteBaixo:-8, corAlto:'red', corBaixo:'blue' },
-            'CH8008':       { nome:'CH8008', unidade:'°C', grupo:'temperaturas', limiteAlto:2, limiteBaixo:-8, corAlto:'red', corBaixo:'blue' },
-            'CH8011_14':    { nome:'CH8011/14', unidade:'°C', grupo:'temperaturas', limiteAlto:2, limiteBaixo:-8, corAlto:'red', corBaixo:'blue' },
-            'CV8004':       { nome:'CV8004 Retorno', unidade:'°C', grupo:'temperaturas', limiteAlto:50, limiteBaixo:35, corAlto:'red', corBaixo:'blue' },
-            'Agua6C':       { nome:'Água 6°C', unidade:'°C', grupo:'temperaturas', limiteAlto:9, limiteBaixo:3, corAlto:'red', corBaixo:'blue' },
-            'PressaoVapor': { nome:'Pressão Vapor', unidade:'bar', grupo:'vapor', limiteAlto:8.5, limiteBaixo:5.5, corAlto:'red', corBaixo:'red' },
-            'VacuoSist':    { nome:'Vácuo Sistema', unidade:'mmHg', grupo:'vapor', limiteAlto:-200, limiteBaixo:-600, corAlto:'red', corBaixo:'red' },
-            'ArComp1':      { nome:'Ar Comprimido 1', unidade:'bar', grupo:'ar', limiteAlto:8.5, limiteBaixo:5.8, corAlto:'blue', corBaixo:'red' },
-            'ArComp2':      { nome:'Ar Comprimido 2', unidade:'bar', grupo:'ar', limiteAlto:8.5, limiteBaixo:5.8, corAlto:'blue', corBaixo:'red' },
-            'ArComp3':      { nome:'Ar Comprimido 3', unidade:'bar', grupo:'ar', limiteAlto:8.5, limiteBaixo:5.8, corAlto:'blue', corBaixo:'red' },
-            'TempCuraChoc': { nome:'Temp Cura Chocolate', unidade:'°C', grupo:'cura', limiteAlto:22, limiteBaixo:16, corAlto:'red', corBaixo:'blue' },
-            'UmidCuraChoc': { nome:'Umid Cura Chocolate', unidade:'%', grupo:'cura', limiteAlto:55, limiteBaixo:35, corAlto:'red', corBaixo:'blue' },
-            'TempCuraChiclets': { nome:'Temp Cura Chiclets', unidade:'°C', grupo:'cura', limiteAlto:25, limiteBaixo:18, corAlto:'red', corBaixo:'blue' },
-            'UmidCuraChiclets': { nome:'Umid Cura Chiclets', unidade:'%', grupo:'cura', limiteAlto:45, limiteBaixo:25, corAlto:'red', corBaixo:'blue' },
-            'TempCuraTrident': { nome:'Temp Cura Trident', unidade:'°C', grupo:'cura', limiteAlto:25, limiteBaixo:18, corAlto:'red', corBaixo:'blue' },
-            'UmidCuraTrident': { nome:'Umid Cura Trident', unidade:'%', grupo:'cura', limiteAlto:45, limiteBaixo:25, corAlto:'red', corBaixo:'blue' }
+        var tagConfig={
+            "TO8001_2_3_4":{nome:"Torres C.A.G.",grupo:"temp",u:"°C",limiteAlto:32,limiteBaixo:null,escalaMin:20,escalaMax:35,corAlto:"red",corBaixo:null},
+            "TO8006_Retorno":{nome:"Torre Wafer",grupo:"temp",u:"°C",limiteAlto:35,limiteBaixo:null,escalaMin:25,escalaMax:40,corAlto:"red",corBaixo:null},
+            "CH8007":{nome:"Chiller 8007",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
+            "CH8008":{nome:"Chiller 8008",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
+            "CH8011_14":{nome:"Chillers 8011/14",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
+            "CV8004_Retorno":{nome:"Sala de Gordura",grupo:"temp",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:35,escalaMax:55,corAlto:"red",corBaixo:null},
+            "Agua_6C":{nome:"Água Gelada 6°C",grupo:"temp",u:"°C",limiteAlto:8,limiteBaixo:null,escalaMin:3,escalaMax:10,corAlto:"red",corBaixo:null},
+            "Ar_Comp_DM":{nome:"Ar Comp Dry Mix",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.5,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
+            "Ar_Comp_DM_Boge":{nome:"Ar Comp Boge",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.0,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
+            "Ar_Comp_Choco":{nome:"Ar Comp Chocolate",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.5,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
+            "Vacuo_Dry_Mix":{nome:"Vácuo Dry Mix",grupo:"ar",u:"Pol Hg",limiteAlto:null,limiteBaixo:15,escalaMin:10,escalaMax:30,corAlto:null,corBaixo:"red"},
+            "Pressao_Cavalete_BG":{nome:"Pressão Cavalete B&G",grupo:"vapor",u:"bar",limiteAlto:null,limiteBaixo:10,escalaMin:8,escalaMax:15,corAlto:null,corBaixo:"red"},
+            "Pressao_Vapor_Choco":{nome:"Pressão Vapor Choco",grupo:"vapor",u:"bar",limiteAlto:null,limiteBaixo:5,escalaMin:3,escalaMax:10,corAlto:null,corBaixo:"red"},
+            "Nivel_TQ_CD8006_7":{nome:"Nível TQ CD8006/7",grupo:"vapor",u:"%",limiteAlto:null,limiteBaixo:40,escalaMin:20,escalaMax:100,corAlto:null,corBaixo:"red"},
+            "Temperatura_Ar_Comp_Chocolate":{nome:"Temp Ar Choco",grupo:"ar",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:25,escalaMax:60,corAlto:"orange",corBaixo:null},
+            "Temperatura_Ar_Comp_BG":{nome:"Temp Ar B&G",grupo:"ar",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:25,escalaMax:60,corAlto:"orange",corBaixo:null},
+            "Umidade_Ar_Comp_Chocolate":{nome:"Umidade Ar Choco",grupo:"ar",u:"%",limiteAlto:25,limiteBaixo:null,escalaMin:0,escalaMax:35,corAlto:"red",corBaixo:null},
+            "Umidade_Ar_Comp_BG":{nome:"Umidade Ar B&G",grupo:"ar",u:"%",limiteAlto:25,limiteBaixo:null,escalaMin:0,escalaMax:35,corAlto:"red",corBaixo:null},
+            "Temperatura_Sala_Cura_Bubba":{nome:"Sala Cura Bubba",grupo:"cura",u:"°C",limiteAlto:17,limiteBaixo:null,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
+            "Temperatura_Sala_Cura_Chiclets":{nome:"Sala Cura Chiclets",grupo:"cura",u:"°C",limiteAlto:14,limiteBaixo:null,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
+            "Temperatura_Sala_Cura_Trident":{nome:"Sala Cura Trident",grupo:"cura",u:"°C",limiteAlto:15,limiteBaixo:null,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
+            "Umidade_Sala_Cura_Bubba":{nome:"Umid. Cura Bubba",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
+            "Umidade_Sala_Cura_Chiclets":{nome:"Umid. Cura Chiclets",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
+            "Umidade_Sala_Cura_Trident":{nome:"Umid. Cura Trident",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"}
         };
 
         // ============================================
