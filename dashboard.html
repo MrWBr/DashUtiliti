@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -5,1174 +6,810 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Utilidades - Mondelēz</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#7c3aed">
-    <link rel="apple-touch-icon" href="icon-192.png">
     <style>
-        :root {
-            --bg1: #0d1117;
-            --bg2: #161b22;
-            --bg3: rgba(255,255,255,0.03);
-            --bg-card: rgba(255,255,255,0.05);
-            --bg-card-hover: rgba(255,255,255,0.08);
-            --glass: rgba(255,255,255,0.02);
-            --glass-border: rgba(255,255,255,0.08);
-            --t1: #ffffff;
-            --t2: #8b949e;
-            --t3: #484f58;
-            --accent: #7c3aed;
-            --accent2: #06b6d4;
-            --gradient: linear-gradient(135deg, #7c3aed, #06b6d4);
-            --gradient-soft: linear-gradient(135deg, rgba(124,58,237,0.15), rgba(6,182,212,0.15));
-            --gradient-fill: linear-gradient(180deg, rgba(124,58,237,0.3), rgba(6,182,212,0.05));
-            --red: #ef4444;
-            --orange: #f97316;
-            --green: #22c55e;
-            --blue: #3b82f6;
-            --yellow: #eab308;
-            --shadow: 0 4px 24px rgba(0,0,0,0.3);
-            --radius: 16px;
-            --radius-sm: 10px;
-        }
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif; background: var(--bg1); color: var(--t1); min-height:100vh; overflow-x:hidden; }
-
-        /* === HEADER === */
-        .header { background: var(--bg2); padding: 16px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--glass-border); position:sticky; top:0; z-index:100; backdrop-filter: blur(20px); }
-        .header-left { display:flex; align-items:center; gap:12px; }
-        .header-logo { width:32px; height:32px; border-radius:8px; background: var(--gradient); display:flex; align-items:center; justify-content:center; font-size:16px; }
-        .header h1 { font-size: 1em; font-weight: 600; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .header-right { display:flex; align-items:center; gap:10px; }
-        .status-badge { font-size:.7em; padding:4px 10px; border-radius:20px; background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
-        .status-badge.offline { background: rgba(239,68,68,0.15); color: var(--red); border-color: rgba(239,68,68,0.3); }
-        .btn-icon { background: var(--bg-card); border: 1px solid var(--glass-border); color: var(--t2); width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; transition: all .2s; }
-        .btn-icon:hover { background: var(--bg-card-hover); color: var(--t1); }
-
-        /* === TABS === */
-        .tabs { display:flex; gap:4px; padding:12px 16px; background: var(--bg2); border-bottom: 1px solid var(--glass-border); overflow-x:auto; -webkit-overflow-scrolling:touch; }
-        .tabs::-webkit-scrollbar { display:none; }
-        .tab { padding:8px 16px; border-radius:10px; font-size:.75em; font-weight:500; color: var(--t2); background: transparent; border: none; cursor:pointer; white-space:nowrap; transition: all .2s; }
-        .tab:hover { color: var(--t1); background: var(--bg-card); }
-        .tab.active { background: var(--gradient); color: #fff; font-weight:600; }
-
-        /* === LEITOR STATUS === */
-        .leitor-bar { display:flex; align-items:center; justify-content:space-between; padding:10px 20px; background: var(--glass); border-bottom: 1px solid var(--glass-border); }
-        .leitor-left { display:flex; align-items:center; gap:10px; font-size:.75em; }
-        .leitor-dot { width:8px; height:8px; border-radius:50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
-        .leitor-dot.offline { background: var(--red); box-shadow: 0 0 8px var(--red); animation:none; }
-        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.85)} }
-        .leitor-right { display:flex; gap:16px; font-size:.7em; color: var(--t2); }
-        .leitor-right .val { color: var(--accent2); font-weight:600; }
-        .last-update { text-align:center; font-size:.68em; color: var(--t3); padding:6px 20px; background: var(--bg2); }
-
-        /* === OVERVIEW CARDS (Visão Geral) === */
-        .overview-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; padding:16px; }
-        .overview-card { background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius); padding:16px; position:relative; overflow:hidden; transition: all .3s; }
-        .overview-card:hover { background: var(--bg-card-hover); transform: translateY(-2px); box-shadow: var(--shadow); }
-        .overview-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: var(--gradient); border-radius: var(--radius) var(--radius) 0 0; }
-        .overview-label { font-size:.65em; color: var(--t2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
-        .overview-value { font-size:1.8em; font-weight:700; background: var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-        .overview-sub { font-size:.7em; color: var(--t3); margin-top:4px; }
-        .overview-card .donut-container { position:absolute; top:12px; right:12px; width:44px; height:44px; }
-        /* Cards com gauge no canto reservam espaço à direita pro texto não passar por baixo do desenho */
-        .overview-card.has-gauge { padding-right:74px; }
-        .overview-gauge-canvas { position:absolute; top:10px; right:10px; width:54px; height:54px; }
-
-        /* === DATA CARDS === */
-        .section-container { padding:12px 16px; }
-        .section-title { font-size:.7em; color: var(--accent); text-transform:uppercase; letter-spacing:1px; font-weight:600; margin-bottom:10px; padding-left:4px; }
-        .cards-grid { display:flex; flex-direction:column; gap:8px; }
-        .data-card { display:flex; align-items:center; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding:14px 16px; gap:14px; transition: all .3s; cursor:pointer; position:relative; overflow:hidden; }
-        .data-card:hover { background: var(--bg-card-hover); transform: translateX(4px); }
-        .data-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background: var(--gradient); }
-        .data-card.alarm-red::before { background: var(--red); }
-        .data-card.alarm-red { border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.05); }
-        .data-card.alarm-red .card-value { color: var(--red); }
-        .data-card.alarm-blue::before { background: var(--blue); }
-        .data-card.alarm-blue { border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.05); }
-        .data-card.alarm-blue .card-value { color: var(--blue); }
-        .data-card.alarm-orange::before { background: var(--orange); }
-        .data-card.alarm-orange { border-color: rgba(249,115,22,0.3); background: rgba(249,115,22,0.05); }
-        .data-card.alarm-orange .card-value { color: var(--orange); }
-        .card-info { flex-shrink:0; min-width:fit-content; }
-        .card-name { font-size:.7em; color: var(--t2); text-transform:uppercase; letter-spacing:.3px; white-space:nowrap; }
-        .card-value { font-size:1.5em; font-weight:700; color: var(--t1); margin-top:2px; }
-        .card-value .unit { font-size:.5em; color: var(--t3); font-weight:400; margin-left:3px; }
-        .card-spark { flex:1; min-width:60px; height:50px; position:relative; }
-        .card-spark canvas { width:100%; height:100%; display:block; }
-        .card-trend { font-size:1.1em; width:24px; text-align:center; flex-shrink:0; }
-        .trend-up { color: var(--red); }
-        .trend-down { color: var(--green); }
-        .trend-stable { color: var(--t3); }
-
-        /* === ENERGIA TAB === */
-        .energia-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:12px; padding:16px; }
-        .trafo-card { background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius); padding:18px; position:relative; overflow:hidden; }
-        .trafo-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: var(--gradient); }
-        .trafo-card.offline::before { background: var(--red); }
-        .trafo-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-        .trafo-nome { font-size:.85em; font-weight:600; color: var(--t1); }
-        .trafo-status { font-size:.65em; padding:3px 8px; border-radius:12px; }
-        .trafo-status.online { background: rgba(34,197,94,0.15); color: var(--green); }
-        .trafo-status.offline { background: rgba(239,68,68,0.15); color: var(--red); }
-        .trafo-status.alerta { background: rgba(249,115,22,0.15); color: var(--orange); }
-        .trafo-body { display:flex; gap:16px; align-items:center; }
-        .trafo-donut { width:80px; height:80px; position:relative; flex-shrink:0; }
-        .trafo-donut canvas { width:100%; height:100%; }
-        .trafo-donut-label { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; }
-        .trafo-donut-value { font-size:1.1em; font-weight:700; color: var(--t1); }
-        .trafo-donut-sub { font-size:.55em; color: var(--t3); }
-        .trafo-metrics { flex:1; display:flex; flex-direction:column; gap:6px; }
-        .trafo-metric { display:flex; justify-content:space-between; align-items:center; font-size:.72em; }
-        .trafo-metric-label { color: var(--t2); }
-        .trafo-metric-value { color: var(--t1); font-weight:600; font-family:monospace; }
-        .trafo-metric-value.alarm { color: var(--red); }
-
-        /* === MODAL === */
-        .modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.9); z-index:200; align-items:center; justify-content:center; padding:15px; backdrop-filter:blur(8px); }
-        .modal-overlay.show { display:flex; }
-        .modal { background: var(--bg2); border-radius: var(--radius); width:100%; max-width:700px; max-height:90vh; overflow-y:auto; padding:24px; position:relative; border: 1px solid var(--glass-border); box-shadow: var(--shadow); }
-        .modal-close { position:absolute; top:12px; right:16px; background:none; border:none; color: var(--t2); font-size:1.5em; cursor:pointer; }
-        .modal h2 { background: var(--gradient); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; font-size:1.1em; margin-bottom:5px; }
-        .modal-valor { font-size:2.2em; font-weight:700; margin-bottom:12px; }
-        .modal-periodo { display:flex; gap:8px; margin-bottom:16px; }
-        .modal-periodo button { background: var(--bg-card); color: var(--accent2); border: 1px solid var(--glass-border); padding:6px 14px; border-radius:8px; font-size:.75em; cursor:pointer; transition: all .2s; }
-        .modal-periodo button.active { background: var(--gradient); color:#fff; border-color:transparent; }
-        .modal canvas { width:100%; height:250px; display:block; border-radius: var(--radius-sm); background: var(--bg-card); }
-        .modal-stats { display:flex; justify-content:space-around; margin-top:14px; font-size:.8em; color: var(--t2); }
-        .modal-stats .stat-val { font-weight:700; color: var(--t1); font-size:1.2em; }
-
-        /* === TOOLBAR === */
-        .toolbar { display:flex; gap:6px; padding:8px 16px; background: var(--bg2); border-bottom: 1px solid var(--glass-border); }
-        .toolbar button { background: var(--bg-card); color: var(--t2); border: 1px solid var(--glass-border); padding:6px 12px; border-radius:8px; font-size:.7em; cursor:pointer; transition: all .2s; }
-        .toolbar button:hover { color: var(--t1); background: var(--bg-card-hover); }
-        .toolbar button.active { background: var(--gradient); color:#fff; border-color:transparent; }
-
-        /* === ALARMES === */
-        .alarmes-section { display:none; padding:16px; }
-        .alarme-item { display:flex; align-items:center; gap:10px; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding:10px 14px; font-size:.75em; margin-bottom:6px; border-left:3px solid var(--t3); }
-        .alarme-item.tipo-limite { border-left-color: var(--red); }
-        .alarme-item.tipo-taxa { border-left-color: var(--orange); }
-        .alarme-item.tipo-tempo_faixa { border-left-color: var(--blue); }
-        .alarme-item.tipo-saida { border-left-color: var(--green); }
-
-        /* === RESPONSIVE === */
-        @media (max-width: 480px) {
-            .overview-grid { grid-template-columns: repeat(2, 1fr); gap:8px; }
-            .energia-grid { grid-template-columns: 1fr; }
-            .card-value { font-size:1.3em; }
-            .overview-value { font-size:1.5em; }
-            .overview-card.has-gauge { padding-right:58px; }
-            .overview-gauge-canvas { width:42px; height:42px; top:8px; right:8px; }
+        :root {
+            --bg: #0f172a; --surface: #1e293b; --border: #334155;
+            --text: #e2e8f0; --muted: #94a3b8; --accent: #7c6aff;
+            --green: #22c55e; --red: #ef4444; --amber: #f59e0b; --blue: #3b82f6;
         }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        body.light { --bg:#f1f5f9; --surface:#fff; --border:#e2e8f0; --text:#1e293b; --muted:#64748b; }
 
-        /* === SCROLLBAR === */
-        ::-webkit-scrollbar { width:4px; }
-        ::-webkit-scrollbar-track { background: var(--bg1); }
-        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius:4px; }
+        /* HEADER */
+        .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .header-left { display: flex; align-items: center; gap: 10px; }
+        .header-left span:first-child { font-size: 1.3em; }
+        .header-left span:last-child { font-weight: 700; font-size: 1.05em; }
+        .header-right { display: flex; gap: 8px; align-items: center; }
+        .header-right span, .header-right button { cursor: pointer; padding: 4px 8px; border-radius: 6px; border: none; background: transparent; color: var(--text); font-size: .85em; }
+        .header-right button:hover { background: rgba(255,255,255,0.1); }
+        .status-dot { color: var(--green); font-size: .7em; margin-right: 4px; }
 
-        /* === WIDGET / PIP — faixa tipo "ticker" de bolsa, rolando na horizontal === */
-        .btn-icon.widget-on { background: var(--gradient); color:#fff; border-color:transparent; }
-        .widget-ticker-bar { position:relative; display:flex; align-items:center; height:40px; background: var(--bg2); overflow:hidden; }
-        .widget-ticker-viewport { flex:1; overflow:hidden; height:100%; display:flex; align-items:center; }
-        .widget-ticker-track { display:inline-flex; align-items:center; white-space:nowrap; animation: ticker-scroll 26s linear infinite; will-change: transform; }
-        .widget-ticker-track:hover { animation-play-state: paused; }
-        @keyframes ticker-scroll { from{ transform: translateX(0); } to{ transform: translateX(-50%); } }
-        .ticker-item { display:inline-flex; align-items:baseline; gap:5px; padding:0 16px; font-size:.72em; font-weight:700; color: var(--t1); white-space:nowrap; }
-        .ticker-item .tlabel { color: var(--t2); font-weight:500; }
-        .ticker-item.alarm { color: var(--red); }
-        .ticker-sep { color: var(--t3); opacity:.5; font-size:.7em; }
-        .widget-close, .widget-modo { flex-shrink:0; background: var(--bg-card); border:1px solid var(--glass-border); color: var(--t2); border-radius:50%; width:20px; height:20px; font-size:.6em; line-height:1; cursor:pointer; margin:0 4px; }
+        /* TABS */
+        .tabs { display: flex; gap: 4px; padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--border); overflow-x: auto; flex-wrap: nowrap; }
+        .tab { padding: 6px 14px; border-radius: 8px; font-size: .78em; cursor: pointer; white-space: nowrap; border: 1px solid transparent; color: var(--muted); transition: all .2s; }
+        .tab:hover { background: rgba(124,106,255,0.1); }
+        .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-        /* Modo tabela — lista simples com todas as tags de todas as abas, rolável */
-        .widget-tabela-bar { display:flex; flex-direction:column; background: var(--bg2); }
-        .widget-tabela-header { display:flex; align-items:center; justify-content:space-between; padding:6px 8px 6px 12px; border-bottom:1px solid var(--glass-border); flex-shrink:0; }
-        .widget-tabela-header span { font-size:.68em; font-weight:700; color: var(--t1); text-transform:uppercase; letter-spacing:.5px; }
-        .widget-tabela-actions { display:flex; align-items:center; }
-        .widget-tabela-scroll { max-height:320px; overflow-y:auto; padding:2px 0 6px; }
-        .wt-secao { font-size:.6em; color: var(--accent); text-transform:uppercase; letter-spacing:.6px; font-weight:700; padding:8px 12px 3px; }
-        .wt-linha { display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:3px 12px; font-size:.7em; color: var(--t1); }
-        .wt-nome { color: var(--t2); }
-        .wt-valor { font-weight:700; font-family:monospace; white-space:nowrap; }
-        .wt-linha.alarm .wt-valor { color: var(--red); }
-        .wt-linha.alarm .wt-nome { color: var(--red); opacity:.85; }
+        /* LEITOR STATUS */
+        .reader-bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(124,106,255,0.05); border-bottom: 1px solid var(--border); font-size: .75em; }
+        .reader-bar .left { display: flex; align-items: center; gap: 8px; }
+        .reader-bar .right { display: flex; gap: 14px; color: var(--muted); }
 
-        /* Fallback flutuante (quando o navegador não suporta Document Picture-in-Picture) */
-        #widget-fallback { display:none; position:fixed; bottom:16px; right:16px; width:320px; max-height:80vh; background: var(--bg2); border:1px solid var(--glass-border); border-radius: var(--radius); box-shadow: var(--shadow); z-index:500; overflow:hidden; }
-        #widget-fallback.show { display:block; }
+        /* CONTENT */
+        .content { padding: 12px 16px; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .section-title { font-size: .85em; font-weight: 700; color: var(--accent); margin: 16px 0 8px; }
+
+        /* CARDS */
+        .cards-grid { display: flex; flex-direction: column; gap: 6px; }
+        .card { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; gap: 12px; transition: border-color .3s, box-shadow .3s; }
+        .card.alarm-high { border-color: var(--red); box-shadow: 0 0 8px rgba(239,68,68,0.2); }
+        .card.alarm-low-blue { border-color: var(--blue); box-shadow: 0 0 8px rgba(59,130,246,0.2); }
+        .card.alarm-low-orange { border-color: var(--amber); box-shadow: 0 0 8px rgba(245,158,11,0.2); }
+        .card-info { min-width: 140px; flex-shrink: 0; }
+        .card-name { font-size: .75em; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+        .card-value { font-size: 1.3em; font-weight: 700; margin-top: 2px; }
+        .card-unit { font-size: .65em; color: var(--muted); margin-left: 2px; }
+        .card-spark { flex: 1; min-width: 60px; height: 35px; }
+        .card-spark canvas { width: 100%; height: 100%; }
+
+        /* LED */
+        @keyframes ledBlink { 0%,100%{opacity:1} 50%{opacity:.3} }
+        .led { display:inline-block; width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+        .led-green { background:#22c55e; box-shadow:0 0 3px rgba(34,197,94,.5); }
+        .led-yellow { background:#fbbf24; box-shadow:0 0 3px rgba(251,191,36,.5); animation:ledBlink 1s infinite; }
+        .led-red { background:#f87171; box-shadow:0 0 4px rgba(248,113,113,.6); animation:ledBlink .5s infinite; }
+
+        /* ALARMES */
+        .alarm-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:.65em; font-weight:700; }
+        .alarm-badge.high { background:rgba(239,68,68,.15); color:#f87171; }
+        .alarm-badge.low { background:rgba(59,130,246,.15); color:#60a5fa; }
+        .alarm-count { background:var(--red); color:#fff; font-size:.6em; padding:1px 6px; border-radius:8px; margin-left:4px; font-weight:700; }
+
+        /* OVERVIEW GAUGES */
+        .overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+        .overview-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center; }
+        .overview-card .label { font-size: .7em; color: var(--muted); margin-bottom: 6px; }
+        .overview-card .value { font-size: 1.5em; font-weight: 700; }
+
+        /* ALARM LOG */
+        .alarm-log { max-height: 300px; overflow-y: auto; }
+        .alarm-log-item { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: .75em; }
+        .alarm-log-item.active { background: rgba(239,68,68,0.05); }
+
+        /* MODAL HISTÓRICO */
+        .modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.7); z-index:200; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+        .modal-overlay.open { display:flex; }
+        .modal-box { background:var(--surface); border-radius:14px; padding:20px; width:90%; max-width:600px; max-height:85vh; overflow-y:auto; border:1px solid var(--border); }
+        .modal-close { float:right; cursor:pointer; font-size:1.2em; background:none; border:none; color:var(--muted); }
+        .modal-title { font-size:1em; font-weight:700; margin-bottom:12px; }
+        .modal-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:12px 0; }
+        .modal-stat { text-align:center; padding:8px; background:rgba(124,106,255,.05); border-radius:8px; }
+        .modal-stat .val { font-size:1.1em; font-weight:700; }
+        .modal-stat .lbl { font-size:.65em; color:var(--muted); }
+        .time-btns { display:flex; gap:6px; margin:10px 0; }
+        .time-btn { padding:4px 12px; border-radius:6px; border:1px solid var(--border); background:transparent; color:var(--text); font-size:.75em; cursor:pointer; }
+        .time-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+        /* WIDGET ALARME */
+        @keyframes pulseAlarm { 0%,100%{box-shadow:0 0 8px rgba(248,113,113,.4);border-color:#f87171} 50%{box-shadow:0 0 20px rgba(248,113,113,.8);border-color:#ef4444} }
+
+        /* PWA BANNER */
+        .pwa-banner { display:none; position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); padding:12px 16px; z-index:150; }
+        .pwa-banner button { padding:8px 16px; border-radius:8px; border:none; cursor:pointer; font-weight:600; }
+
+        /* ENERGIA */
+        .transformador-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:12px; }
+        .transformador-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; }
+        .transformador-card h3 { font-size:.85em; color:var(--accent); margin-bottom:10px; }
+        .transformador-item { display:flex; justify-content:space-between; padding:4px 0; font-size:.78em; border-bottom:1px solid rgba(255,255,255,.03); }
+
+        @media(max-width:600px) {
+            .overview-grid { grid-template-columns: repeat(2,1fr); }
+            .card-info { min-width: 110px; }
+            .modal-stats { grid-template-columns: repeat(2,1fr); }
+        }
     </style>
 </head>
 <body>
+
+
     <!-- HEADER -->
     <div class="header">
         <div class="header-left">
-            <div class="header-logo">🏭</div>
-            <h1>Utilidades</h1>
+            <span>🏭</span>
+            <span>Utilidades</span>
         </div>
         <div class="header-right">
-            <span class="status-badge" id="conn-status">● Online</span>
-            <button class="btn-icon" onclick="toggleTheme()" id="btn-theme" title="Alternar tema" aria-label="Alternar tema">☀️</button>
-            <button class="btn-icon" onclick="toggleWidget()" id="btn-widget" title="Modo Widget (PIP)" aria-label="Modo Widget (PIP)">🧩</button>
-            <button class="btn-icon" onclick="exportarCSV()" title="Exportar CSV" aria-label="Exportar CSV">📥</button>
-            <button class="btn-icon" onclick="toggleNotificacoes()" id="btn-notif" title="Ativar notificações" aria-label="Ativar notificações">🔔</button>
-            <button class="btn-icon" onclick="logout()" title="Sair" aria-label="Sair">⏻</button>
+            <span><span class="status-dot">●</span> Online</span>
+            <button onclick="toggleTheme()" title="Tema">☀️</button>
+            <button onclick="abrirWidget()" title="Widget">🧩</button>
+            <button onclick="exportCSV()" title="CSV">📥</button>
+            <button onclick="mostrarAba('alarmes')" title="Alarmes">🔔<span id="alarm-badge-header"></span></button>
+            <button onclick="location.href='reader.html'" title="Sair">⏻</button>
         </div>
     </div>
 
     <!-- TABS -->
     <div class="tabs">
-        <button class="tab active" onclick="mudarTab('overview',this)">📊 Visão Geral</button>
-        <button class="tab" onclick="mudarTab('temp',this)">🌡️ Temperaturas</button>
-        <button class="tab" onclick="mudarTab('ar',this)">💨 Ar Comprimido</button>
-        <button class="tab" onclick="mudarTab('cura',this)">🧊 Salas de Cura</button>
-        <button class="tab" onclick="mudarTab('vapor',this)">♨️ Vapor/Água</button>
-        <button class="tab" onclick="mudarTab('energia',this)">⚡ Energia</button>
-        <button class="tab" onclick="mudarTab('alarmes',this)">📋 Alarmes</button>
+        <div class="tab active" onclick="mostrarAba('geral')">📊 Visão Geral</div>
+        <div class="tab" onclick="mostrarAba('temperaturas')">🌡️ Temperaturas</div>
+        <div class="tab" onclick="mostrarAba('ar')">💨 Ar Comprimido</div>
+        <div class="tab" onclick="mostrarAba('cura')">🧊 Salas de Cura</div>
+        <div class="tab" onclick="mostrarAba('vapor')">♨️ Vapor/Água</div>
+        <div class="tab" onclick="mostrarAba('energia')">⚡ Energia</div>
+        <div class="tab" onclick="mostrarAba('alarmes')">📋 Alarmes</div>
     </div>
 
-    <!-- LEITOR STATUS -->
-    <div class="leitor-bar">
-        <div class="leitor-left">
-            <div class="leitor-dot" id="leitor-dot"></div>
-            <span id="leitor-label" style="color:var(--t2)">Leitor: verificando...</span>
+    <!-- READER STATUS -->
+    <div class="reader-bar">
+        <div class="left">
+            <span id="reader-status-dot" style="color:var(--muted)">●</span>
+            <span id="reader-status-text">Leitor: verificando...</span>
         </div>
-        <div class="leitor-right">
-            <span>📖 <span class="val" id="leitor-leituras">0</span></span>
-            <span>⏱️ <span class="val" id="leitor-uptime">00:00</span></span>
+        <div class="right">
+            <span>📖 <span id="reader-leituras">0</span></span>
+            <span>⏱️ <span id="reader-uptime">00:00</span></span>
         </div>
     </div>
-    <div class="last-update" id="last-update">Aguardando dados...</div>
 
-    <!-- CONTEÚDO PRINCIPAL -->
-    <div id="content-area">
-        <!-- Overview (padrão) -->
-        <div id="tab-overview" class="tab-content">
-            <div class="overview-grid" id="overview-grid"></div>
-            <div class="section-container">
-                <div class="section-title">Variáveis em Alarme</div>
-                <div class="cards-grid" id="alarme-cards"></div>
-            </div>
+    <div id="aguardando" style="text-align:center;padding:40px;color:var(--muted)">Aguardando dados...</div>
+
+    <!-- CONTENT -->
+    <div class="content" id="main-content" style="display:none">
+
+        <!-- VISÃO GERAL -->
+        <div class="section active" id="sec-geral">
+            <div class="overview-grid" id="overview-gauges"></div>
+            <div class="section-title">Variáveis em Alarme</div>
+            <div class="cards-grid" id="cards-alarme"></div>
         </div>
 
-        <!-- Temperaturas -->
-        <div id="tab-temp" class="tab-content" style="display:none">
-            <div class="section-container">
-                <div class="cards-grid" id="cards-temp"></div>
-            </div>
+        <!-- TEMPERATURAS -->
+        <div class="section" id="sec-temperaturas">
+            <div class="cards-grid" id="cards-temperaturas"></div>
         </div>
 
-        <!-- Ar Comprimido -->
-        <div id="tab-ar" class="tab-content" style="display:none">
-            <div class="section-container">
-                <div class="cards-grid" id="cards-ar"></div>
-            </div>
+        <!-- AR COMPRIMIDO -->
+        <div class="section" id="sec-ar">
+            <div class="cards-grid" id="cards-ar"></div>
         </div>
 
-        <!-- Salas de Cura -->
-        <div id="tab-cura" class="tab-content" style="display:none">
-            <div class="section-container">
-                <div class="cards-grid" id="cards-cura"></div>
-            </div>
+        <!-- SALAS DE CURA -->
+        <div class="section" id="sec-cura">
+            <div class="cards-grid" id="cards-cura"></div>
         </div>
 
-        <!-- Vapor/Água -->
-        <div id="tab-vapor" class="tab-content" style="display:none">
-            <div class="section-container">
-                <div class="cards-grid" id="cards-vapor"></div>
-            </div>
+        <!-- VAPOR/ÁGUA -->
+        <div class="section" id="sec-vapor">
+            <div class="cards-grid" id="cards-vapor"></div>
         </div>
 
-        <!-- Energia Elétrica -->
-        <div id="tab-energia" class="tab-content" style="display:none">
-            <div class="section-container">
-                <div class="section-title">⚡ Subestações & Transformadores</div>
-                <div class="overview-grid" id="energia-resumo"></div>
-            </div>
-            <div class="energia-grid" id="energia-trafos"></div>
-            <div class="section-container">
-                <div class="section-title">📊 Medições Gerais</div>
-                <div class="cards-grid" id="cards-energia"></div>
-            </div>
+        <!-- ENERGIA -->
+        <div class="section" id="sec-energia">
+            <div class="section-title">⚡ Subestações & Transformadores</div>
+            <div class="transformador-grid" id="transformadores"></div>
+            <div class="section-title" style="margin-top:16px">📊 Medições Gerais</div>
+            <div class="cards-grid" id="cards-energia"></div>
         </div>
 
-        <!-- Alarmes -->
-        <div id="tab-alarmes" class="tab-content" style="display:none">
-            <div class="alarmes-section" style="display:block">
+        <!-- ALARMES -->
+        <div class="section" id="sec-alarmes">
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                    <h2 style="color:var(--accent);font-size:.9em">📋 Log de Alarmes</h2>
-                    <div style="display:flex;gap:6px" id="alarme-filtros"></div>
+                    <span style="font-weight:700;font-size:.9em">📋 Log de Alarmes</span>
+                    <button onclick="limparAlarmes()" style="padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.7em;cursor:pointer">Limpar</button>
                 </div>
-                <div class="overview-grid" id="alarme-resumo" style="margin-bottom:12px"></div>
-                <div id="alarmes-lista"></div>
+                <div class="alarm-log" id="alarm-log"></div>
+                <div id="alarm-resumo" style="margin-top:12px;padding:10px;background:rgba(124,106,255,.05);border-radius:8px;font-size:.75em"></div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL -->
-    <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)this.classList.remove('show')">
-        <div class="modal">
-            <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('show')">✕</button>
-            <h2 id="modal-titulo">—</h2>
-            <div class="modal-valor" id="modal-valor">—</div>
-            <div class="modal-periodo">
-                <button class="active" onclick="mudarPeriodo('1h',this)">1h</button>
-                <button onclick="mudarPeriodo('6h',this)">6h</button>
-                <button onclick="mudarPeriodo('24h',this)">24h</button>
-                <button onclick="mudarPeriodo('7d',this)">7d</button>
+    <!-- MODAL HISTÓRICO -->
+    <div class="modal-overlay" id="modal-historico">
+        <div class="modal-box">
+            <button class="modal-close" onclick="fecharModal()">✕</button>
+            <div class="modal-title" id="modal-titulo">—</div>
+            <div id="modal-valor-atual" style="font-size:1.3em;font-weight:700">—</div>
+            <div class="time-btns">
+                <button class="time-btn active" onclick="carregarHistorico('1h')">1h</button>
+                <button class="time-btn" onclick="carregarHistorico('6h')">6h</button>
+                <button class="time-btn" onclick="carregarHistorico('24h')">24h</button>
+                <button class="time-btn" onclick="carregarHistorico('7d')">7d</button>
             </div>
-            <canvas id="modal-canvas"></canvas>
+            <canvas id="modal-chart" width="560" height="200" style="width:100%;margin:10px 0"></canvas>
             <div class="modal-stats">
-                <div><div class="stat-val" id="stat-min">—</div>Mínimo</div>
-                <div><div class="stat-val" id="stat-med">—</div>Média</div>
-                <div><div class="stat-val" id="stat-max">—</div>Máximo</div>
-                <div><div class="stat-val" id="stat-pts">—</div>Pontos</div>
+                <div class="modal-stat"><div class="val" id="stat-min">—</div><div class="lbl">Mínimo</div></div>
+                <div class="modal-stat"><div class="val" id="stat-avg">—</div><div class="lbl">Média</div></div>
+                <div class="modal-stat"><div class="val" id="stat-max">—</div><div class="lbl">Máximo</div></div>
+                <div class="modal-stat"><div class="val" id="stat-pts">—</div><div class="lbl">Pontos</div></div>
             </div>
         </div>
     </div>
 
-    <!-- WIDGET FLUTUANTE (fallback quando o navegador não suporta Document Picture-in-Picture) -->
-    <div id="widget-fallback"></div>
+    <!-- PWA BANNER -->
+    <div class="pwa-banner" id="pwa-banner">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:.85em">📲 Instalar Utilidades como app?</span>
+            <div style="display:flex;gap:8px">
+                <button onclick="document.getElementById('pwa-banner').style.display='none'" style="background:transparent;color:var(--muted);border:1px solid var(--border)">Depois</button>
+                <button onclick="instalarPWA()" style="background:var(--accent);color:#fff">Instalar</button>
+            </div>
+        </div>
+    </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <!-- FIREBASE SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-    
+
     <script>
-    (function(){
-        firebase.initializeApp({apiKey:"AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",authDomain:"dshutili.firebaseapp.com",databaseURL:"https://dshutili-default-rtdb.firebaseio.com",projectId:"dshutili",storageBucket:"dshutili.firebasestorage.app",messagingSenderId:"1065134772507",appId:"1:1065134772507:web:aed91d6d1953f69cb403be",measurementId:"G-B3NS6YKTLV"});
-        var db=firebase.database();
-        firebase.auth().onAuthStateChanged(function(u){if(!u)window.location.href='index.html';else initDashboard()});
-
-        // ===== TAG CONFIG =====
-        var tagConfig={
-            "TO8001_2_3_4":{nome:"Torres C.A.G.",grupo:"temp",u:"°C",limiteAlto:32,limiteBaixo:null,escalaMin:20,escalaMax:35,corAlto:"red",corBaixo:null},
-            "TO8006_Retorno":{nome:"Torre Wafer",grupo:"temp",u:"°C",limiteAlto:35,limiteBaixo:null,escalaMin:25,escalaMax:40,corAlto:"red",corBaixo:null},
-            "CH8007":{nome:"Chiller 8007",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
-            "CH8008":{nome:"Chiller 8008",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
-            "CH8011_14":{nome:"Chillers 8011/14",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
-            "CV8004_Retorno":{nome:"Sala de Gordura",grupo:"temp",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:35,escalaMax:55,corAlto:"red",corBaixo:null},
-            "Agua_6C":{nome:"Água Gelada 6°C",grupo:"temp",u:"°C",limiteAlto:8,limiteBaixo:null,escalaMin:3,escalaMax:10,corAlto:"red",corBaixo:null},
-            "Ar_Comp_DM":{nome:"Ar Comp Dry Mix",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.5,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
-            "Ar_Comp_DM_Boge":{nome:"Ar Comp Boge",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.0,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
-            "Ar_Comp_Choco":{nome:"Ar Comp Chocolate",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.5,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
-            "Vacuo_Dry_Mix":{nome:"Vácuo Dry Mix",grupo:"ar",u:"Pol Hg",limiteAlto:null,limiteBaixo:15,escalaMin:10,escalaMax:30,corAlto:null,corBaixo:"red"},
-            "Pressao_Cavalete_BG":{nome:"Pressão Cavalete B&G",grupo:"vapor",u:"bar",limiteAlto:null,limiteBaixo:10,escalaMin:8,escalaMax:15,corAlto:null,corBaixo:"red"},
-            "Pressao_Vapor_Choco":{nome:"Pressão Vapor Choco",grupo:"vapor",u:"bar",limiteAlto:null,limiteBaixo:5,escalaMin:3,escalaMax:10,corAlto:null,corBaixo:"red"},
-            "Nivel_TQ_CD8006_7":{nome:"Nível TQ CD8006/7",grupo:"vapor",u:"%",limiteAlto:null,limiteBaixo:40,escalaMin:20,escalaMax:100,corAlto:null,corBaixo:"red"},
-            "Temperatura_Ar_Comp_Chocolate":{nome:"Temp Ar Choco",grupo:"ar",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:25,escalaMax:60,corAlto:"orange",corBaixo:null},
-            "Temperatura_Ar_Comp_BG":{nome:"Temp Ar B&G",grupo:"ar",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:25,escalaMax:60,corAlto:"orange",corBaixo:null},
-            "Umidade_Ar_Comp_Chocolate":{nome:"Umidade Ar Choco",grupo:"ar",u:"%",limiteAlto:25,limiteBaixo:null,escalaMin:0,escalaMax:35,corAlto:"red",corBaixo:null},
-            "Umidade_Ar_Comp_BG":{nome:"Umidade Ar B&G",grupo:"ar",u:"%",limiteAlto:25,limiteBaixo:null,escalaMin:0,escalaMax:35,corAlto:"red",corBaixo:null},
-            "Temperatura_Sala_Cura_Bubba":{nome:"Sala Cura Bubba",grupo:"cura",u:"°C",limiteAlto:17,limiteBaixo:null,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
-            "Temperatura_Sala_Cura_Chiclets":{nome:"Sala Cura Chiclets",grupo:"cura",u:"°C",limiteAlto:14,limiteBaixo:null,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
-            "Temperatura_Sala_Cura_Trident":{nome:"Sala Cura Trident",grupo:"cura",u:"°C",limiteAlto:15,limiteBaixo:null,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
-            "Umidade_Sala_Cura_Bubba":{nome:"Umid. Cura Bubba",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
-            "Umidade_Sala_Cura_Chiclets":{nome:"Umid. Cura Chiclets",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
-            "Umidade_Sala_Cura_Trident":{nome:"Umid. Cura Trident",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"}
+        // ============================================
+        // CONFIGURAÇÃO DAS TAGS
+        // ============================================
+        const tagConfig = {
+            'TO8001_4':     { nome:'TO8001/2/3/4', unidade:'°C', grupo:'temperaturas', limiteAlto:30, limiteBaixo:18, corAlto:'red', corBaixo:'blue' },
+            'TO8006':       { nome:'TO8006 Retorno', unidade:'°C', grupo:'temperaturas', limiteAlto:35, limiteBaixo:20, corAlto:'red', corBaixo:'blue' },
+            'CH8007':       { nome:'CH8007', unidade:'°C', grupo:'temperaturas', limiteAlto:2, limiteBaixo:-8, corAlto:'red', corBaixo:'blue' },
+            'CH8008':       { nome:'CH8008', unidade:'°C', grupo:'temperaturas', limiteAlto:2, limiteBaixo:-8, corAlto:'red', corBaixo:'blue' },
+            'CH8011_14':    { nome:'CH8011/14', unidade:'°C', grupo:'temperaturas', limiteAlto:2, limiteBaixo:-8, corAlto:'red', corBaixo:'blue' },
+            'CV8004':       { nome:'CV8004 Retorno', unidade:'°C', grupo:'temperaturas', limiteAlto:50, limiteBaixo:35, corAlto:'red', corBaixo:'blue' },
+            'Agua6C':       { nome:'Água 6°C', unidade:'°C', grupo:'temperaturas', limiteAlto:9, limiteBaixo:3, corAlto:'red', corBaixo:'blue' },
+            'PressaoVapor': { nome:'Pressão Vapor', unidade:'bar', grupo:'vapor', limiteAlto:8.5, limiteBaixo:5.5, corAlto:'red', corBaixo:'red' },
+            'VacuoSist':    { nome:'Vácuo Sistema', unidade:'mmHg', grupo:'vapor', limiteAlto:-200, limiteBaixo:-600, corAlto:'red', corBaixo:'red' },
+            'ArComp1':      { nome:'Ar Comprimido 1', unidade:'bar', grupo:'ar', limiteAlto:8.5, limiteBaixo:5.8, corAlto:'blue', corBaixo:'red' },
+            'ArComp2':      { nome:'Ar Comprimido 2', unidade:'bar', grupo:'ar', limiteAlto:8.5, limiteBaixo:5.8, corAlto:'blue', corBaixo:'red' },
+            'ArComp3':      { nome:'Ar Comprimido 3', unidade:'bar', grupo:'ar', limiteAlto:8.5, limiteBaixo:5.8, corAlto:'blue', corBaixo:'red' },
+            'TempCuraChoc': { nome:'Temp Cura Chocolate', unidade:'°C', grupo:'cura', limiteAlto:22, limiteBaixo:16, corAlto:'red', corBaixo:'blue' },
+            'UmidCuraChoc': { nome:'Umid Cura Chocolate', unidade:'%', grupo:'cura', limiteAlto:55, limiteBaixo:35, corAlto:'red', corBaixo:'blue' },
+            'TempCuraChiclets': { nome:'Temp Cura Chiclets', unidade:'°C', grupo:'cura', limiteAlto:25, limiteBaixo:18, corAlto:'red', corBaixo:'blue' },
+            'UmidCuraChiclets': { nome:'Umid Cura Chiclets', unidade:'%', grupo:'cura', limiteAlto:45, limiteBaixo:25, corAlto:'red', corBaixo:'blue' },
+            'TempCuraTrident': { nome:'Temp Cura Trident', unidade:'°C', grupo:'cura', limiteAlto:25, limiteBaixo:18, corAlto:'red', corBaixo:'blue' },
+            'UmidCuraTrident': { nome:'Umid Cura Trident', unidade:'%', grupo:'cura', limiteAlto:45, limiteBaixo:25, corAlto:'red', corBaixo:'blue' }
         };
 
-        // ===== ENERGIA CONFIG =====
-        var energiaConfig={
-            trafos:[
-                {id:"TRAFO_01",nome:"Trafo 01 - Sub. Principal",potencia:1500,u:"kVA"},
-                {id:"TRAFO_02",nome:"Trafo 02 - Chocolate",potencia:1000,u:"kVA"},
-                {id:"TRAFO_03",nome:"Trafo 03 - Dry Mix / B&G",potencia:750,u:"kVA"},
-                {id:"TRAFO_04",nome:"Trafo 04 - Utilidades",potencia:1000,u:"kVA"},
-                {id:"TRAFO_05",nome:"Trafo 05 - Utilidades",potencia:1000,u:"kVA"}
-            ],
-            medicoes:[
-                {id:"Demanda_Total",nome:"Demanda Total",u:"kW",limiteAlto:3500,escalaMax:4000},
-                {id:"FP_Geral",nome:"Fator de Potência",u:"",limiteBaixo:0.92,escalaMin:0.85,escalaMax:1.0},
-                {id:"Consumo_Dia",nome:"Consumo Hoje",u:"kWh"},
-                {id:"Tensao_Entrada",nome:"Tensão Entrada",u:"kV",limiteAlto:14.2,limiteBaixo:12.6,escalaMin:12,escalaMax:15}
-            ]
+        // ============================================
+        // VARIÁVEIS GLOBAIS
+        // ============================================
+        let db, dadosAtuais = {}, sparkData = {}, alarmLog = [], popupWindow = null;
+        let tagTimestamps = {};
+        let deferredPrompt = null;
+        const HISTORY_MAX = 60;
+
+        // ============================================
+        // FIREBASE
+        // ============================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBLx0ECcSQdS8uKnaXzDIuygK7Hi3JTcuU",
+            authDomain: "dshutiliti.firebaseapp.com",
+            databaseURL: "https://dshutiliti-default-rtdb.firebaseio.com",
+            projectId: "dshutiliti",
+            storageBucket: "dshutiliti.appspot.com",
+            messagingSenderId: "606aborede894",
+            appId: "1:606071894:web:your_app_id",
+            measurementId: "G-B3NS6YKTLV"
         };
 
-        // ===== VARIÁVEIS GLOBAIS =====
-        var historico={},MAX_HIST=30,ultimosDados=null,ultimoTimestamp=null;
-        var tabAtual='overview',modalTagAtual=null,notificacoesAtivas=false,alarmesAtivosNotif={};
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
 
-        // ===== TABS =====
-        window.mudarTab=function(tab,btn){
-            tabAtual=tab;
-            document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});
-            btn.classList.add('active');
-            document.querySelectorAll('.tab-content').forEach(function(c){c.style.display='none'});
-            var el=document.getElementById('tab-'+tab);if(el)el.style.display='block';
-            if(ultimosDados)renderAll(ultimosDados);
-        };
-
-        // ===== INIT =====
-        // Renderizar a cada valor recebido do Firebase pode gerar trabalho de DOM/canvas à toa se o
-        // leitor publicar com muita frequência. O histórico (sparklines) é atualizado a cada tick —
-        // é barato e mantém a densidade dos dados — mas o render pesado (grid, gauges, cards, widget)
-        // é limitado a no máximo ~1x a cada RENDER_MIN_INTERVAL ms (primeira atualização é imediata).
-        var RENDER_MIN_INTERVAL=800,renderTimer=null,ultimaRenderizacao=0;
-        function agendarRender(){
-            if(renderTimer)return;
-            var espera=Math.max(0,RENDER_MIN_INTERVAL-(Date.now()-ultimaRenderizacao));
-            renderTimer=setTimeout(function(){
-                renderTimer=null;ultimaRenderizacao=Date.now();
-                renderAll(ultimosDados);atualizarIndicadorTempo();
-                verificarAlarmesNotif(ultimosDados);atualizarWidget(ultimosDados);
-            },espera);
+        // ============================================
+        // TIMESTAMPS & LED DE REDE
+        // ============================================
+        function registrarTimestamp(tagId) {
+            tagTimestamps[tagId] = Date.now();
         }
 
-        function initDashboard(){
-            db.ref('current').on('value',function(snap){
-                var data=snap.val();if(!data)return;
-                ultimosDados=data;ultimoTimestamp=data._timestamp||Date.now();
-                atualizarHistorico(data);agendarRender();
-            });
-            db.ref('leitor_status').on('value',function(snap){atualizarStatusLeitor(snap.val())});
-            db.ref('.info/connected').on('value',function(snap){
-                var el=document.getElementById('conn-status');
-                if(snap.val()){el.textContent='● Online';el.className='status-badge'}
-                else{el.textContent='● Offline';el.className='status-badge offline'}
-            });
+        function getLedClass(tagId) {
+            var ts = tagTimestamps[tagId];
+            if (!ts) return 'led-red';
+            var diff = (Date.now() - ts) / 1000;
+            if (diff < 30) return 'led-green';
+            if (diff <= 120) return 'led-yellow';
+            return 'led-red';
         }
 
-        // ===== RENDER ALL =====
-        function renderAll(data){
-            if(tabAtual==='overview')renderOverview(data);
-            else if(tabAtual==='energia')renderEnergia(data);
-            else if(tabAtual==='alarmes')renderAlarmes();
-            else renderGrupo(tabAtual,data);
+        function getLedTitle(tagId) {
+            var ts = tagTimestamps[tagId];
+            if (!ts) return 'Sem dados recebidos';
+            var diff = Math.round((Date.now() - ts) / 1000);
+            if (diff < 30) return 'Atualizado há ' + diff + 's';
+            if (diff <= 120) return 'Atraso: ' + diff + 's';
+            return 'SEM ATUALIZAÇÃO há ' + diff + 's';
         }
 
-        // ===== OVERVIEW COM GAUGES =====
-        // Tags físicas mostradas na Visão Geral, cada uma com sua própria faixa (min/max do gauge)
-        // e direção de perigo (perigoAlto=true quando valor alto é ruim, ex: água quente).
-        var fisicoConfig={
-            agua:{tag:'Agua_6C',min:3,max:10,perigoAlto:true},
-            arDM:{tag:'Ar_Comp_DM',min:4,max:8,perigoAlto:false},
-            arChoco:{tag:'Ar_Comp_Choco',min:4,max:8,perigoAlto:false},
-            vaporBG:{tag:'Pressao_Cavalete_BG',min:8,max:15,perigoAlto:false},
-            vaporChoco:{tag:'Pressao_Vapor_Choco',min:3,max:10,perigoAlto:false},
-            vacuo:{tag:'Vacuo_Dry_Mix',min:10,max:30,perigoAlto:false}
-        };
+        // ============================================
+        // LISTENER FIREBASE — CURRENT
+        // ============================================
+        db.ref('current').on('value', function(snap) {
+            var dados = snap.val();
+            if (!dados) return;
 
-        function clamp01(n){return Math.max(0,Math.min(1,n))}
+            document.getElementById('aguardando').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
 
-        function calcOverviewStats(data){
-            var totalVars=0,emAlarme=0,normal=0;
-            var keys=Object.keys(data);
-            for(var i=0;i<keys.length;i++){
-                if(keys[i].startsWith('_'))continue;
-                var valor=getVal(data,keys[i]);
-                if(valor===null)continue;totalVars++;
-                var alarm=getAlarmInfo(keys[i],valor);
-                if(alarm.tipo!=='none')emAlarme++;else normal++;
-            }
-            var pctOk=totalVars>0?Math.round((normal/totalVars)*100):0;
-
-            var fisico={};
-            Object.keys(fisicoConfig).forEach(function(chave){
-                var f=fisicoConfig[chave],val=getVal(data,f.tag);
-                fisico[chave]={
-                    val:val,
-                    alarm:val!==null&&getAlarmInfo(f.tag,val).tipo!=='none',
-                    pct:val!==null?clamp01((val-f.min)/(f.max-f.min)):0,
-                    perigoAlto:f.perigoAlto
-                };
+            Object.keys(dados).forEach(function(key) {
+                if (tagConfig[key] !== undefined) {
+                    dadosAtuais[key] = dados[key];
+                    registrarTimestamp(key);
+                    if (!sparkData[key]) sparkData[key] = [];
+                    sparkData[key].push(parseFloat(dados[key]));
+                    if (sparkData[key].length > HISTORY_MAX) sparkData[key].shift();
+                }
             });
 
-            return{totalVars:totalVars,emAlarme:emAlarme,normal:normal,pctOk:pctOk,fisico:fisico};
-        }
+            atualizarTudo();
+        });
 
-        function overviewCardHTML(id,label,valorTxt,subTxt,alarm){
-            var corTxt=alarm?'background:linear-gradient(135deg,var(--red),var(--orange));-webkit-background-clip:text;-webkit-text-fill-color:transparent':'';
-            return '<div class="overview-card has-gauge"><div class="overview-label">'+label+'</div><div class="overview-value" style="'+corTxt+'">'+valorTxt+'</div><div class="overview-sub">'+subTxt+'</div><canvas id="'+id+'" width="120" height="120" class="overview-gauge-canvas"></canvas></div>';
-        }
+        // ============================================
+        // LISTENER FIREBASE — READER STATUS
+        // ============================================
+        db.ref('reader').on('value', function(snap) {
+            var r = snap.val();
+            if (!r) return;
+            var dot = document.getElementById('reader-status-dot');
+            var txt = document.getElementById('reader-status-text');
+            var leituras = document.getElementById('reader-leituras');
+            var uptime = document.getElementById('reader-uptime');
 
-        // Rótulos e unidades dos cards físicos, na ordem em que aparecem na Visão Geral
-        var fisicoCards=[
-            {chave:'agua',label:'🌡️ Água 6°C',sub:'°C · gelada'},
-            {chave:'arDM',label:'💨 Ar Comp. DM',sub:'bar'},
-            {chave:'arChoco',label:'💨 Ar Comp. Choco',sub:'bar'},
-            {chave:'vaporBG',label:'♨️ Vapor B&G',sub:'bar'},
-            {chave:'vaporChoco',label:'♨️ Vapor Choco',sub:'bar'},
-            {chave:'vacuo',label:'🌀 Vácuo',sub:'Pol Hg'}
-        ];
-
-        // Renderiza os gauges do painel (usado na Visão Geral)
-        function renderOverviewInto(gridEl,data,doc,prefix){
-            if(!gridEl)return;
-            var s=calcOverviewStats(data);
-            var pS=prefix||'';
-            var idSaude=pS+'gauge-saude',idAlarme=pS+'gauge-alarme';
-
-            var html=overviewCardHTML(idSaude,'Saúde Utilidades',s.pctOk+'%',s.normal+'/'+s.totalVars+' OK',false)
-                +overviewCardHTML(idAlarme,'Em Alarme',s.emAlarme,'fora do limite',s.emAlarme>0);
-            fisicoCards.forEach(function(c){
-                var f=s.fisico[c.chave];
-                html+=overviewCardHTML(pS+'gauge-'+c.chave,c.label,f.val!==null?f.val.toFixed(1):'—',c.sub,f.alarm);
-            });
-            gridEl.innerHTML=html;
-
-            setTimeout(function(){
-                desenharGauge(idSaude,s.pctOk,100,'normal',doc);
-                desenharGauge(idAlarme,s.emAlarme,s.totalVars||1,'alarme',doc);
-                fisicoCards.forEach(function(c){
-                    var f=s.fisico[c.chave];
-                    desenharGaugeFisico(pS+'gauge-'+c.chave,f.pct,f.perigoAlto,doc);
-                });
-            },50);
-        }
-
-        function renderOverview(data){
-            renderOverviewInto(document.getElementById('overview-grid'),data,document,'');
-
-            var keys=Object.keys(data);
-            var alarmCards=document.getElementById('alarme-cards');alarmCards.innerHTML='';
-            for(var j=0;j<keys.length;j++){
-                if(keys[j].startsWith('_'))continue;
-                var val2=getVal(data,keys[j]);
-                if(val2===null)continue;
-                var a2=getAlarmInfo(keys[j],val2);
-                if(a2.tipo!=='none')alarmCards.appendChild(criarDataCard(keys[j],val2,getCfg(keys[j])));
+            if (r.ativo && r.ts) {
+                var diff = (Date.now() - r.ts) / 1000;
+                if (diff < 60) {
+                    dot.style.color = 'var(--green)';
+                    txt.textContent = 'Leitor: online';
+                } else {
+                    dot.style.color = 'var(--amber)';
+                    txt.textContent = 'Leitor: sem sinal (' + Math.round(diff) + 's)';
+                }
+            } else {
+                dot.style.color = 'var(--red)';
+                txt.textContent = 'Leitor: offline';
             }
-            if(!alarmCards.innerHTML)alarmCards.innerHTML='<div style="text-align:center;color:var(--t3);padding:20px;font-size:.8em">✅ Tudo normal</div>';
+            if (r.leituras) leituras.textContent = r.leituras;
+            if (r.uptime) uptime.textContent = r.uptime;
+        });
+
+        // ============================================
+        // ATUALIZAR TUDO
+        // ============================================
+        function atualizarTudo() {
+            atualizarCards();
+            atualizarOverview();
+            verificarAlarmes();
+            if (popupWindow && !popupWindow.closed) atualizarWidget();
         }
 
-        // ===== GAUGE (CORTA-GIRO) — contagens (saúde geral / alarmes) =====
-        function desenharGauge(canvasId,valor,maximo,tipo,doc){
-            doc=doc||document;
-            var canvas=doc.getElementById(canvasId);if(!canvas)return;
-            var ctx=canvas.getContext('2d');var w=canvas.width,h=canvas.height;
-            var cx=w/2,cy=h*0.55,r=w*0.38,lw=w*0.12;
-            ctx.clearRect(0,0,w,h);
-            var startAngle=0.75*Math.PI,endAngle=2.25*Math.PI,totalAngle=1.5*Math.PI;
-            ctx.beginPath();ctx.arc(cx,cy,r,startAngle,endAngle);ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();
-            var pct=maximo>0?(valor/maximo):0;pct=Math.max(0,Math.min(1,pct));
-            var valueAngle=startAngle+(pct*totalAngle);
-            var grad=ctx.createLinearGradient(0,0,w,h);
-            if(tipo==='alarme'){
-                var pctA=maximo>0?((maximo-valor)/maximo):0;valueAngle=startAngle+(pctA*totalAngle);
-                grad.addColorStop(0,'#22c55e');grad.addColorStop(0.5,'#eab308');grad.addColorStop(1,'#ef4444');
-            }else{grad.addColorStop(0,'#ef4444');grad.addColorStop(0.5,'#eab308');grad.addColorStop(1,'#22c55e')}
-            if(pct>0||tipo==='alarme'){ctx.beginPath();ctx.arc(cx,cy,r,startAngle,valueAngle);ctx.strokeStyle=grad;ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke()}
-            var nx=cx+Math.cos(valueAngle)*r,ny=cy+Math.sin(valueAngle)*r;
-            ctx.beginPath();ctx.arc(nx,ny,lw*0.4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
-            ctx.beginPath();ctx.arc(cx,cy,lw*0.3,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.3)';ctx.fill();
-        }
+        // ============================================
+        // ATUALIZAR CARDS
+        // ============================================
+        function atualizarCards() {
+            var grupos = {};
+            var alarmeCards = '';
 
-        // ===== GAUGE FÍSICO (água / ar comprimido / vapor / vácuo) =====
-        // pct já vem normalizado 0..1 dentro da faixa da grandeza. perigoAlto=true quando valor alto é ruim
-        // (ex: água quente), perigoAlto=false quando valor baixo é ruim (ex: pressão/vácuo caindo).
-        function desenharGaugeFisico(canvasId,pct,perigoAlto,doc){
-            doc=doc||document;
-            var canvas=doc.getElementById(canvasId);if(!canvas)return;
-            var ctx=canvas.getContext('2d');var w=canvas.width,h=canvas.height;
-            var cx=w/2,cy=h*0.55,r=w*0.38,lw=w*0.12;
-            ctx.clearRect(0,0,w,h);
-            var startAngle=0.75*Math.PI,endAngle=2.25*Math.PI,totalAngle=1.5*Math.PI;
-            ctx.beginPath();ctx.arc(cx,cy,r,startAngle,endAngle);ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();
-            pct=Math.max(0,Math.min(1,pct||0));
-            var valueAngle=startAngle+(pct*totalAngle);
-            var grad=ctx.createLinearGradient(0,0,w,h);
-            if(perigoAlto){grad.addColorStop(0,'#22c55e');grad.addColorStop(0.5,'#eab308');grad.addColorStop(1,'#ef4444')}
-            else{grad.addColorStop(0,'#ef4444');grad.addColorStop(0.5,'#eab308');grad.addColorStop(1,'#22c55e')}
-            if(pct>0){ctx.beginPath();ctx.arc(cx,cy,r,startAngle,valueAngle);ctx.strokeStyle=grad;ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke()}
-            var nx=cx+Math.cos(valueAngle)*r,ny=cy+Math.sin(valueAngle)*r;
-            ctx.beginPath();ctx.arc(nx,ny,lw*0.4,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
-            ctx.beginPath();ctx.arc(cx,cy,lw*0.3,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.3)';ctx.fill();
-        }
+            Object.keys(tagConfig).forEach(function(key) {
+                var cfg = tagConfig[key];
+                var valor = dadosAtuais[key];
+                if (valor === undefined) return;
 
+                var numVal = parseFloat(valor);
+                var alarmClass = '';
+                var alarmType = '';
 
-        // ===== RENDER GRUPO =====
-        function renderGrupo(grupo,data){
-            var container=document.getElementById('cards-'+grupo);if(!container)return;container.innerHTML='';
-            var keys=Object.keys(tagConfig);
-            for(var i=0;i<keys.length;i++){
-                var cfg=tagConfig[keys[i]];if(cfg.grupo!==grupo)continue;
-                var valor=getVal(data,keys[i]);
-                if(valor===null)valor=0;
-                container.appendChild(criarDataCard(keys[i],valor,cfg));
-            }
-            setTimeout(redesenharSparklines,50);
-        }
-
-        // ===== RENDER ENERGIA =====
-        function renderEnergia(data){
-            var resumo=document.getElementById('energia-resumo');
-            var demanda=getVal(data,'Demanda_Total'),fp=getVal(data,'FP_Geral');
-            var consumo=getVal(data,'Consumo_Dia'),tensao=getVal(data,'Tensao_Entrada');
-            resumo.innerHTML='<div class="overview-card"><div class="overview-label">Demanda Atual</div><div class="overview-value">'+(demanda!==null?demanda.toFixed(0):'—')+'</div><div class="overview-sub">kW</div></div>'
-                +'<div class="overview-card"><div class="overview-label">Fator Potência</div><div class="overview-value">'+(fp!==null?fp.toFixed(3):'—')+'</div><div class="overview-sub">'+(fp!==null&&fp<0.92?'⚠️ Abaixo':'✅ OK')+'</div></div>'
-                +'<div class="overview-card"><div class="overview-label">Consumo Hoje</div><div class="overview-value">'+(consumo!==null?(consumo/1000).toFixed(1):'—')+'</div><div class="overview-sub">MWh</div></div>'
-                +'<div class="overview-card"><div class="overview-label">Tensão</div><div class="overview-value">'+(tensao!==null?tensao.toFixed(1):'—')+'</div><div class="overview-sub">kV</div></div>';
-
-            var trafosDiv=document.getElementById('energia-trafos');trafosDiv.innerHTML='';
-            for(var i=0;i<energiaConfig.trafos.length;i++){
-                var trafo=energiaConfig.trafos[i];
-                var carga=getVal(data,trafo.id+'_Carga'),temp=getVal(data,trafo.id+'_Temp');
-                var corrente=getVal(data,trafo.id+'_Corrente'),status=getVal(data,trafo.id+'_Status');
-                var pctCarga=carga!==null?(carga/trafo.potencia*100):null;
-                var statusClass='online',statusText='Online';
-                if(status===0){statusClass='offline';statusText='Offline'}
-                else if(pctCarga!==null&&pctCarga>85){statusClass='alerta';statusText='Carga Alta'}
-                var card=document.createElement('div');card.className='trafo-card'+(statusClass==='offline'?' offline':'');
-                card.innerHTML='<div class="trafo-header"><span class="trafo-nome">'+trafo.nome+'</span><span class="trafo-status '+statusClass+'">● '+statusText+'</span></div>'
-                    +'<div class="trafo-body"><div class="trafo-donut"><canvas id="donut-'+trafo.id+'" width="160" height="160"></canvas><div class="trafo-donut-label"><div class="trafo-donut-value">'+(pctCarga!==null?pctCarga.toFixed(0)+'%':'—')+'</div><div class="trafo-donut-sub">carga</div></div></div>'
-                    +'<div class="trafo-metrics">'
-                    +'<div class="trafo-metric"><span class="trafo-metric-label">Potência</span><span class="trafo-metric-value">'+(carga!==null?carga.toFixed(0)+' kVA':'—')+'</span></div>'
-                    +'<div class="trafo-metric"><span class="trafo-metric-label">Corrente</span><span class="trafo-metric-value">'+(corrente!==null?corrente.toFixed(1)+' A':'—')+'</span></div>'
-                    +'<div class="trafo-metric"><span class="trafo-metric-label">Temperatura</span><span class="trafo-metric-value'+(temp!==null&&temp>75?' alarm':'')+'">'+(temp!==null?temp.toFixed(0)+'°C':'—')+'</span></div>'
-                    +'<div class="trafo-metric"><span class="trafo-metric-label">Capacidade</span><span class="trafo-metric-value">'+trafo.potencia+' '+trafo.u+'</span></div>'
-                    +'</div></div>';
-                trafosDiv.appendChild(card);
-                if(pctCarga!==null)setTimeout((function(id,pct){return function(){desenharDonut(id,pct)}})(trafo.id,pctCarga),50);
-            }
-
-            var medContainer=document.getElementById('cards-energia');medContainer.innerHTML='';
-            for(var j=0;j<energiaConfig.medicoes.length;j++){
-                var med=energiaConfig.medicoes[j];var val=getVal(data,med.id);
-                if(val===null)continue;
-                var fakeTag={nome:med.nome,grupo:'energia',u:med.u,limiteAlto:med.limiteAlto||null,limiteBaixo:med.limiteBaixo||null,escalaMin:med.escalaMin||null,escalaMax:med.escalaMax||null,corAlto:'red',corBaixo:'orange'};
-                medContainer.appendChild(criarDataCard(med.id,val,fakeTag));
-            }
-        }
-
-        // ===== DONUT =====
-        function desenharDonut(trafoId,pct){
-            var canvas=document.getElementById('donut-'+trafoId);if(!canvas)return;
-            var ctx=canvas.getContext('2d');var w=canvas.width,h=canvas.height;
-            var cx=w/2,cy=h/2,r=60,lw=12;
-            ctx.clearRect(0,0,w,h);
-            ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=lw;ctx.stroke();
-            var angle=(pct/100)*Math.PI*2,startA=-Math.PI/2;
-            var grad=ctx.createLinearGradient(0,0,w,h);
-            if(pct>85){grad.addColorStop(0,'#ef4444');grad.addColorStop(1,'#f97316')}
-            else if(pct>70){grad.addColorStop(0,'#f97316');grad.addColorStop(1,'#eab308')}
-            else{grad.addColorStop(0,'#7c3aed');grad.addColorStop(1,'#06b6d4')}
-            ctx.beginPath();ctx.arc(cx,cy,r,startA,startA+angle);ctx.strokeStyle=grad;ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();
-        }
-
-        // ===== DATA CARD =====
-        function criarDataCard(tagId,valor,cfg){
-            if(!cfg)cfg={nome:tagId,u:'',limiteAlto:null,limiteBaixo:null};
-            var alarm=getAlarmInfo(tagId,valor);
-            var hist=historico[tagId]||[];
-            var tendencia='',tClass='trend-stable';
-            if(hist.length>=2){var d=hist[hist.length-1]-hist[hist.length-2];
-                if(d>0.2){tendencia='▲';tClass='trend-up'}else if(d<-0.2){tendencia='▼';tClass='trend-down'}else{tendencia='─';tClass='trend-stable'}}
-            var alarmClass='';
-            if(alarm.cor==='red')alarmClass=' alarm-red';
-            else if(alarm.cor==='blue')alarmClass=' alarm-blue';
-            else if(alarm.cor==='orange')alarmClass=' alarm-orange';
-            var card=document.createElement('div');card.className='data-card'+alarmClass;
-            card.onclick=function(){abrirModal(tagId)};
-            card.innerHTML='<div class="card-info"><div class="card-name">'+cfg.nome+'</div><div class="card-value">'+valor.toFixed(1)+'<span class="unit">'+(cfg.u||'')+'</span></div></div>'
-                +'<div class="card-spark"><canvas data-tag="'+tagId+'" data-alarm="'+(alarm.cor||'none')+'"></canvas></div>'
-                +'<div class="card-trend '+tClass+'">'+tendencia+'</div>';
-            return card;
-        }
-
-        // ===== SPARKLINES =====
-        function redesenharSparklines(){
-            document.querySelectorAll('.card-spark canvas').forEach(function(canvas){
-                var tagId=canvas.getAttribute('data-tag'),alarmCor=canvas.getAttribute('data-alarm');
-                var hist=historico[tagId]||[],cfg=getCfg(tagId)||{};
-                var rect=canvas.parentElement.getBoundingClientRect();
-                canvas.width=Math.floor(rect.width*2);canvas.height=Math.floor(rect.height*2);
-                if(hist.length>=2)desenharSparkline(canvas,hist,alarmCor,cfg);
-            });
-        }
-        window.addEventListener('resize',function(){setTimeout(redesenharSparklines,100)});
-
-        function desenharSparkline(canvas,valores,alarmCor,cfg){
-            var ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height,p=6;
-            ctx.clearRect(0,0,w,h);if(valores.length<2)return;
-            var min,max;
-            if(cfg.escalaMin!=null&&cfg.escalaMax!=null){min=cfg.escalaMin;max=cfg.escalaMax}
-            else{min=Math.min.apply(null,valores);max=Math.max.apply(null,valores);var mg=(max-min)*0.2||1;min-=mg;max+=mg}
-            var range=max-min||1;
-            function vY(val){var c=Math.max(min,Math.min(max,val));return h-p-((c-min)/range)*(h-p*2)}
-            if(cfg.limiteAlto!=null){ctx.strokeStyle='rgba(239,68,68,0.3)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(0,vY(cfg.limiteAlto));ctx.lineTo(w,vY(cfg.limiteAlto));ctx.stroke();ctx.setLineDash([])}
-            if(cfg.limiteBaixo!=null){ctx.strokeStyle='rgba(59,130,246,0.3)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(0,vY(cfg.limiteBaixo));ctx.lineTo(w,vY(cfg.limiteBaixo));ctx.stroke();ctx.setLineDash([])}
-            var cL='#7c3aed',cF='rgba(124,58,237,0.15)';
-            if(alarmCor==='red'){cL='#ef4444';cF='rgba(239,68,68,0.15)'}
-            else if(alarmCor==='blue'){cL='#3b82f6';cF='rgba(59,130,246,0.15)'}
-            else if(alarmCor==='orange'){cL='#f97316';cF='rgba(249,115,22,0.15)'}
-            ctx.beginPath();for(var i=0;i<valores.length;i++){var x=(i/(valores.length-1))*w,y=vY(valores[i]);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
-            ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();ctx.fillStyle=cF;ctx.fill();
-            ctx.beginPath();for(var j=0;j<valores.length;j++){var px=(j/(valores.length-1))*w,py=vY(valores[j]);if(j===0)ctx.moveTo(px,py);else ctx.lineTo(px,py)}
-            ctx.strokeStyle=cL;ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();
-            ctx.beginPath();ctx.arc(w-2,vY(valores[valores.length-1]),4,0,Math.PI*2);ctx.fillStyle=cL;ctx.fill();
-        }
-
-
-        // ===== MODAL =====
-        function abrirModal(tagId){
-            modalTagAtual=tagId;var cfg=getCfg(tagId)||{};
-            document.getElementById('modal-titulo').textContent=cfg.nome||tagId;
-            var valorAtual='—';if(ultimosDados&&ultimosDados[tagId]){var v=ultimosDados[tagId];
-                valorAtual=(typeof v==='object'&&'v' in v)?v.v.toFixed(1)+' '+(v.u||''):(typeof v==='number'?v.toFixed(1):v)}
-            document.getElementById('modal-valor').textContent=valorAtual;
-            document.getElementById('modal-overlay').classList.add('show');
-            document.querySelectorAll('.modal-periodo button').forEach(function(b){b.classList.remove('active')});
-            document.querySelector('.modal-periodo button').classList.add('active');
-            carregarHistoricoModal(tagId,'1h');
-        }
-        window.mudarPeriodo=function(periodo,btn){
-            document.querySelectorAll('.modal-periodo button').forEach(function(b){b.classList.remove('active')});
-            btn.classList.add('active');if(modalTagAtual)carregarHistoricoModal(modalTagAtual,periodo);
-        };
-        function carregarHistoricoModal(tagId,periodo){
-            var ms={'1h':3600000,'6h':21600000,'24h':86400000,'7d':604800000};
-            var desde=Date.now()-(ms[periodo]||3600000);
-            // limitToLast evita baixar o nó 'history' inteiro em períodos longos (24h/7d) — pega os
-            // registros mais recentes dentro da janela. Se a leitura for muito frequente, o ideal a
-            // médio prazo é o leitor gravar um nó de histórico já agregado (ex: médias por hora).
-            db.ref('history').orderByChild('_timestamp').startAt(desde).limitToLast(3000).once('value').then(function(snap){
-                var dados=snap.val(),pontos=[];
-                if(dados){Object.keys(dados).forEach(function(k){var e=dados[k];
-                    if(e&&e[tagId]!==undefined){var val=(typeof e[tagId]==='object'&&'v' in e[tagId])?e[tagId].v:(typeof e[tagId]==='number'?e[tagId]:null);
-                        if(val!==null)pontos.push({t:e._timestamp||0,v:val})}})}
-                pontos.sort(function(a,b){return a.t-b.t});desenharGraficoModal(pontos,tagId);
-            }).catch(function(){var hist=historico[tagId]||[],pontos=[];
-                for(var i=0;i<hist.length;i++)pontos.push({t:Date.now()-(hist.length-i)*30000,v:hist[i]});desenharGraficoModal(pontos,tagId)});
-        }
-        function desenharGraficoModal(pontos,tagId){
-            var canvas=document.getElementById('modal-canvas');var rect=canvas.getBoundingClientRect();
-            canvas.width=Math.floor(rect.width*2);canvas.height=500;
-            var ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height,pad=40;
-            ctx.clearRect(0,0,w,h);ctx.fillStyle='rgba(255,255,255,0.02)';ctx.fillRect(0,0,w,h);
-            if(pontos.length<2){ctx.fillStyle='#484f58';ctx.font='24px sans-serif';ctx.textAlign='center';ctx.fillText('Sem dados para este período',w/2,h/2);
-                document.getElementById('stat-min').textContent='—';document.getElementById('stat-med').textContent='—';document.getElementById('stat-max').textContent='—';document.getElementById('stat-pts').textContent='0';return}
-            var cfg=getCfg(tagId)||{},valores=pontos.map(function(p){return p.v});
-            var min,max;if(cfg.escalaMin!=null&&cfg.escalaMax!=null){min=cfg.escalaMin;max=cfg.escalaMax}
-            else{min=Math.min.apply(null,valores);max=Math.max.apply(null,valores);var mg=(max-min)*0.15||1;min-=mg;max+=mg}
-            var range=max-min||1;
-            var vMin=Math.min.apply(null,valores),vMax=Math.max.apply(null,valores);
-            var vMed=valores.reduce(function(a,b){return a+b},0)/valores.length;
-            document.getElementById('stat-min').textContent=vMin.toFixed(1);
-            document.getElementById('stat-med').textContent=vMed.toFixed(1);
-            document.getElementById('stat-max').textContent=vMax.toFixed(1);
-            document.getElementById('stat-pts').textContent=pontos.length.toString();
-            function vY(val){var c=Math.max(min,Math.min(max,val));return h-pad-((c-min)/range)*(h-pad*2)}
-            function tX(t){return pad+((t-pontos[0].t)/(pontos[pontos.length-1].t-pontos[0].t))*(w-pad*2)}
-            // Grid
-            ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;
-            for(var g=0;g<5;g++){var gy=pad+g*((h-pad*2)/4);ctx.beginPath();ctx.moveTo(pad,gy);ctx.lineTo(w-pad,gy);ctx.stroke();
-                ctx.fillStyle='#484f58';ctx.font='18px monospace';ctx.textAlign='right';ctx.fillText((max-(g/4)*range).toFixed(1),pad-8,gy+5)}
-            // Limites
-            if(cfg.limiteAlto!=null){ctx.strokeStyle='rgba(239,68,68,0.5)';ctx.lineWidth=1;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(pad,vY(cfg.limiteAlto));ctx.lineTo(w-pad,vY(cfg.limiteAlto));ctx.stroke();ctx.setLineDash([])}
-            if(cfg.limiteBaixo!=null){ctx.strokeStyle='rgba(59,130,246,0.5)';ctx.lineWidth=1;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(pad,vY(cfg.limiteBaixo));ctx.lineTo(w-pad,vY(cfg.limiteBaixo));ctx.stroke();ctx.setLineDash([])}
-            // Cores
-            var alarm=getAlarmInfo(tagId,pontos[pontos.length-1].v);
-            var cL='#7c3aed',cF='rgba(124,58,237,0.15)';
-            if(alarm.cor==='red'){cL='#ef4444';cF='rgba(239,68,68,0.1)'}
-            else if(alarm.cor==='blue'){cL='#3b82f6';cF='rgba(59,130,246,0.1)'}
-            // Fill
-            ctx.beginPath();for(var i=0;i<pontos.length;i++){var x=tX(pontos[i].t),y=vY(pontos[i].v);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
-            ctx.lineTo(tX(pontos[pontos.length-1].t),h-pad);ctx.lineTo(tX(pontos[0].t),h-pad);ctx.closePath();ctx.fillStyle=cF;ctx.fill();
-            // Line
-            ctx.beginPath();for(var j=0;j<pontos.length;j++){var px=tX(pontos[j].t),py=vY(pontos[j].v);if(j===0)ctx.moveTo(px,py);else ctx.lineTo(px,py)}
-            ctx.strokeStyle=cL;ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();
-            // Last dot
-            var lx=tX(pontos[pontos.length-1].t),ly=vY(pontos[pontos.length-1].v);
-            ctx.beginPath();ctx.arc(lx,ly,6,0,Math.PI*2);ctx.fillStyle=cL;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
-            // Time labels
-            ctx.fillStyle='#484f58';ctx.font='16px monospace';ctx.textAlign='center';
-            var nL=Math.min(6,pontos.length);
-            for(var l=0;l<nL;l++){var idx=Math.floor(l*(pontos.length-1)/(nL-1));var lxx=tX(pontos[idx].t);
-                var dt=new Date(pontos[idx].t);ctx.fillText(dt.getHours().toString().padStart(2,'0')+':'+dt.getMinutes().toString().padStart(2,'0'),lxx,h-8)}
-        }
-
-        // ===== ALARMES LOG =====
-        function renderAlarmes(){
-            var desde=Date.now()-(24*60*60*1000);
-            db.ref('alarmes_log').orderByChild('timestamp').startAt(desde).once('value',function(snap){
-                var lista=document.getElementById('alarmes-lista');lista.innerHTML='';
-                var logs=[];snap.forEach(function(c){logs.push(c.val())});
-                logs.sort(function(a,b){return b.timestamp-a.timestamp});
-                var total=0,criticos=0,taxa=0,tempo=0,normalizados=0;
-                for(var i=0;i<logs.length;i++){total++;var a=logs[i];
-                    if(a.tipo==='limite')criticos++;else if(a.tipo==='taxa')taxa++;else if(a.tipo==='tempo_faixa')tempo++;else if(a.tipo==='saida')normalizados++}
-                var resumo=document.getElementById('alarme-resumo');
-                resumo.innerHTML='<div class="overview-card"><div class="overview-label">Total</div><div class="overview-value">'+total+'</div></div>'
-                    +'<div class="overview-card"><div class="overview-label">Críticos</div><div class="overview-value" style="-webkit-text-fill-color:var(--red)">'+criticos+'</div></div>'
-                    +'<div class="overview-card"><div class="overview-label">Taxa</div><div class="overview-value" style="-webkit-text-fill-color:var(--orange)">'+taxa+'</div></div>'
-                    +'<div class="overview-card"><div class="overview-label">Tempo</div><div class="overview-value" style="-webkit-text-fill-color:var(--blue)">'+tempo+'</div></div>'
-                    +'<div class="overview-card"><div class="overview-label">Normalizados</div><div class="overview-value" style="-webkit-text-fill-color:var(--green)">'+normalizados+'</div></div>';
-                for(var j=0;j<Math.min(logs.length,50);j++){var l=logs[j];
-                    var dt=new Date(l.timestamp);var hora=dt.getHours().toString().padStart(2,'0')+':'+dt.getMinutes().toString().padStart(2,'0');
-                    var icone='🚨';if(l.tipo==='taxa')icone='📈';else if(l.tipo==='tempo_faixa')icone='⏱️';else if(l.tipo==='saida')icone='✅';
-                    var div=document.createElement('div');div.className='alarme-item tipo-'+(l.tipo||'limite');
-                    div.innerHTML='<span style="color:var(--t3);font-family:monospace;min-width:50px">'+hora+'</span><span style="font-size:1.2em">'+icone+'</span><span style="flex:1;color:var(--t1)">'+(l.mensagem||l.tagId)+'</span>';
-                    lista.appendChild(div)}
-                if(!logs.length)lista.innerHTML='<div style="text-align:center;color:var(--t3);padding:30px;font-size:.8em">✅ Nenhum alarme nas últimas 24h</div>';
-            });
-        }
-
-        // ===== HELPERS =====
-        function getVal(data,key){
-            if(!data||!data[key])return null;
-            if(typeof data[key]==='object'&&'v' in data[key])return data[key].v;
-            if(typeof data[key]==='number')return data[key];return null;
-        }
-        // Une tagConfig (temperaturas/ar/cura/vapor) e energiaConfig.medicoes (energia) numa única
-        // busca, para que alarmes, nomes e limites funcionem igual pros dois grupos de tags.
-        function getCfg(tagId){
-            if(tagConfig[tagId])return tagConfig[tagId];
-            for(var i=0;i<energiaConfig.medicoes.length;i++){
-                var m=energiaConfig.medicoes[i];
-                if(m.id===tagId)return{nome:m.nome,grupo:'energia',u:m.u,limiteAlto:m.limiteAlto||null,limiteBaixo:m.limiteBaixo||null,escalaMin:m.escalaMin||null,escalaMax:m.escalaMax||null,corAlto:'red',corBaixo:'orange'};
-            }
-            return null;
-        }
-        function getAlarmInfo(tagId,valor){
-            var cfg=getCfg(tagId);if(!cfg)return{tipo:'none',cor:null};
-            if(cfg.limiteAlto!=null&&valor>cfg.limiteAlto)return{tipo:'alto',cor:cfg.corAlto||'red'};
-            if(cfg.limiteBaixo!=null&&valor<cfg.limiteBaixo)return{tipo:'baixo',cor:cfg.corBaixo||'blue'};
-            return{tipo:'none',cor:null};
-        }
-        function atualizarHistorico(data){
-            var keys=Object.keys(data);
-            for(var i=0;i<keys.length;i++){if(keys[i].startsWith('_'))continue;
-                var valor=getVal(data,keys[i]);
-                if(valor===null)continue;
-                if(!historico[keys[i]])historico[keys[i]]=[];
-                historico[keys[i]].push(valor);
-                if(historico[keys[i]].length>MAX_HIST)historico[keys[i]].shift();
-            }
-        }
-        function atualizarStatusLeitor(status){
-            var dot=document.getElementById('leitor-dot'),label=document.getElementById('leitor-label');
-            if(!status){dot.className='leitor-dot offline';label.textContent='Leitor: desconectado';return}
-            var agora=Date.now(),diff=agora-(status.lastHeartbeat||0);
-            if(diff<30000&&status.ativo){dot.className='leitor-dot';label.textContent='Leitor: ativo'}
-            else{dot.className='leitor-dot offline';label.textContent='Leitor: offline ('+Math.floor(diff/1000)+'s)'}
-            document.getElementById('leitor-leituras').textContent=status.leituras||0;
-            if(status.uptime){var m=Math.floor(status.uptime/60),h=Math.floor(m/60);document.getElementById('leitor-uptime').textContent=h.toString().padStart(2,'0')+':'+String(m%60).padStart(2,'0')}
-            var ovUp=document.getElementById('ov-uptime');if(ovUp&&status.uptime){var m2=Math.floor(status.uptime/60),h2=Math.floor(m2/60);ovUp.textContent=h2+'h'+String(m2%60).padStart(2,'0')}
-        }
-        function atualizarIndicadorTempo(){
-            var el=document.getElementById('last-update');
-            if(ultimosDados&&ultimosDados._readAt)el.textContent='Última atualização: '+ultimosDados._readAt;
-            else el.textContent='Aguardando dados...';
-        }
-
-        // ===== NOTIFICAÇÕES =====
-        function verificarAlarmesNotif(data){
-            if(!notificacoesAtivas)return;
-            var keys=Object.keys(tagConfig);
-            for(var i=0;i<keys.length;i++){
-                var val=getVal(data,keys[i]);if(val===null)continue;
-                var alarm=getAlarmInfo(keys[i],val);
-                if(alarm.tipo!=='none'&&!alarmesAtivosNotif[keys[i]]){
-                    alarmesAtivosNotif[keys[i]]=true;
-                    if(Notification.permission==='granted')new Notification('🚨 '+tagConfig[keys[i]].nome,{body:'Valor: '+val.toFixed(1)+' '+tagConfig[keys[i]].u,icon:'icon-192.png'});
-                }else if(alarm.tipo==='none'){delete alarmesAtivosNotif[keys[i]]}
-            }
-        }
-        function aplicarEstadoNotif(ativo){
-            notificacoesAtivas=ativo;
-            var btn=document.getElementById('btn-notif');if(!btn)return;
-            btn.style.background=ativo?'var(--accent)':'';btn.style.color=ativo?'#fff':'';
-        }
-        window.toggleNotificacoes=function(){
-            if(!notificacoesAtivas){
-                Notification.requestPermission().then(function(p){
-                    if(p==='granted'){aplicarEstadoNotif(true);try{localStorage.setItem('notificacoesAtivas','1')}catch(e){}}
-                });
-            }else{
-                aplicarEstadoNotif(false);try{localStorage.setItem('notificacoesAtivas','0')}catch(e){}
-            }
-        };
-        // Restaura a preferência salva — só reativa automaticamente se a permissão do navegador
-        // ainda estiver concedida (ela pode ter sido revogada fora do app desde a última visita).
-        (function restaurarPreferenciaNotif(){
-            try{
-                if(localStorage.getItem('notificacoesAtivas')==='1'&&typeof Notification!=='undefined'&&Notification.permission==='granted')aplicarEstadoNotif(true);
-            }catch(e){}
-        })();
-
-        // ===== THEME =====
-        window.toggleTheme=function(){
-            var r=document.documentElement,btn=document.getElementById('btn-theme');
-            if(r.style.getPropertyValue('--bg1')==='#f5f5f5'){r.style.setProperty('--bg1','#0d1117');r.style.setProperty('--bg2','#161b22');r.style.setProperty('--t1','#ffffff');r.style.setProperty('--t2','#8b949e');r.style.setProperty('--t3','#484f58');r.style.setProperty('--bg-card','rgba(255,255,255,0.05)');r.style.setProperty('--bg-card-hover','rgba(255,255,255,0.08)');r.style.setProperty('--glass-border','rgba(255,255,255,0.08)');btn.textContent='☀️'}
-            else{r.style.setProperty('--bg1','#f5f5f5');r.style.setProperty('--bg2','#ffffff');r.style.setProperty('--t1','#1a1a1a');r.style.setProperty('--t2','#666666');r.style.setProperty('--t3','#999999');r.style.setProperty('--bg-card','rgba(0,0,0,0.03)');r.style.setProperty('--bg-card-hover','rgba(0,0,0,0.06)');r.style.setProperty('--glass-border','rgba(0,0,0,0.08)');btn.textContent='🌙'}
-        };
-
-        // ===== WIDGET / PICTURE-IN-PICTURE =====
-        // Ao clicar, tenta abrir uma janela real "sempre no topo" via Document Picture-in-Picture
-        // (Chrome/Edge desktop). Se o navegador não suportar, cai para uma faixa flutuante fixa no
-        // canto da própria página. Tem dois modos de conteúdo, alternáveis pelo botão ▦/↺ dentro do
-        // próprio widget — a preferência fica salva pro próximo uso:
-        //   'ticker' — faixa fina rolando (texto + seta de tendência), ocupa o mínimo de espaço
-        //   'tabela' — lista simples e rolável com todas as tags de todas as abas
-        var pipWindow=null,widgetFallbackAtivo=false;
-        var widgetModo='ticker';
-        try{widgetModo=localStorage.getItem('widgetModo')==='tabela'?'tabela':'ticker'}catch(e){}
-
-        window.toggleWidget=function(){
-            if(pipWindow||widgetFallbackAtivo){fecharWidget();return}
-            if('documentPictureInPicture' in window)abrirWidgetPip();
-            else abrirWidgetFallback();
-        };
-
-        // Troca entre os dois modos. Como o tamanho ideal da janela PIP muda de modo pra modo (faixa
-        // fina x lista mais alta), reabrimos o widget no tamanho certo em vez de tentar redimensionar
-        // uma janela PIP já aberta (não é uma operação suportada de forma confiável).
-        window.alternarModoWidget=function(){
-            widgetModo=widgetModo==='ticker'?'tabela':'ticker';
-            try{localStorage.setItem('widgetModo',widgetModo)}catch(e){}
-            if(pipWindow){fecharWidget();abrirWidgetPip()}
-            else if(widgetFallbackAtivo){fecharWidget();abrirWidgetFallback()}
-        };
-
-        function tamanhoJanelaWidget(){
-            return widgetModo==='tabela'?{width:300,height:380}:{width:340,height:46};
-        }
-
-        function abrirWidgetPip(){
-            // Alguns navegadores expõem a API mas nunca resolvem/rejeitam a promise (sem suporte real
-            // ou sem gesto do usuário reconhecido) — depois de 1.5s sem resposta, cai pra faixa flutuante.
-            var settled=false;
-            var timeoutId=setTimeout(function(){if(!settled){settled=true;abrirWidgetFallback()}},1500);
-            documentPictureInPicture.requestWindow(tamanhoJanelaWidget()).then(function(pip){
-                if(settled){try{pip.close()}catch(e){}return}
-                settled=true;clearTimeout(timeoutId);
-                pipWindow=pip;
-                pip.document.title='Utilidades - Widget';
-                pip.document.documentElement.style.cssText=document.documentElement.style.cssText;
-                Array.prototype.forEach.call(document.styleSheets,function(sheet){
-                    try{
-                        var css=Array.prototype.map.call(sheet.cssRules,function(r){return r.cssText}).join('');
-                        var style=pip.document.createElement('style');style.textContent=css;pip.document.head.appendChild(style);
-                    }catch(e){}
-                });
-                pip.addEventListener('pagehide',function(){pipWindow=null;atualizarBotaoWidget(false)},{once:true});
-                atualizarBotaoWidget(true);
-                if(ultimosDados)atualizarWidget(ultimosDados);
-            }).catch(function(){
-                if(settled)return;
-                settled=true;clearTimeout(timeoutId);
-                abrirWidgetFallback();
-            });
-        }
-
-        function abrirWidgetFallback(){
-            widgetFallbackAtivo=true;
-            document.getElementById('widget-fallback').classList.add('show');
-            atualizarBotaoWidget(true);
-            if(ultimosDados)atualizarWidget(ultimosDados);
-        }
-
-        function fecharWidget(){
-            if(pipWindow){try{pipWindow.close()}catch(e){}pipWindow=null}
-            widgetFallbackAtivo=false;
-            var fb=document.getElementById('widget-fallback');
-            fb.classList.remove('show');fb.innerHTML=''; // limpa pra reconstruir do zero no próximo modo
-            atualizarBotaoWidget(false);
-        }
-
-        function atualizarBotaoWidget(ativo){
-            var btn=document.getElementById('btn-widget');if(!btn)return;
-            if(ativo)btn.classList.add('widget-on');else btn.classList.remove('widget-on');
-        }
-
-        function fmtOuTraco(v,casas){return v!==null?v.toFixed(casas==null?1:casas):'—'}
-
-        // Histórico auxiliar só pra calcular tendência de Saúde/Alarmes no ticker (os demais itens já
-        // usam o array 'historico' que o resto do app mantém por tag).
-        var tickerAuxHist={saude:[],alarme:[]};
-        function pushAux(chave,valor){var h=tickerAuxHist[chave];h.push(valor);if(h.length>5)h.shift()}
-        function tendenciaDe(valores){
-            if(!valores||valores.length<2)return{seta:'',cls:'trend-stable'};
-            var d=valores[valores.length-1]-valores[valores.length-2];
-            if(d>0.2)return{seta:'▲',cls:'trend-up'};
-            if(d<-0.2)return{seta:'▼',cls:'trend-down'};
-            return{seta:'─',cls:'trend-stable'};
-        }
-
-        // Monta a lista de itens do ticker a partir das mesmas stats usadas na Visão Geral.
-        // Só texto + seta de tendência, sem emojis.
-        function itensTicker(data){
-            var s=calcOverviewStats(data),f=s.fisico;
-            pushAux('saude',s.pctOk);pushAux('alarme',s.emAlarme);
-            function item(label,valTxt,alarmFlag,hist){
-                var t=tendenciaDe(hist);
-                return{label:label,val:valTxt,alarm:alarmFlag,seta:t.seta,setaCls:t.cls};
-            }
-            return[
-                item('Saúde',s.pctOk+'%',false,tickerAuxHist.saude),
-                item('Alarmes',String(s.emAlarme),s.emAlarme>0,tickerAuxHist.alarme),
-                item('Água 6°C',fmtOuTraco(f.agua.val)+'°C',f.agua.alarm,historico['Agua_6C']),
-                item('Ar DM',fmtOuTraco(f.arDM.val)+' bar',f.arDM.alarm,historico['Ar_Comp_DM']),
-                item('Ar Choco',fmtOuTraco(f.arChoco.val)+' bar',f.arChoco.alarm,historico['Ar_Comp_Choco']),
-                item('Vapor B&G',fmtOuTraco(f.vaporBG.val)+' bar',f.vaporBG.alarm,historico['Pressao_Cavalete_BG']),
-                item('Vapor Choco',fmtOuTraco(f.vaporChoco.val)+' bar',f.vaporChoco.alarm,historico['Pressao_Vapor_Choco']),
-                item('Vácuo',fmtOuTraco(f.vacuo.val)+' PolHg',f.vacuo.alarm,historico['Vacuo_Dry_Mix']),
-                item('Atualizado',data._readAt||'—',false,null)
-            ];
-        }
-
-        function tickerItemsFragment(doc,itens){
-            var frag=doc.createDocumentFragment();
-            itens.forEach(function(it){
-                var itemEl=doc.createElement('span');
-                itemEl.className='ticker-item'+(it.alarm?' alarm':'');
-
-                var labelEl=doc.createElement('span');
-                labelEl.className='tlabel';
-                labelEl.textContent=it.label;
-                itemEl.appendChild(labelEl);
-
-                itemEl.appendChild(doc.createTextNode(String(it.val)));
-
-                if(it.seta){
-                    itemEl.appendChild(doc.createTextNode(' '));
-                    var setaEl=doc.createElement('span');
-                    setaEl.className=it.setaCls;
-                    setaEl.textContent=it.seta;
-                    itemEl.appendChild(setaEl);
+                if (cfg.limiteAlto !== undefined && numVal > cfg.limiteAlto) {
+                    alarmClass = cfg.corAlto === 'blue' ? 'alarm-low-blue' : 'alarm-high';
+                    alarmType = 'high';
+                }
+                if (cfg.limiteBaixo !== undefined && numVal < cfg.limiteBaixo) {
+                    alarmClass = cfg.corBaixo === 'blue' ? 'alarm-low-blue' : cfg.corBaixo === 'orange' ? 'alarm-low-orange' : 'alarm-high';
+                    alarmType = 'low';
                 }
 
-                frag.appendChild(itemEl);
+                var ledClass = getLedClass(key);
+                var ledTitle = getLedTitle(key);
 
-                var sepEl=doc.createElement('span');
-                sepEl.className='ticker-sep';
-                sepEl.textContent='•';
-                frag.appendChild(sepEl);
+                var cardHtml = '<div class="card ' + alarmClass + '" onclick="abrirHistorico(\'' + key + '\')" style="cursor:pointer">' +
+                    '<div class="card-info">' +
+                    '<div class="card-name"><span class="led ' + ledClass + '" data-tag="' + key + '" title="' + ledTitle + '"></span>' + cfg.nome + '</div>' +
+                    '<div class="card-value">' + numVal.toFixed(1) + '<span class="card-unit">' + cfg.unidade + '</span></div>' +
+                    '</div>' +
+                    '<div class="card-spark"><canvas id="spark-' + key + '"></canvas></div>' +
+                    '</div>';
+
+                if (!grupos[cfg.grupo]) grupos[cfg.grupo] = '';
+                grupos[cfg.grupo] += cardHtml;
+
+                if (alarmClass) alarmeCards += cardHtml;
             });
-            return frag;
+
+            // Preenche cada aba
+            Object.keys(grupos).forEach(function(grupo) {
+                var el = document.getElementById('cards-' + grupo);
+                if (el) el.innerHTML = grupos[grupo];
+            });
+
+            // Cards em alarme na visão geral
+            var alarmeEl = document.getElementById('cards-alarme');
+            if (alarmeEl) alarmeEl.innerHTML = alarmeCards || '<div style="text-align:center;padding:16px;color:var(--green);font-size:.85em">✅ Todos os parâmetros normais</div>';
+
+            // Desenha sparklines
+            Object.keys(sparkData).forEach(function(key) {
+                desenharSparkline('spark-' + key, sparkData[key], tagConfig[key]);
+            });
         }
 
-        // Monta os botões de ação (▦/↺ trocar modo, ✕ fechar) como elementos DOM de verdade, com
-        // addEventListener em vez de atributo onclick="...". Isso importa especificamente pra janela
-        // PIP real: ela é um documento/contexto JS separado da página principal, então um onclick="..."
-        // inline tentaria resolver a função dentro do escopo global da PRÓPRIA janela PIP (onde ela não
-        // existe) e falharia silenciosamente. addEventListener aqui usa o closure do script principal
-        // (onde essas funções realmente vivem), então funciona nos dois documentos.
-        function montarAcoesWidget(doc,mostrarFechar){
-            var wrap=doc.createElement('div');
-            wrap.className='widget-tabela-actions';
-            var modoBtn=doc.createElement('button');
-            modoBtn.className='widget-modo';
-            modoBtn.title=widgetModo==='tabela'?'Modo ticker':'Modo tabela';
-            modoBtn.textContent=widgetModo==='tabela'?'↺':'▦';
-            modoBtn.addEventListener('click',function(){alternarModoWidget()});
-            wrap.appendChild(modoBtn);
-            if(mostrarFechar){
-                var fecharBtn=doc.createElement('button');
-                fecharBtn.className='widget-close';
-                fecharBtn.title='Fechar widget';
-                fecharBtn.textContent='✕';
-                fecharBtn.addEventListener('click',function(){toggleWidget()});
-                wrap.appendChild(fecharBtn);
+
+        // ============================================
+        // SPARKLINE
+        // ============================================
+        function desenharSparkline(canvasId, data, cfg) {
+            var canvas = document.getElementById(canvasId);
+            if (!canvas || !data || data.length < 2) return;
+            var ctx = canvas.getContext('2d');
+            var w = canvas.parentElement.offsetWidth;
+            var h = canvas.parentElement.offsetHeight || 35;
+            canvas.width = w * 2; canvas.height = h * 2;
+            ctx.scale(2, 2);
+
+            var pad = 2;
+            var rangeMin = cfg.limiteBaixo !== undefined ? Math.min(cfg.limiteBaixo, Math.min.apply(null, data)) : Math.min.apply(null, data);
+            var rangeMax = cfg.limiteAlto !== undefined ? Math.max(cfg.limiteAlto, Math.max.apply(null, data)) : Math.max.apply(null, data);
+            var range = rangeMax - rangeMin || 1;
+
+            // Faixa normal
+            if (cfg.limiteBaixo !== undefined && cfg.limiteAlto !== undefined) {
+                var yLow = h - pad - ((cfg.limiteBaixo - rangeMin) / range) * (h - pad * 2);
+                var yHigh = h - pad - ((cfg.limiteAlto - rangeMin) / range) * (h - pad * 2);
+                ctx.fillStyle = 'rgba(34,197,94,0.08)';
+                ctx.fillRect(0, yHigh, w, yLow - yHigh);
             }
-            return wrap;
+
+            // Linha
+            ctx.beginPath();
+            ctx.strokeStyle = 'var(--accent)';
+            ctx.lineWidth = 1.5;
+            data.forEach(function(v, i) {
+                var x = pad + (i / (data.length - 1)) * (w - pad * 2);
+                var y = h - pad - ((v - rangeMin) / range) * (h - pad * 2);
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Ponto atual
+            var lastVal = data[data.length - 1];
+            var lastX = w - pad;
+            var lastY = h - pad - ((lastVal - rangeMin) / range) * (h - pad * 2);
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, 3, 0, Math.PI * 2);
+            var emAlarme = (cfg.limiteAlto !== undefined && lastVal > cfg.limiteAlto) || (cfg.limiteBaixo !== undefined && lastVal < cfg.limiteBaixo);
+            ctx.fillStyle = emAlarme ? 'var(--red)' : 'var(--green)';
+            ctx.fill();
         }
 
-        // Renderiza a faixa "ticker" dentro do container informado (documento principal ou da janela PIP).
-        // Importante: o elemento animado (.widget-ticker-track) é criado UMA VEZ e reaproveitado nas
-        // atualizações seguintes — só o innerHTML dele é trocado. Se recriássemos o elemento a cada
-        // atualização (como innerHTML do container inteiro fazia antes), a animação CSS reiniciava do
-        // zero a cada tick e a rolagem nunca chegava no fim.
-        function renderTicker(container,data,mostrarFechar){
-            if(!container)return;
-            var track=container.querySelector('.widget-ticker-track');
-            if(!track){
-                var doc=container.ownerDocument;
-                var bar=doc.createElement('div');bar.className='widget-ticker-bar';
-                var viewport=doc.createElement('div');viewport.className='widget-ticker-viewport';
-                track=doc.createElement('div');track.className='widget-ticker-track';
-                viewport.appendChild(track);
-                bar.appendChild(viewport);
-                bar.appendChild(montarAcoesWidget(doc,mostrarFechar));
-                container.innerHTML='';
-                container.appendChild(bar);
+        // ============================================
+        // OVERVIEW (VISÃO GERAL)
+        // ============================================
+        function atualizarOverview() {
+            var keys = ['TO8001_4', 'PressaoVapor', 'VacuoSist', 'ArComp1', 'TempCuraChoc', 'Agua6C'];
+            var html = '';
+            keys.forEach(function(key) {
+                var cfg = tagConfig[key];
+                if (!cfg || dadosAtuais[key] === undefined) return;
+                var val = parseFloat(dadosAtuais[key]);
+                var emAlarme = (cfg.limiteAlto !== undefined && val > cfg.limiteAlto) || (cfg.limiteBaixo !== undefined && val < cfg.limiteBaixo);
+                var cor = emAlarme ? 'var(--red)' : 'var(--text)';
+                html += '<div class="overview-card"><div class="label">' + cfg.nome + '</div><div class="value" style="color:' + cor + '">' + val.toFixed(1) + '<span style="font-size:.5em;color:var(--muted)"> ' + cfg.unidade + '</span></div></div>';
+            });
+            document.getElementById('overview-gauges').innerHTML = html;
+        }
+
+        // ============================================
+        // ALARMES
+        // ============================================
+        function verificarAlarmes() {
+            var count = 0;
+            Object.keys(tagConfig).forEach(function(key) {
+                var cfg = tagConfig[key];
+                var val = parseFloat(dadosAtuais[key]);
+                if (isNaN(val)) return;
+                var emAlarme = false;
+                var tipo = '';
+                if (cfg.limiteAlto !== undefined && val > cfg.limiteAlto) { emAlarme = true; tipo = 'ALTO'; }
+                if (cfg.limiteBaixo !== undefined && val < cfg.limiteBaixo) { emAlarme = true; tipo = 'BAIXO'; }
+                if (emAlarme) {
+                    count++;
+                    var agora = new Date();
+                    var ultimo = alarmLog.length > 0 ? alarmLog[0] : null;
+                    if (!ultimo || ultimo.key !== key || (agora - new Date(ultimo.ts)) > 60000) {
+                        alarmLog.unshift({ key: key, nome: cfg.nome, valor: val, unidade: cfg.unidade, tipo: tipo, ts: agora.toISOString() });
+                        if (alarmLog.length > 200) alarmLog.pop();
+                    }
+                }
+            });
+
+            // Badge no header
+            var badge = document.getElementById('alarm-badge-header');
+            if (badge) badge.innerHTML = count > 0 ? '<span class="alarm-count">' + count + '</span>' : '';
+
+            // Badge na tab alarmes
+            document.querySelectorAll('.tab').forEach(function(t) {
+                if (t.textContent.indexOf('Alarmes') !== -1) {
+                    var old = t.querySelector('.alarm-count');
+                    if (old) old.remove();
+                    if (count > 0) {
+                        var b = document.createElement('span');
+                        b.className = 'alarm-count';
+                        b.textContent = count;
+                        t.appendChild(b);
+                    }
+                }
+            });
+
+            renderAlarmLog();
+        }
+
+        function renderAlarmLog() {
+            var html = '';
+            alarmLog.forEach(function(a) {
+                var dt = new Date(a.ts);
+                var hora = String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0') + ':' + String(dt.getSeconds()).padStart(2,'0');
+                var badgeClass = a.tipo === 'ALTO' ? 'high' : 'low';
+                html += '<div class="alarm-log-item"><div><span class="alarm-badge ' + badgeClass + '">' + a.tipo + '</span> ' + a.nome + '</div><div>' + a.valor.toFixed(1) + a.unidade + ' — ' + hora + '</div></div>';
+            });
+            var el = document.getElementById('alarm-log');
+            if (el) el.innerHTML = html || '<div style="text-align:center;padding:16px;color:var(--muted);font-size:.8em">Nenhum alarme registrado</div>';
+
+            // Resumo 24h
+            var agora = Date.now();
+            var total24 = alarmLog.filter(function(a) { return (agora - new Date(a.ts).getTime()) < 86400000; }).length;
+            var criticos24 = alarmLog.filter(function(a) { return (agora - new Date(a.ts).getTime()) < 86400000 && a.tipo === 'ALTO'; }).length;
+            var resumoEl = document.getElementById('alarm-resumo');
+            if (resumoEl) resumoEl.innerHTML = '📊 <b>Últimas 24h:</b> Total: ' + total24 + ' | Críticos: ' + criticos24;
+        }
+
+        function limparAlarmes() { alarmLog = []; renderAlarmLog(); }
+
+        // ============================================
+        // WIDGET PiP COM ALARME VISUAL
+        // ============================================
+        function abrirWidget() {
+            if (popupWindow && !popupWindow.closed) { popupWindow.focus(); return; }
+            popupWindow = window.open('', 'widget_utilidades', 'width=280,height=400,top=100,left=' + (screen.width - 300));
+            if (!popupWindow) { alert('Popup bloqueado! Permita popups para este site.'); return; }
+            popupWindow.document.title = '🏭 Utilidades';
+            atualizarWidget();
+        }
+
+        function atualizarWidget() {
+            if (!popupWindow || popupWindow.closed) return;
+            var alarmes = [];
+            var html = '<div style="padding:8px;font-family:sans-serif;font-size:12px;background:#1a1a2e;color:#e0e0e0;min-height:100%">';
+            html += '<div style="font-weight:700;font-size:13px;margin-bottom:8px;color:#a78bfa">🏭 Utilidades</div>';
+
+            Object.keys(tagConfig).forEach(function(key) {
+                var cfg = tagConfig[key];
+                var valor = dadosAtuais[key];
+                if (valor === undefined) return;
+                var numVal = parseFloat(valor);
+                var emAlarme = false;
+                if (cfg.limiteAlto !== undefined && numVal > cfg.limiteAlto) emAlarme = true;
+                if (cfg.limiteBaixo !== undefined && numVal < cfg.limiteBaixo) emAlarme = true;
+                if (emAlarme) alarmes.push({ nome: cfg.nome, valor: numVal, unidade: cfg.unidade });
+
+                var ledClass = getLedClass(key);
+                var corValor = emAlarme ? '#f87171' : '#e0e0e0';
+                var peso = emAlarme ? 'font-weight:700' : '';
+
+                // LED inline no widget
+                var ledColor = ledClass === 'led-green' ? '#22c55e' : ledClass === 'led-yellow' ? '#fbbf24' : '#f87171';
+
+                html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.05)">';
+                html += '<div style="display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + ledColor + '"></span>';
+                html += '<span style="font-size:11px;color:#aaa">' + cfg.nome + '</span></div>';
+                html += '<span style="font-size:11px;color:' + corValor + ';' + peso + '">' + numVal.toFixed(1) + cfg.unidade + '</span>';
+                html += '</div>';
+            });
+
+            html += '</div>';
+
+            try {
+                popupWindow.document.body.innerHTML = html;
+                popupWindow.document.body.style.margin = '0';
+                popupWindow.document.body.style.background = '#1a1a2e';
+                popupWindow.document.body.style.overflow = 'auto';
+
+                if (alarmes.length > 0) {
+                    popupWindow.document.title = '🔴 ' + alarmes.length + ' ALARME(S)';
+                    popupWindow.document.body.style.border = '2px solid #f87171';
+                    popupWindow.document.body.style.animation = 'none';
+                    popupWindow.document.body.offsetHeight; // reflow
+                    var style = popupWindow.document.createElement('style');
+                    style.textContent = '@keyframes pulse{0%,100%{border-color:#f87171;box-shadow:0 0 8px rgba(248,113,113,.4)}50%{border-color:#ef4444;box-shadow:0 0 20px rgba(248,113,113,.8)}}body{animation:pulse 1.5s infinite!important}';
+                    popupWindow.document.head.innerHTML = '';
+                    popupWindow.document.head.appendChild(style);
+                } else {
+                    popupWindow.document.title = '🟢 Utilidades OK';
+                    popupWindow.document.body.style.border = '2px solid #22c55e';
+                    popupWindow.document.head.innerHTML = '';
+                }
+            } catch(e) { /* cross-origin */ }
+        }
+
+        // ============================================
+        // HISTÓRICO (MODAL)
+        // ============================================
+        var modalTag = null, modalPeriodo = '1h';
+
+        function abrirHistorico(key) {
+            modalTag = key;
+            var cfg = tagConfig[key];
+            document.getElementById('modal-titulo').textContent = cfg.nome + ' (' + cfg.unidade + ')';
+            document.getElementById('modal-valor-atual').textContent = parseFloat(dadosAtuais[key] || 0).toFixed(2) + ' ' + cfg.unidade;
+            document.getElementById('modal-historico').classList.add('open');
+            carregarHistorico('1h');
+        }
+
+        function fecharModal() { document.getElementById('modal-historico').classList.remove('open'); }
+
+        function carregarHistorico(periodo) {
+            modalPeriodo = periodo;
+            document.querySelectorAll('.time-btn').forEach(function(b) { b.classList.remove('active'); });
+            event.target.classList.add('active');
+
+            var horas = { '1h': 1, '6h': 6, '24h': 24, '7d': 168 };
+            var desde = Date.now() - (horas[periodo] * 3600000);
+
+            db.ref('history').orderByChild('ts').startAt(desde).once('value', function(snap) {
+                var dados = snap.val();
+                var pontos = [];
+                if (dados) {
+                    Object.values(dados).forEach(function(d) {
+                        if (d[modalTag] !== undefined) {
+                            pontos.push({ ts: d.ts, v: parseFloat(d[modalTag]) });
+                        }
+                    });
+                }
+                pontos.sort(function(a, b) { return a.ts - b.ts; });
+                desenharGraficoModal(pontos);
+            });
+        }
+
+        function desenharGraficoModal(pontos) {
+            var canvas = document.getElementById('modal-chart');
+            var ctx = canvas.getContext('2d');
+            var w = canvas.parentElement.offsetWidth;
+            canvas.width = w * 2; canvas.height = 400;
+            ctx.scale(2, 2);
+            var cw = w, ch = 200, pad = 30;
+
+            ctx.clearRect(0, 0, cw, ch);
+            ctx.fillStyle = 'rgba(124,106,255,0.03)';
+            ctx.fillRect(0, 0, cw, ch);
+
+            if (pontos.length < 2) {
+                ctx.fillStyle = '#666'; ctx.font = '12px sans-serif';
+                ctx.fillText('Sem dados para o período', cw / 2 - 60, ch / 2);
+                ['stat-min','stat-avg','stat-max','stat-pts'].forEach(function(id) { document.getElementById(id).textContent = '—'; });
+                return;
             }
-            var doc=track.ownerDocument;
-            var itens=itensTicker(data);
-            while(track.firstChild)track.removeChild(track.firstChild);
-            track.appendChild(tickerItemsFragment(doc,itens));
-            track.appendChild(tickerItemsFragment(doc,itens));
-        }
 
-        // Monta as linhas da tabela agrupadas por aba: Temperaturas, Ar Comprimido, Salas de Cura,
-        // Vapor/Água (todas vindas de tagConfig) e Energia (vindas de energiaConfig.medicoes).
-        var GRUPOS_TABELA_WIDGET=[['temp','Temperaturas'],['ar','Ar Comprimido'],['cura','Salas de Cura'],['vapor','Vapor/Água']];
-        function linhaTabelaHTML(nome,val,unidade,alarme,casas){
-            return '<div class="wt-linha'+(alarme?' alarm':'')+'"><span class="wt-nome">'+nome+'</span><span class="wt-valor">'+(val!==null?val.toFixed(casas||1):'—')+(unidade?' '+unidade:'')+'</span></div>';
-        }
-        function linhasTabelaWidget(data){
-            var html='';
-            GRUPOS_TABELA_WIDGET.forEach(function(g){
-                var chave=g[0],titulo=g[1];
-                var tags=Object.keys(tagConfig).filter(function(t){return tagConfig[t].grupo===chave});
-                if(!tags.length)return;
-                html+='<div class="wt-secao">'+titulo+'</div>';
-                tags.forEach(function(t){
-                    var cfg=tagConfig[t],val=getVal(data,t);
-                    var alarm=val!==null&&getAlarmInfo(t,val).tipo!=='none';
-                    html+=linhaTabelaHTML(cfg.nome,val,cfg.u,alarm);
-                });
+            var vals = pontos.map(function(p) { return p.v; });
+            var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+            var avg = vals.reduce(function(a, b) { return a + b; }, 0) / vals.length;
+            var range = max - min || 1;
+
+            document.getElementById('stat-min').textContent = min.toFixed(2);
+            document.getElementById('stat-avg').textContent = avg.toFixed(2);
+            document.getElementById('stat-max').textContent = max.toFixed(2);
+            document.getElementById('stat-pts').textContent = pontos.length;
+
+            // Limites
+            var cfg = tagConfig[modalTag];
+            if (cfg.limiteAlto !== undefined) {
+                var yH = ch - pad - ((cfg.limiteAlto - min) / range) * (ch - pad * 2);
+                ctx.strokeStyle = 'rgba(239,68,68,0.3)'; ctx.setLineDash([4, 4]);
+                ctx.beginPath(); ctx.moveTo(pad, yH); ctx.lineTo(cw - pad, yH); ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            if (cfg.limiteBaixo !== undefined) {
+                var yL = ch - pad - ((cfg.limiteBaixo - min) / range) * (ch - pad * 2);
+                ctx.strokeStyle = 'rgba(59,130,246,0.3)'; ctx.setLineDash([4, 4]);
+                ctx.beginPath(); ctx.moveTo(pad, yL); ctx.lineTo(cw - pad, yL); ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Linha
+            ctx.beginPath(); ctx.strokeStyle = '#7c6aff'; ctx.lineWidth = 2;
+            pontos.forEach(function(p, i) {
+                var x = pad + (i / (pontos.length - 1)) * (cw - pad * 2);
+                var y = ch - pad - ((p.v - min) / range) * (ch - pad * 2);
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
             });
-            html+='<div class="wt-secao">Energia</div>';
-            energiaConfig.medicoes.forEach(function(m){
-                var val=getVal(data,m.id);
-                var alarm=val!==null&&getAlarmInfo(m.id,val).tipo!=='none';
-                html+=linhaTabelaHTML(m.nome,val,m.u,alarm,m.id==='FP_Geral'?3:1);
+            ctx.stroke();
+
+            // Eixo Y
+            ctx.fillStyle = '#666'; ctx.font = '10px sans-serif';
+            for (var i = 0; i <= 4; i++) {
+                var yVal = min + (range * i / 4);
+                var yPos = ch - pad - (i / 4) * (ch - pad * 2);
+                ctx.fillText(yVal.toFixed(1), 2, yPos + 3);
+            }
+        }
+
+        // ============================================
+        // TABS
+        // ============================================
+        function mostrarAba(aba) {
+            document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+            document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+            var sec = document.getElementById('sec-' + aba);
+            if (sec) sec.classList.add('active');
+            document.querySelectorAll('.tab').forEach(function(t) {
+                if (t.textContent.toLowerCase().indexOf(aba === 'geral' ? 'geral' : aba === 'ar' ? 'ar' : aba === 'cura' ? 'cura' : aba === 'vapor' ? 'vapor' : aba === 'energia' ? 'energia' : aba === 'alarmes' ? 'alarmes' : aba) !== -1) t.classList.add('active');
             });
-            return html;
         }
 
-        // Preserva a posição de rolagem entre atualizações — sem isso, a lista voltaria pro topo a
-        // cada tick de dados (mesmo problema de fundo do "reinício" do ticker, versão lista).
-        function renderTabelaMode(container,data,mostrarFechar){
-            if(!container)return;
-            var doc=container.ownerDocument;
-            var scrollAnterior=container.querySelector('.widget-tabela-scroll');
-            var scrollTop=scrollAnterior?scrollAnterior.scrollTop:0;
-
-            var bar=doc.createElement('div');bar.className='widget-tabela-bar';
-            var header=doc.createElement('div');header.className='widget-tabela-header';
-            var titulo=doc.createElement('span');titulo.textContent='Utilidades';
-            header.appendChild(titulo);
-            header.appendChild(montarAcoesWidget(doc,mostrarFechar));
-            var scroll=doc.createElement('div');scroll.className='widget-tabela-scroll';
-            scroll.innerHTML=linhasTabelaWidget(data);
-            bar.appendChild(header);bar.appendChild(scroll);
-
-            container.innerHTML='';
-            container.appendChild(bar);
-            scroll.scrollTop=scrollTop;
+        // ============================================
+        // TEMA
+        // ============================================
+        function toggleTheme() {
+            document.body.classList.toggle('light');
+            var btn = document.querySelector('.header-right button');
+            btn.textContent = document.body.classList.contains('light') ? '🌙' : '☀️';
         }
 
-        function renderWidgetConteudo(container,data,mostrarFechar){
-            if(widgetModo==='tabela')renderTabelaMode(container,data,mostrarFechar);
-            else renderTicker(container,data,mostrarFechar);
+        // ============================================
+        // EXPORT CSV
+        // ============================================
+        function exportCSV() {
+            var csv = 'Tag,Nome,Valor,Unidade,Timestamp\n';
+            Object.keys(tagConfig).forEach(function(key) {
+                var cfg = tagConfig[key];
+                var val = dadosAtuais[key] || '';
+                csv += key + ',' + cfg.nome + ',' + val + ',' + cfg.unidade + ',' + new Date().toISOString() + '\n';
+            });
+            var blob = new Blob([csv], { type: 'text/csv' });
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'utilidades_' + new Date().toISOString().slice(0, 10) + '.csv';
+            a.click();
         }
 
-        function atualizarWidget(data){
-            if(pipWindow)renderWidgetConteudo(pipWindow.document.body,data,false);
-            if(widgetFallbackAtivo)renderWidgetConteudo(document.getElementById('widget-fallback'),data,true);
+        // ============================================
+        // PWA
+        // ============================================
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('pwa-banner').style.display = 'block';
+        });
+
+        function instalarPWA() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(function() { document.getElementById('pwa-banner').style.display = 'none'; });
+            }
         }
 
-        // ===== CSV =====
-        window.exportarCSV=function(){
-            if(!ultimosDados)return;var csv='Tag,Valor,Unidade,Timestamp\n';
-            var keys=Object.keys(ultimosDados);
-            for(var i=0;i<keys.length;i++){if(keys[i].startsWith('_'))continue;
-                var v=ultimosDados[keys[i]];var val=(typeof v==='object'&&'v' in v)?v.v:v;var u=(typeof v==='object'&&'u' in v)?v.u:'';
-                csv+=keys[i]+','+val+','+u+','+(ultimosDados._readAt||'')+'\n'}
-            var blob=new Blob([csv],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='utilidades_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
-        };
+        // ============================================
+        // ATUALIZAR LEDs PERIODICAMENTE
+        // ============================================
+        setInterval(function() {
+            document.querySelectorAll('.led[data-tag]').forEach(function(led) {
+                var key = led.getAttribute('data-tag');
+                led.className = 'led ' + getLedClass(key);
+                led.title = getLedTitle(key);
+            });
+        }, 10000);
 
-        // ===== LOGOUT =====
-        window.logout=function(){localStorage.removeItem('modo_acesso');localStorage.removeItem('login_timestamp');firebase.auth().signOut().then(function(){window.location.href='index.html'})};
-
-        // ===== SW + REFRESH =====
-        if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js');
-        setInterval(function(){if(tabAtual!=='overview'&&tabAtual!=='alarmes'&&tabAtual!=='energia')redesenharSparklines()},5000);
-    })();
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(function() {});
+        }
     </script>
 </body>
 </html>
+
