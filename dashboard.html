@@ -288,6 +288,10 @@
                 <div class="section-title">📊 Medições Gerais</div>
                 <div class="cards-grid" id="cards-energia"></div>
             </div>
+            <div class="section-container">
+                <div class="section-title">🔌 Subestações (Tensão/Corrente)</div>
+                <div class="cards-grid" id="cards-sub"></div>
+            </div>
         </div>
         <div id="tab-alarmes" class="tab-content" style="display:none">
             <div class="alarmes-section" style="display:block">
@@ -344,30 +348,58 @@
 
         // ===== TAG CONFIG =====
         var tagConfig={
-            "TO8001_2_3_4":{nome:"Torres C.A.G.",grupo:"temp",u:"°C",limiteAlto:32,limiteBaixo:null,escalaMin:20,escalaMax:35,corAlto:"red",corBaixo:null},
-            "TO8006_Retorno":{nome:"Torre Wafer",grupo:"temp",u:"°C",limiteAlto:35,limiteBaixo:null,escalaMin:25,escalaMax:40,corAlto:"red",corBaixo:null},
-            "CH8007":{nome:"Chiller 8007",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
-            "CH8008":{nome:"Chiller 8008",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
-            "CH8011_14":{nome:"Chillers 8011/14",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
-            "CV8004_Retorno":{nome:"Sala de Gordura",grupo:"temp",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:35,escalaMax:55,corAlto:"red",corBaixo:null},
-            "Agua_6C":{nome:"Água Gelada 6°C",grupo:"temp",u:"°C",limiteAlto:8,limiteBaixo:null,escalaMin:3,escalaMax:10,corAlto:"red",corBaixo:null},
-            "Ar_Comp_DM":{nome:"Ar Comp Dry Mix",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.5,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
-            "Ar_Comp_DM_Boge":{nome:"Ar Comp Boge",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.0,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
-            "Ar_Comp_Choco":{nome:"Ar Comp Chocolate",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.5,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
-            "Vacuo_Dry_Mix":{nome:"Vácuo Dry Mix",grupo:"ar",u:"Pol Hg",limiteAlto:null,limiteBaixo:15,escalaMin:10,escalaMax:30,corAlto:null,corBaixo:"red"},
-            "Pressao_Cavalete_BG":{nome:"Pressão Cavalete B&G",grupo:"vapor",u:"bar",limiteAlto:null,limiteBaixo:10,escalaMin:8,escalaMax:15,corAlto:null,corBaixo:"red"},
-            "Pressao_Vapor_Choco":{nome:"Pressão Vapor Choco",grupo:"vapor",u:"bar",limiteAlto:null,limiteBaixo:5,escalaMin:3,escalaMax:10,corAlto:null,corBaixo:"red"},
-            "Nivel_TQ_CD8006_7":{nome:"Nível TQ CD8006/7",grupo:"vapor",u:"%",limiteAlto:null,limiteBaixo:40,escalaMin:20,escalaMax:100,corAlto:null,corBaixo:"red"},
-            "Temperatura_Ar_Comp_Chocolate":{nome:"Temp Ar Choco",grupo:"ar",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:25,escalaMax:60,corAlto:"orange",corBaixo:null},
-            "Temperatura_Ar_Comp_BG":{nome:"Temp Ar B&G",grupo:"ar",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:25,escalaMax:60,corAlto:"orange",corBaixo:null},
-            "Umidade_Ar_Comp_Chocolate":{nome:"Umidade Ar Choco",grupo:"ar",u:"%",limiteAlto:25,limiteBaixo:null,escalaMin:0,escalaMax:35,corAlto:"red",corBaixo:null},
-            "Umidade_Ar_Comp_BG":{nome:"Umidade Ar B&G",grupo:"ar",u:"%",limiteAlto:25,limiteBaixo:null,escalaMin:0,escalaMax:35,corAlto:"red",corBaixo:null},
-            "Temperatura_Sala_Cura_Bubba":{nome:"Sala Cura Bubba",grupo:"cura",u:"°C",limiteAlto:17,limiteBaixo:null,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
-            "Temperatura_Sala_Cura_Chiclets":{nome:"Sala Cura Chiclets",grupo:"cura",u:"°C",limiteAlto:14,limiteBaixo:null,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
-            "Temperatura_Sala_Cura_Trident":{nome:"Sala Cura Trident",grupo:"cura",u:"°C",limiteAlto:15,limiteBaixo:null,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
-            "Umidade_Sala_Cura_Bubba":{nome:"Umid. Cura Bubba",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
-            "Umidade_Sala_Cura_Chiclets":{nome:"Umid. Cura Chiclets",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
-            "Umidade_Sala_Cura_Trident":{nome:"Umid. Cura Trident",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"}
+            "TO81234":{nome:"Torres C.A.G.",grupo:"temp",u:"°C",limiteAlto:32,limiteBaixo:null,escalaMin:20,escalaMax:35,corAlto:"red",corBaixo:null},
+            "TO86":{nome:"Torre Wafer",grupo:"temp",u:"°C",limiteAlto:35,limiteBaixo:null,escalaMin:25,escalaMax:40,corAlto:"red",corBaixo:null},
+            "CH87":{nome:"Chiller 8007",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
+            "CH88":{nome:"Chiller 8008",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
+            "CH11/14":{nome:"Chillers 8011/14",grupo:"temp",u:"°C",limiteAlto:2,limiteBaixo:-5,escalaMin:-8,escalaMax:5,corAlto:"red",corBaixo:"blue"},
+            "CV84":{nome:"Sala de Gordura",grupo:"temp",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:35,escalaMax:55,corAlto:"red",corBaixo:null},
+            "A6":{nome:"Água Gelada 6°C",grupo:"temp",u:"°C",limiteAlto:8,limiteBaixo:null,escalaMin:3,escalaMax:10,corAlto:"red",corBaixo:null},
+            "ACDM":{nome:"Ar Comp Dry Mix",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.5,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
+            "ACB":{nome:"Ar Comp Boge",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.0,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
+            "ACC":{nome:"Ar Comp Chocolate",grupo:"ar",u:"bar",limiteAlto:null,limiteBaixo:5.5,escalaMin:4,escalaMax:8,corAlto:null,corBaixo:"red"},
+            "VDM":{nome:"Vácuo Dry Mix",grupo:"ar",u:"Pol Hg",limiteAlto:null,limiteBaixo:15,escalaMin:10,escalaMax:30,corAlto:null,corBaixo:"red"},
+            "PVB":{nome:"Pressão Cavalete B&G",grupo:"vapor",u:"bar",limiteAlto:null,limiteBaixo:10,escalaMin:8,escalaMax:15,corAlto:null,corBaixo:"red"},
+            "PVC":{nome:"Pressão Vapor Choco",grupo:"vapor",u:"bar",limiteAlto:null,limiteBaixo:5,escalaMin:3,escalaMax:10,corAlto:null,corBaixo:"red"},
+            "NTQC6/7":{nome:"Nível TQ CD8006/7",grupo:"vapor",u:"%",limiteAlto:null,limiteBaixo:40,escalaMin:20,escalaMax:100,corAlto:null,corBaixo:"red"},
+            "TACC":{nome:"Temp Ar Choco",grupo:"ar",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:25,escalaMax:60,corAlto:"orange",corBaixo:null},
+            "TACB":{nome:"Temp Ar B&G",grupo:"ar",u:"°C",limiteAlto:50,limiteBaixo:null,escalaMin:25,escalaMax:60,corAlto:"orange",corBaixo:null},
+            "UACC":{nome:"Umidade Ar Choco",grupo:"ar",u:"%",limiteAlto:25,limiteBaixo:null,escalaMin:0,escalaMax:35,corAlto:"red",corBaixo:null},
+            "UACB":{nome:"Umidade Ar B&G",grupo:"ar",u:"%",limiteAlto:25,limiteBaixo:null,escalaMin:0,escalaMax:35,corAlto:"red",corBaixo:null},
+            "TSCB":{nome:"Sala Cura Bubba",grupo:"cura",u:"°C",limiteAlto:17,limiteBaixo:null,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
+            "TSCC":{nome:"Sala Cura Chiclets",grupo:"cura",u:"°C",limiteAlto:14,limiteBaixo:null,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
+            "TSCT":{nome:"Sala Cura Trident",grupo:"cura",u:"°C",limiteAlto:15,limiteBaixo:null,escalaMin:8,escalaMax:22,corAlto:"red",corBaixo:"blue"},
+            "USCB":{nome:"Umid. Cura Bubba",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
+            "USCC":{nome:"Umid. Cura Chiclets",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
+            "USCT":{nome:"Umid. Cura Trident",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
+
+            // ===== Subestações (Tensão/Corrente) — leitura do lado rebaixado, 13.8kV nominal =====
+            "TSB1":{nome:"Tensão Sub. 01",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
+            "CSB1":{nome:"Corrente Sub. 01",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB2":{nome:"Tensão Sub. 02",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
+            "CSB2":{nome:"Corrente Sub. 02",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB3":{nome:"Tensão Sub. 03",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
+            "CSB3":{nome:"Corrente Sub. 03",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB4":{nome:"Tensão Sub. 04",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
+            "CSB4":{nome:"Corrente Sub. 04",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB5":{nome:"Tensão Sub. 05",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
+            "CSB5":{nome:"Corrente Sub. 05",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB6":{nome:"Tensão Sub. 06",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
+            "CSB6":{nome:"Corrente Sub. 06",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB7":{nome:"Tensão Sub. 07",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
+            "CSB7":{nome:"Corrente Sub. 07",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB8":{nome:"Tensão Sub. 08",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
+            "CSB8":{nome:"Corrente Sub. 08",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB9":{nome:"Tensão Sub. 09",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
+            "CSB9":{nome:"Corrente Sub. 09",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSBG":{nome:"Tensão Sub. Graham",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
+            "CSBG":{nome:"Corrente Sub. Graham",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB11":{nome:"Tensão Sub. 11",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
+            "CSB11":{nome:"Corrente Sub. 11",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB69T1":{nome:"Tensão Sub. 69 Trafo 1",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
+            "CSB69T1":{nome:"Corrente Sub. 69 Trafo 1",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB69T2":{nome:"Tensão Sub. 69 Trafo 2",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
+            "CSB69T2":{nome:"Corrente Sub. 69 Trafo 2",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"}
         };
 
         // ===== ENERGIA CONFIG =====
@@ -443,12 +475,12 @@
 
         // ===== OVERVIEW COM GAUGES =====
         var fisicoConfig={
-            agua:{tag:'Agua_6C',min:3,max:10,perigoAlto:true},
-            arDM:{tag:'Ar_Comp_DM',min:4,max:8,perigoAlto:false},
-            arChoco:{tag:'Ar_Comp_Choco',min:4,max:8,perigoAlto:false},
-            vaporBG:{tag:'Pressao_Cavalete_BG',min:8,max:15,perigoAlto:false},
-            vaporChoco:{tag:'Pressao_Vapor_Choco',min:3,max:10,perigoAlto:false},
-            vacuo:{tag:'Vacuo_Dry_Mix',min:10,max:30,perigoAlto:false}
+            agua:{tag:'A6',min:3,max:10,perigoAlto:true},
+            arDM:{tag:'ACDM',min:4,max:8,perigoAlto:false},
+            arChoco:{tag:'ACC',min:4,max:8,perigoAlto:false},
+            vaporBG:{tag:'PVB',min:8,max:15,perigoAlto:false},
+            vaporChoco:{tag:'PVC',min:3,max:10,perigoAlto:false},
+            vacuo:{tag:'VDM',min:10,max:30,perigoAlto:false}
         };
 
         function clamp01(n){return Math.max(0,Math.min(1,n))}
@@ -619,6 +651,7 @@
                 var fakeTag={nome:med.nome,grupo:'energia',u:med.u,limiteAlto:med.limiteAlto||null,limiteBaixo:med.limiteBaixo||null,escalaMin:med.escalaMin||null,escalaMax:med.escalaMax||null,corAlto:'red',corBaixo:'orange'};
                 medContainer.appendChild(criarDataCard(med.id,val,fakeTag));
             }
+            renderGrupo('sub',data);
         }
 
         // ===== DONUT =====
@@ -982,12 +1015,12 @@
             return[
                 item('Saúde',s.pctOk+'%',false,tickerAuxHist.saude),
                 item('Alarmes',String(s.emAlarme),s.emAlarme>0,tickerAuxHist.alarme),
-                item('Água 6°C',fmtOuTraco(f.agua.val)+'°C',f.agua.alarm,historico['Agua_6C']),
-                item('Ar DM',fmtOuTraco(f.arDM.val)+' bar',f.arDM.alarm,historico['Ar_Comp_DM']),
-                item('Ar Choco',fmtOuTraco(f.arChoco.val)+' bar',f.arChoco.alarm,historico['Ar_Comp_Choco']),
-                item('Vapor B&G',fmtOuTraco(f.vaporBG.val)+' bar',f.vaporBG.alarm,historico['Pressao_Cavalete_BG']),
-                item('Vapor Choco',fmtOuTraco(f.vaporChoco.val)+' bar',f.vaporChoco.alarm,historico['Pressao_Vapor_Choco']),
-                item('Vácuo',fmtOuTraco(f.vacuo.val)+' PolHg',f.vacuo.alarm,historico['Vacuo_Dry_Mix']),
+                item('Água 6°C',fmtOuTraco(f.agua.val)+'°C',f.agua.alarm,historico['A6']),
+                item('Ar DM',fmtOuTraco(f.arDM.val)+' bar',f.arDM.alarm,historico['ACDM']),
+                item('Ar Choco',fmtOuTraco(f.arChoco.val)+' bar',f.arChoco.alarm,historico['ACC']),
+                item('Vapor B&G',fmtOuTraco(f.vaporBG.val)+' bar',f.vaporBG.alarm,historico['PVB']),
+                item('Vapor Choco',fmtOuTraco(f.vaporChoco.val)+' bar',f.vaporChoco.alarm,historico['PVC']),
+                item('Vácuo',fmtOuTraco(f.vacuo.val)+' PolHg',f.vacuo.alarm,historico['VDM']),
                 item('Atualizado',data._readAt||'—',false,null)
             ];
         }
@@ -1065,7 +1098,7 @@
             track.appendChild(tickerItemsFragment(doc,itens));
         }
 
-        var GRUPOS_TABELA_WIDGET=[['temp','Temperaturas'],['ar','Ar Comprimido'],['cura','Salas de Cura'],['vapor','Vapor/Água']];
+        var GRUPOS_TABELA_WIDGET=[['temp','Temperaturas'],['ar','Ar Comprimido'],['cura','Salas de Cura'],['vapor','Vapor/Água'],['sub','Subestações']];
         function linhaTabelaHTML(nome,val,unidade,alarme,casas){
             return '<div class="wt-linha'+(alarme?' alarm':'')+'"><span class="wt-nome">'+nome+'</span><span class="wt-valor">'+(val!==null?val.toFixed(casas||1):'—')+(unidade?' '+unidade:'')+'</span></div>';
         }
@@ -1147,5 +1180,3 @@
     </script>
 </body>
 </html>
-
-
