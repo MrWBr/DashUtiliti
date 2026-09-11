@@ -283,14 +283,13 @@
                 <div class="section-title">⚡ Subestações & Transformadores</div>
                 <div class="overview-grid" id="energia-resumo"></div>
             </div>
-            <div class="energia-grid" id="energia-trafos"></div>
+            <div class="section-container">
+                <div class="section-title">🔌 Subestações (Tensão/Corrente/Potência)</div>
+                <div class="energia-grid" id="energia-subs"></div>
+            </div>
             <div class="section-container">
                 <div class="section-title">📊 Medições Gerais</div>
                 <div class="cards-grid" id="cards-energia"></div>
-            </div>
-            <div class="section-container">
-                <div class="section-title">🔌 Subestações (Tensão/Corrente)</div>
-                <div class="cards-grid" id="cards-sub"></div>
             </div>
         </div>
         <div id="tab-alarmes" class="tab-content" style="display:none">
@@ -373,44 +372,54 @@
             "USCC":{nome:"Umid. Cura Chiclets",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
             "USCT":{nome:"Umid. Cura Trident",grupo:"cura",u:"%",limiteAlto:35,limiteBaixo:null,escalaMin:15,escalaMax:45,corAlto:"red",corBaixo:"blue"},
 
-            // ===== Subestações (Tensão/Corrente) — leitura do lado rebaixado, 13.8kV nominal =====
-            "TSB1":{nome:"Tensão Sub. 01",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
-            "CSB1":{nome:"Corrente Sub. 01",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
-            "TSB2":{nome:"Tensão Sub. 02",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
-            "CSB2":{nome:"Corrente Sub. 02",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
-            "TSB3":{nome:"Tensão Sub. 03",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
-            "CSB3":{nome:"Corrente Sub. 03",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
-            "TSB4":{nome:"Tensão Sub. 04",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
-            "CSB4":{nome:"Corrente Sub. 04",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
-            "TSB5":{nome:"Tensão Sub. 05",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
-            "CSB5":{nome:"Corrente Sub. 05",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
-            "TSB6":{nome:"Tensão Sub. 06",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
-            "CSB6":{nome:"Corrente Sub. 06",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
-            "TSB7":{nome:"Tensão Sub. 07",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
-            "CSB7":{nome:"Corrente Sub. 07",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
-            "TSB8":{nome:"Tensão Sub. 08",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
-            "CSB8":{nome:"Corrente Sub. 08",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
-            "TSB9":{nome:"Tensão Sub. 09",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
-            "CSB9":{nome:"Corrente Sub. 09",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
-            "TSBG":{nome:"Tensão Sub. Graham",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
-            "CSBG":{nome:"Corrente Sub. Graham",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
-            "TSB11":{nome:"Tensão Sub. 11",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
-            "CSB11":{nome:"Corrente Sub. 11",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
-            "TSB69T1":{nome:"Tensão Sub. 69 Trafo 1",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
-            "CSB69T1":{nome:"Corrente Sub. 69 Trafo 1",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
-            "TSB69T2":{nome:"Tensão Sub. 69 Trafo 2",grupo:"sub",u:"kV",limiteAlto:13.7,limiteBaixo:13.2,escalaMin:12.5,escalaMax:15,corAlto:"red",corBaixo:"blue"},
-            "CSB69T2":{nome:"Corrente Sub. 69 Trafo 2",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"}
+            // ===== Subestações (Tensão/Corrente) — SB08 e Graham(SB10) derivam da SB07, ficam em 380/440V =====
+            "TSB1":{nome:"Tensão SB01 - Chocolate",grupo:"sub",u:"V",limiteAlto:13700,limiteBaixo:13200,escalaMin:12500,escalaMax:15000,corAlto:"red",corBaixo:"blue"},
+            "CSB1":{nome:"Corrente SB01 - Chocolate",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB2":{nome:"Tensão SB02 - Moldados",grupo:"sub",u:"V",limiteAlto:13700,limiteBaixo:13200,escalaMin:12500,escalaMax:15000,corAlto:"red",corBaixo:"blue"},
+            "CSB2":{nome:"Corrente SB02 - Moldados",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB3":{nome:"Tensão SB03 - Páscoa",grupo:"sub",u:"V",limiteAlto:13700,limiteBaixo:13200,escalaMin:12500,escalaMax:15000,corAlto:"red",corBaixo:"blue"},
+            "CSB3":{nome:"Corrente SB03 - Páscoa",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB4":{nome:"Tensão SB04 - Massas",grupo:"sub",u:"V",limiteAlto:13700,limiteBaixo:13200,escalaMin:12500,escalaMax:15000,corAlto:"red",corBaixo:"blue"},
+            "CSB4":{nome:"Corrente SB04 - Massas",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB5":{nome:"Tensão SB05 - Utilidades",grupo:"sub",u:"V",limiteAlto:13700,limiteBaixo:13200,escalaMin:12500,escalaMax:15000,corAlto:"red",corBaixo:"blue"},
+            "CSB5":{nome:"Corrente SB05 - Utilidades",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB6":{nome:"Tensão SB06 - Refeitório",grupo:"sub",u:"V",limiteAlto:13700,limiteBaixo:13200,escalaMin:12500,escalaMax:15000,corAlto:"red",corBaixo:"blue"},
+            "CSB6":{nome:"Corrente SB06 - Refeitório",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB7":{nome:"Tensão SB07 - Dry Mix",grupo:"sub",u:"V",limiteAlto:13700,limiteBaixo:13200,escalaMin:12500,escalaMax:15000,corAlto:"red",corBaixo:"blue"},
+            "CSB7":{nome:"Corrente SB07 - Dry Mix",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB8":{nome:"Tensão SB08 - Queijo",grupo:"sub",u:"V",limiteAlto:460,limiteBaixo:340,escalaMin:300,escalaMax:500,corAlto:"red",corBaixo:"blue"},
+            "CSB8":{nome:"Corrente SB08 - Queijo",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB9":{nome:"Tensão SB09 - B&G",grupo:"sub",u:"V",limiteAlto:13700,limiteBaixo:13200,escalaMin:12500,escalaMax:15000,corAlto:"red",corBaixo:"blue"},
+            "CSB9":{nome:"Corrente SB09 - B&G",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSBG":{nome:"Tensão SB10 - Graham",grupo:"sub",u:"V",limiteAlto:460,limiteBaixo:340,escalaMin:300,escalaMax:500,corAlto:"red",corBaixo:"blue"},
+            "CSBG":{nome:"Corrente SB10 - Graham",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB11":{nome:"Tensão SB11 - B&G",grupo:"sub",u:"V",limiteAlto:13700,limiteBaixo:13200,escalaMin:12500,escalaMax:15000,corAlto:"red",corBaixo:"blue"},
+            "CSB11":{nome:"Corrente SB11 - B&G",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB69T1":{nome:"Tensão TF01 - Sub 69kV",grupo:"sub",u:"V",limiteAlto:13700,limiteBaixo:13200,escalaMin:12500,escalaMax:15000,corAlto:"red",corBaixo:"blue"},
+            "CSB69T1":{nome:"Corrente TF01 - Sub 69kV",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"},
+            "TSB69T2":{nome:"Tensão TF02 - Sub 69kV",grupo:"sub",u:"V",limiteAlto:13700,limiteBaixo:13200,escalaMin:12500,escalaMax:15000,corAlto:"red",corBaixo:"blue"},
+            "CSB69T2":{nome:"Corrente TF02 - Sub 69kV",grupo:"sub",u:"A",limiteAlto:250,limiteBaixo:0,escalaMin:0,escalaMax:300,corAlto:"red",corBaixo:"blue"}
         };
+
+        // ===== SUBESTAÇÕES / CUBÍCULOS (blocos, sem alarme visual — alarme fica só na lista principal) =====
+        var subestacoesConfig=[
+            {nome:"Cubículo SB01 - Chocolate",tagV:"TSB1",tagA:"CSB1"},
+            {nome:"Cubículo SB02 - Moldados",tagV:"TSB2",tagA:"CSB2"},
+            {nome:"Cubículo SB03 - Páscoa",tagV:"TSB3",tagA:"CSB3"},
+            {nome:"Cubículo SB04 - Massas",tagV:"TSB4",tagA:"CSB4"},
+            {nome:"Cubículo SB05 - Utilidades",tagV:"TSB5",tagA:"CSB5"},
+            {nome:"Cubículo SB06 - Refeitório",tagV:"TSB6",tagA:"CSB6"},
+            {nome:"Cubículo SB07 - Dry Mix",tagV:"TSB7",tagA:"CSB7"},
+            {nome:"Cubículo SB08 - Queijo",tagV:"TSB8",tagA:"CSB8"},
+            {nome:"Cubículo SB09 - B&G",tagV:"TSB9",tagA:"CSB9"},
+            {nome:"Cubículo SB10 - Graham",tagV:"TSBG",tagA:"CSBG"},
+            {nome:"Cubículo SB11 - B&G",tagV:"TSB11",tagA:"CSB11"},
+            {nome:"Trafo TF01 - Sub 69kV",tagV:"TSB69T1",tagA:"CSB69T1"},
+            {nome:"Trafo TF02 - Sub 69kV",tagV:"TSB69T2",tagA:"CSB69T2"}
+        ];
 
         // ===== ENERGIA CONFIG =====
         var energiaConfig={
-            trafos:[
-                {id:"TRAFO_01",nome:"Trafo 01 - Sub. Principal",potencia:1500,u:"kVA"},
-                {id:"TRAFO_02",nome:"Trafo 02 - Chocolate",potencia:1000,u:"kVA"},
-                {id:"TRAFO_03",nome:"Trafo 03 - Dry Mix / B&G",potencia:750,u:"kVA"},
-                {id:"TRAFO_04",nome:"Trafo 04 - Utilidades",potencia:1000,u:"kVA"},
-                {id:"TRAFO_05",nome:"Trafo 05 - Utilidades",potencia:1000,u:"kVA"}
-            ],
             medicoes:[
                 {id:"Demanda_Total",nome:"Demanda Total",u:"kW",limiteAlto:3500,escalaMax:4000},
                 {id:"FP_Geral",nome:"Fator de Potência",u:"",limiteBaixo:0.92,escalaMin:0.85,escalaMax:1.0},
@@ -623,27 +632,6 @@
                 +'<div class="overview-card"><div class="overview-label">Fator Potência</div><div class="overview-value">'+(fp!==null?fp.toFixed(3):'—')+'</div><div class="overview-sub">'+(fp!==null&&fp<0.92?'⚠️ Abaixo':'✅ OK')+'</div></div>'
                 +'<div class="overview-card"><div class="overview-label">Consumo Hoje</div><div class="overview-value">'+(consumo!==null?(consumo/1000).toFixed(1):'—')+'</div><div class="overview-sub">MWh</div></div>'
                 +'<div class="overview-card"><div class="overview-label">Tensão</div><div class="overview-value">'+(tensao!==null?tensao.toFixed(1):'—')+'</div><div class="overview-sub">kV</div></div>';
-            var trafosDiv=document.getElementById('energia-trafos');trafosDiv.innerHTML='';
-            for(var i=0;i<energiaConfig.trafos.length;i++){
-                var trafo=energiaConfig.trafos[i];
-                var carga=getVal(data,trafo.id+'_Carga'),temp=getVal(data,trafo.id+'_Temp');
-                var corrente=getVal(data,trafo.id+'_Corrente'),status=getVal(data,trafo.id+'_Status');
-                var pctCarga=carga!==null?(carga/trafo.potencia*100):null;
-                var statusClass='online',statusText='Online';
-                if(status===0){statusClass='offline';statusText='Offline'}
-                else if(pctCarga!==null&&pctCarga>85){statusClass='alerta';statusText='Carga Alta'}
-                var card=document.createElement('div');card.className='trafo-card'+(statusClass==='offline'?' offline':'');
-                card.innerHTML='<div class="trafo-header"><span class="trafo-nome">'+trafo.nome+'</span><span class="trafo-status '+statusClass+'">● '+statusText+'</span></div>'
-                    +'<div class="trafo-body"><div class="trafo-donut"><canvas id="donut-'+trafo.id+'" width="160" height="160"></canvas><div class="trafo-donut-label"><div class="trafo-donut-value">'+(pctCarga!==null?pctCarga.toFixed(0)+'%':'—')+'</div><div class="trafo-donut-sub">carga</div></div></div>'
-                    +'<div class="trafo-metrics">'
-                    +'<div class="trafo-metric"><span class="trafo-metric-label">Potência</span><span class="trafo-metric-value">'+(carga!==null?carga.toFixed(0)+' kVA':'—')+'</span></div>'
-                    +'<div class="trafo-metric"><span class="trafo-metric-label">Corrente</span><span class="trafo-metric-value">'+(corrente!==null?corrente.toFixed(1)+' A':'—')+'</span></div>'
-                    +'<div class="trafo-metric"><span class="trafo-metric-label">Temperatura</span><span class="trafo-metric-value'+(temp!==null&&temp>75?' alarm':'')+'">'+(temp!==null?temp.toFixed(0)+'°C':'—')+'</span></div>'
-                    +'<div class="trafo-metric"><span class="trafo-metric-label">Capacidade</span><span class="trafo-metric-value">'+trafo.potencia+' '+trafo.u+'</span></div>'
-                    +'</div></div>';
-                trafosDiv.appendChild(card);
-                if(pctCarga!==null)setTimeout((function(id,pct){return function(){desenharDonut(id,pct)}})(trafo.id,pctCarga),50);
-            }
             var medContainer=document.getElementById('cards-energia');medContainer.innerHTML='';
             for(var j=0;j<energiaConfig.medicoes.length;j++){
                 var med=energiaConfig.medicoes[j];var val=getVal(data,med.id);
@@ -651,22 +639,32 @@
                 var fakeTag={nome:med.nome,grupo:'energia',u:med.u,limiteAlto:med.limiteAlto||null,limiteBaixo:med.limiteBaixo||null,escalaMin:med.escalaMin||null,escalaMax:med.escalaMax||null,corAlto:'red',corBaixo:'orange'};
                 medContainer.appendChild(criarDataCard(med.id,val,fakeTag));
             }
-            renderGrupo('sub',data);
+            renderSubestacoes(data);
         }
 
-        // ===== DONUT =====
-        function desenharDonut(trafoId,pct){
-            var canvas=document.getElementById('donut-'+trafoId);if(!canvas)return;
-            var ctx=canvas.getContext('2d');var w=canvas.width,h=canvas.height;
-            var cx=w/2,cy=h/2,r=60,lw=12;
-            ctx.clearRect(0,0,w,h);
-            ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=lw;ctx.stroke();
-            var angle=(pct/100)*Math.PI*2,startA=-Math.PI/2;
-            var grad=ctx.createLinearGradient(0,0,w,h);
-            if(pct>85){grad.addColorStop(0,'#ef4444');grad.addColorStop(1,'#f97316')}
-            else if(pct>70){grad.addColorStop(0,'#f97316');grad.addColorStop(1,'#eab308')}
-            else{grad.addColorStop(0,'#7c3aed');grad.addColorStop(1,'#06b6d4')}
-            ctx.beginPath();ctx.arc(cx,cy,r,startA,startA+angle);ctx.strokeStyle=grad;ctx.lineWidth=lw;ctx.lineCap='round';ctx.stroke();
+        // ===== SUBESTAÇÕES (blocos estilo trafo-card — sem cor de alarme, só Tensão/Corrente + status de rede) =====
+        function renderSubestacoes(data){
+            var container=document.getElementById('energia-subs');if(!container)return;
+            container.innerHTML='';
+            var agora=Date.now();
+            for(var i=0;i<subestacoesConfig.length;i++){
+                var s=subestacoesConfig[i];
+                var cfgV=getCfg(s.tagV)||{},cfgA=getCfg(s.tagA)||{};
+                var valV=getVal(data,s.tagV),valA=getVal(data,s.tagA);
+                var ultimo=Math.max(ultimoUpdatePorTag[s.tagV]||0,ultimoUpdatePorTag[s.tagA]||0);
+                var diffSeg=ultimo?(agora-ultimo)/1000:9999;
+                var offline=diffSeg>120;
+                // Potência instantânea = Tensão × Corrente (kVA, sem fator de potência/√3)
+                var potenciaKVA=(valV!==null&&valA!==null)?(valV*valA/1000):null;
+                var card=document.createElement('div');card.className='trafo-card'+(offline?' offline':'');
+                card.innerHTML='<div class="trafo-header"><span class="trafo-nome">'+s.nome+'</span><span class="trafo-status '+(offline?'offline':'online')+'">● '+(offline?'Offline':'Online')+'</span></div>'
+                    +'<div class="trafo-body"><div class="trafo-metrics">'
+                    +'<div class="trafo-metric"><span class="trafo-metric-label">Tensão</span><span class="trafo-metric-value">'+(valV!==null?valV.toFixed(1)+' '+(cfgV.u||''):'—')+'</span></div>'
+                    +'<div class="trafo-metric"><span class="trafo-metric-label">Corrente</span><span class="trafo-metric-value">'+(valA!==null?valA.toFixed(1)+' '+(cfgA.u||''):'—')+'</span></div>'
+                    +'<div class="trafo-metric"><span class="trafo-metric-label">Potência</span><span class="trafo-metric-value">'+(potenciaKVA!==null?potenciaKVA.toFixed(1)+' kVA':'—')+'</span></div>'
+                    +'</div></div>';
+                container.appendChild(card);
+            }
         }
 
         // ===== DATA CARD (COM LED DE REDE) =====
